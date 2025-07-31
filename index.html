@@ -1,0 +1,195 @@
+<canvas id="flagCanvas"></canvas>
+<script>
+// Get canvas and context
+const canvas = document.getElementById("flagCanvas");
+const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = true; // Enable anti-aliasing
+ctx.lineWidth = 0.5; // Thinner lines for smoother appearance
+
+// Handle high-DPI displays
+const devicePixelRatio = window.devicePixelRatio || 1;
+const backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
+                          ctx.mozBackingStorePixelRatio ||
+                          ctx.msBackingStorePixelRatio ||
+                          ctx.oBackingStorePixelRatio ||
+                          ctx.backingStorePixelRatio || 1;
+
+const pixelRatio = devicePixelRatio / backingStoreRatio;
+
+// Set up canvas dimensions
+let canvasWidth = 400;
+let canvasHeight = 270;
+
+// Set display size (CSS pixels)
+canvas.style.width = canvasWidth + "px";
+canvas.style.height = canvasHeight + "px";
+
+// Set actual size in memory (scaled for high-DPI devices)
+canvas.width = canvasWidth * pixelRatio;
+canvas.height = canvasHeight * pixelRatio;
+
+// Scale all drawing operations by the pixel ratio
+ctx.scale(pixelRatio, pixelRatio);
+
+const canvasCenterX = canvasWidth / 2;
+const canvasCenterY = canvasHeight / 2;
+
+// Rest of your code remains the same...
+
+// Animation and grid configuration
+const radianConversion = (Math.PI / 180);
+const circleRadius = 20;
+const gridSpacing = circleRadius;
+const gridColumnsCount = ~~(canvasWidth / gridSpacing) - 1;  // ~~ is a faster Math.floor
+const gridRowsCount = ~~(canvasHeight / gridSpacing) - 1;
+let angleStart = 0;
+const angleIncrement = -1;  // Controls wave direction and speed
+
+// Styling
+ctx.strokeStyle = "white";
+
+// Grid points array
+const gridPoints = [];
+let colorHue = 53;
+let colorLuminance;
+
+// Initialize grid points
+for (let row = 1; row <= gridRowsCount; row++) {
+    for (let col = 1; col <= gridColumnsCount; col++) {
+        const pointIndex = gridPoints.length;
+        angleStart -= 18 * angleIncrement;
+        
+        gridPoints[pointIndex] = {
+            row: row,
+            col: col,
+            angle: angleStart,
+            centerX: col * gridSpacing,
+            centerY: row * gridSpacing
+        };
+        
+        // Calculate initial position with circular motion
+        gridPoints[pointIndex].x = gridPoints[pointIndex].centerX + 
+            circleRadius * Math.cos(gridPoints[pointIndex].angle * col * radianConversion);
+        gridPoints[pointIndex].y = gridPoints[pointIndex].centerY + 
+            circleRadius * Math.sin(gridPoints[pointIndex].angle * col * radianConversion);
+    }
+}
+
+/**
+ * Draws the flag grid with colored cells
+ */
+function drawGrid() {
+    for (let row = 1; row <= gridRowsCount; row++) {
+        for (let i = (row - 1) * gridColumnsCount; i < row * gridColumnsCount; i++) {
+            ctx.beginPath();
+            
+            // Draw grid cells (quadrilaterals)
+            if (i < row * gridColumnsCount - 1) {
+                // Connect four points to create a cell
+                ctx.moveTo(gridPoints[i].x, gridPoints[i].y);
+                ctx.lineTo(gridPoints[i + 1].x, gridPoints[i + 1].y);
+                
+                if (row < gridRowsCount) {
+                    ctx.lineTo(gridPoints[i + 1 + gridColumnsCount].x, gridPoints[i + 1 + gridColumnsCount].y);
+                    ctx.lineTo(gridPoints[i + gridColumnsCount].x, gridPoints[i + gridColumnsCount].y);
+                    ctx.closePath();
+                    
+                    // Color selection logic for Andorra flag (blue, green, red)
+                    // if (gridPoints[i].col < gridColumnsCount / 3) {
+                    //     colorHue = 230; // Left section (blue)
+                    // } else if (gridPoints[i].col > 2 * gridColumnsCount / 3) {
+                    //     colorHue = 0;   // Right section (red)
+                    // } else {
+                    //     colorHue = 163; // Middle section (green)
+                    // }
+                    // colorSaturation = 100; // Full saturation
+                    
+                    // Catalunya flag coloring (uncomment to use)
+                    // if (gridPoints[i].row % 6 < 3) {
+                    //     colorHue = 23;  // Yellow stripes
+                    // } else if (gridPoints[i].row % 6 >= 3) {
+                    //     colorHue = 0;   // Red stripes
+                    // }
+                    // colorSaturation = 100; // Full saturation
+
+                    
+                    // Create a checked black and white pattern (7 rows × 9 columns)
+                    // Check if the sum of row and column is even or odd to create alternating pattern
+                    // if ((gridPoints[i].row + gridPoints[i].col) % 2 === 0) {
+                    if ((Math.floor(gridPoints[i].row / 2) + (Math.floor((gridPoints[i].col + 1) / 2))) % 2 === 0) {
+                        // White squares (using HSL for consistency with original code)
+                        colorLuminance = 100; // White
+                    } else {
+                        // Black squares
+                        colorLuminance = 0; // Black
+                    }
+                    colorHue = 0;
+                    colorSaturation = 0;
+                    
+                    
+                    // Calculate luminance based on wave position for 3D effect
+                    // const xDifference = (gridPoints[i + 1].x - gridPoints[i].x) / circleRadius;
+                    // colorLuminance = colorLuminance * xDifference;
+                    const cellColor = "hsl(" + colorHue + ", " + colorSaturation + "%, " + colorLuminance + "%)";
+                    
+                    // Apply fill and stroke
+                    ctx.fillStyle = ctx.strokeStyle = cellColor;
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Updates the animation frame
+ */
+function updateAnimation() {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    
+    // Update all grid points positions
+    for (let i = 0; i < gridPoints.length; i++) {
+        gridPoints[i].angle += angleIncrement;
+        gridPoints[i].x = gridPoints[i].centerX + 
+            circleRadius * Math.cos(gridPoints[i].angle * radianConversion);
+        gridPoints[i].y = gridPoints[i].centerY + 
+            circleRadius * Math.sin(gridPoints[i].angle * radianConversion);
+    }
+    
+    // Draw the updated grid
+    drawGrid();
+    
+    // Request next animation frame
+    animationRequestId = window.requestAnimationFrame(updateAnimation);
+}
+
+/**
+ * Starts the animation
+ */
+function startAnimation() {
+    animationRequestId = window.requestAnimationFrame(updateAnimation);
+    isAnimationStopped = false;
+}
+
+/**
+ * Stops the animation
+ */
+function stopAnimation() {
+    if (animationRequestId) {
+        window.cancelAnimationFrame(animationRequestId);
+    }
+    isAnimationStopped = true;
+}
+
+// Initialize animation on page load
+let animationRequestId;
+let isAnimationStopped = true;
+window.addEventListener("load", startAnimation, false);
+
+// Toggle animation on canvas click
+canvas.addEventListener("click", function() {
+    (isAnimationStopped === true) ? startAnimation() : stopAnimation();
+}, false);
+</script>
