@@ -1,0 +1,256 @@
+<style>
+
+/* New Racing Theme Color Palette */
+:root {
+  --bg-color: #f4f4f9;
+  --primary-text: #1a1a1a;
+  --secondary-text: #555555;
+  --accent-color: #e63946; /* Racing Red */
+  --dial-color: #d0d0d5;
+  --transition-speed: 0.5s;
+}
+
+/* Basic Reset & Body Styling */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: var(--bg-color);
+  color: var(--primary-text);
+  overflow: hidden; /* Hide scrollbars during load */
+}
+
+/* Loader Wrapper Styling */
+#loader-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background-color: var(--bg-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity var(--transition-speed) ease,
+    visibility var(--transition-speed) ease;
+  overflow: hidden; /* Hide the overflowing pseudo-element */
+}
+
+/* Subtle, animated checkered flag background */
+#loader-wrapper::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: linear-gradient(45deg, #e8e8f2 25%, transparent 25%),
+    linear-gradient(-45deg, #e8e8f2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e8e8f2 75%),
+    linear-gradient(-45deg, transparent 75%, #e8e8f2 75%);
+  background-size: 100px 100px;
+  background-position: 0 0;
+  opacity: 0.5;
+  z-index: -1;
+  animation: pan-background 40s linear infinite;
+}
+
+#loader-wrapper.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loader-content {
+  text-align: center;
+}
+
+/* App Name Styling - Italic for speed */
+.app-name {
+  font-size: 3rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--primary-text);
+  margin-bottom: 2rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Spinner Box & Speedometer Styling */
+.spinner-box {
+  height: 100px;
+  margin-bottom: 1.5rem;
+}
+
+.speedometer {
+  width: 100px;
+  height: 100px;
+}
+
+.speedo-dial {
+  fill: none;
+  stroke: var(--dial-color);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.speedo-needle-g {
+  /* Animation applied to the group for correct rotation */
+  animation: rev-needle 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.speedo-needle {
+  stroke: var(--accent-color);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.speedo-needle-base {
+  fill: var(--accent-color);
+}
+
+/* Loading Message Styling */
+#loading-message {
+  color: var(--secondary-text);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+/* Main App Content (for demo) */
+#app-content {
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Keyframe Animations */
+@keyframes rev-needle {
+  0% {
+    transform: rotate(-120deg);
+  }
+  50% {
+    transform: rotate(100deg);
+  }
+  100% {
+    transform: rotate(-120deg);
+  }
+}
+
+@keyframes pan-background {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate(100px, 100px) rotate(10deg);
+  }
+}
+
+</style>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ApexDrive | Loading...</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- The loader now has a ::before pseudo-element for the background -->
+    <div id="loader-wrapper">
+      <div class="loader-content">
+        <h1 class="app-name">ApexDrive</h1>
+
+        <!-- Custom SVG Speedometer Spinner -->
+        <div class="spinner-box">
+          <svg class="speedometer" width="100" height="100" viewBox="0 0 100 100">
+            <!-- The dial/gauge part of the speedometer -->
+            <circle
+              class="speedo-dial"
+              cx="50"
+              cy="50"
+              r="40"
+              stroke-dasharray="188.5"
+              stroke-dashoffset="0"
+              transform="rotate(-180 50 50)"
+            />
+            <!-- The needle that will animate -->
+            <g class="speedo-needle-g" transform="rotate(-120 50 50)">
+              <circle class="speedo-needle-base" cx="50" cy="50" r="5" />
+              <path class="speedo-needle" d="M50 50 L50 15" />
+            </g>
+          </svg>
+        </div>
+
+        <p id="loading-message" role="status" aria-live="polite">
+          Starting the engines...
+        </p>
+      </div>
+    </div>
+
+    <!-- Your Actual App Content -->
+    <main id="app-content" style="display: none">
+      <h2>Welcome to ApexDrive!</h2>
+      <p>You're ready to hit the track.</p>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+  const loadingMessages = [
+    "Starting the engines...",
+    "Checking tire pressure...",
+    "Fueling up the tanks...",
+    "Drafting the data packets...",
+    "Hitting the apex...",
+    "Green flag, green flag!",
+    "Final checks on the grid...",
+  ];
+
+  const messageElement = document.getElementById("loading-message");
+  let messageInterval;
+
+  function setRandomMessage() {
+    const randomIndex = Math.floor(Math.random() * loadingMessages.length);
+    messageElement.textContent = loadingMessages[randomIndex];
+  }
+
+  messageInterval = setInterval(setRandomMessage, 2200);
+
+  // --- App Loading Simulation ---
+  // In a real app, call `finishLoading()` when your app is ready.
+  setTimeout(finishLoading, 5500); // Simulate a 5.5-second load time
+
+  function finishLoading() {
+    clearInterval(messageInterval);
+
+    const loaderWrapper = document.getElementById("loader-wrapper");
+    const appContent = document.getElementById("app-content");
+    const body = document.querySelector("body");
+
+    loaderWrapper.classList.add("hidden");
+
+    loaderWrapper.addEventListener("transitionend", function () {
+      loaderWrapper.style.display = "none";
+    });
+
+    appContent.style.display = "block";
+    body.style.overflow = "auto";
+  }
+});
+
+  </script>
