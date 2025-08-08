@@ -1,0 +1,114 @@
+<!-- File: JavaScript.html -->
+<script>
+  // Load templates and clones when the page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    loadTemplates();
+    loadClones();
+    
+    // Set up form submission
+    document.getElementById('cloneForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      createClone();
+    });
+  });
+  
+  // Load available templates
+  function loadTemplates() {
+    google.script.run
+      .withSuccessHandler(function(templates) {
+        const select = document.getElementById('templateSelect');
+        
+        templates.forEach(function(template) {
+          const option = document.createElement('option');
+          option.value = template.id;
+          option.textContent = template.name;
+          select.appendChild(option);
+        });
+      })
+      .withFailureHandler(showError)
+      .getAvailableTemplates();
+  }
+  
+  // Load existing clones
+  function loadClones() {
+    google.script.run
+      .withSuccessHandler(function(clones) {
+        const tbody = document.querySelector('#clonesTable tbody');
+        tbody.innerHTML = '';
+        
+        if (clones.length === 0) {
+          const row = document.createElement('tr');
+          row.innerHTML = '<td colspan="3" class="empty-message">No spreadsheets created yet</td>';
+          tbody.appendChild(row);
+          return;
+        }
+        
+        clones.forEach(function(clone) {
+          const row = document.createElement('tr');
+          
+          row.innerHTML = `
+            <td>${clone.name}</td>
+            <td>${new Date(clone.created_at).toLocaleString()}</td>
+            <td>
+              <a href="${clone.url}" target="_blank" class="btn-small">Open</a>
+            </td>
+          `;
+          
+          tbody.appendChild(row);
+        });
+      })
+      .withFailureHandler(showError)
+      .getClones();
+  }
+  
+  // Create a new clone
+  function createClone() {
+    const templateId = document.getElementById('templateSelect').value;
+    const newName = document.getElementById('newName').value;
+    
+    if (!templateId || !newName) {
+      showError('Please select a template and enter a name');
+      return;
+    }
+    
+    // Show loading status
+    const status = document.getElementById('status');
+    status.textContent = 'Creating spreadsheet...';
+    status.className = 'status-info';
+    
+    google.script.run
+      .withSuccessHandler(function(result) {
+        status.textContent = 'Spreadsheet created successfully!';
+        status.className = 'status-success';
+        
+        // Clear form
+        document.getElementById('newName').value = '';
+        document.getElementById('templateSelect').selectedIndex = 0;
+        
+        // Reload the clones list
+        loadClones();
+        
+        // Open the new spreadsheet
+        window.open(result.url, '_blank');
+        
+        // Hide status after 3 seconds
+        setTimeout(function() {
+          status.className = 'hidden';
+        }, 3000);
+      })
+      .withFailureHandler(showError)
+      .createClone(templateId, newName);
+  }
+  
+  // Show error message
+  function showError(error) {
+    const status = document.getElementById('status');
+    status.textContent = typeof error === 'string' ? error : 'An error occurred';
+    status.className = 'status-error';
+    
+    // Hide error after 5 seconds
+    setTimeout(function() {
+      status.className = 'hidden';
+    }, 5000);
+  }
+</script>

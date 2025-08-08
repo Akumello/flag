@@ -1,0 +1,60 @@
+<!-- File: Index.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?!= include('Stylesheet'); ?>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><img src="https://www.google.com/images/about/sheets-icon.svg" height="30"> Template Manager</h1>
+      </header>
+      
+      <section class="card">
+        <h2>Create New Spreadsheet from Template</h2>
+        <form id="cloneForm">
+          <div class="form-group">
+            <label for="templateSelect">Select Template:</label>
+            <select id="templateSelect" required>
+              <option value="">-- Select a template --</option>
+              <!-- Templates will be loaded here -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="newName">New Spreadsheet Name:</label>
+            <input type="text" id="newName" required>
+          </div>
+          
+          <div class="form-group">
+            <button type="submit" class="btn-primary">Create Spreadsheet</button>
+          </div>
+        </form>
+        <div id="status" class="hidden"></div>
+      </section>
+      
+      <section class="card">
+        <h2>Your Spreadsheets</h2>
+        <div id="clonesContainer">
+          <table id="clonesTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Clones will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    
+    <?!= include('JavaScript'); ?>
+  </body>
+</html>
