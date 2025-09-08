@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Progress Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: #f8f9fa;
+            color: #495057;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.all-active {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .progress-section {
+            margin-bottom: 40px;
+        }
+
+        .progress-title {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: visible;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .progress-label {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #495057;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .threshold-line {
+            position: absolute;
+            top: -5px;
+            height: 30px;
+            width: 2px;
+            background: #6c757d;
+            z-index: 10;
+        }
+
+        .threshold-label {
+            position: absolute;
+            top: -25px;
+            font-size: 10px;
+            color: #6c757d;
+            font-weight: 600;
+            transform: translateX(-50%);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .progress-fill.animated {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Apex Performance Dashboard</h1>
+        
+        <div class="filters">
+            <button class="filter-btn all-active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="apex1">Apex 1</button>
+            <button class="filter-btn" data-filter="apex2">Apex 2</button>
+            <button class="filter-btn" data-filter="apex3">Apex 3</button>
+            <button class="filter-btn" data-filter="apex4">Apex 4</button>
+            <button class="filter-btn" data-filter="apex5">Apex 5</button>
+        </div>
+
+        <div class="progress-section" data-category="apex1">
+            <div class="progress-title">Apex 1 Performance Score</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress1"></div>
+                <div class="progress-label" id="label1">0%</div>
+            </div>
+        </div>
+
+        <div class="progress-section" data-category="apex2">
+            <div class="progress-title">Apex 2 Efficiency Rate</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress2"></div>
+                <div class="progress-label" id="label2">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Progress bar data
+        const progressData = [
+            { id: 'progress1', labelId: 'label1', value: 95 }, // Above 90% - will be green
+            { id: 'progress2', labelId: 'label2', value: 72 }  // Below 90% - will be red/orange
+        ];
+
+        // Color gradients based on threshold
+        const getGradient = (value) => {
+            if (value >= 90) {
+                return ['#28a745', '#20c997']; // Green gradient
+            } else {
+                return ['#fd7e14', '#dc3545']; // Orange to red gradient
+            }
+        };
+
+        // Create gradients and progress bars
+        function createProgressBar(data) {
+            const container = d3.select(`#${data.id}`);
+            const gradient = getGradient(data.value);
+            
+            // Create SVG
+            const svg = container.append('svg')
+                .attr('width', '100%')
+                .attr('height', '20px');
+            
+            // Create gradient definition
+            const defs = svg.append('defs');
+            const gradientDef = defs.append('linearGradient')
+                .attr('id', `gradient-${data.id}`)
+                .attr('x1', '0%')
+                .attr('y1', '0%')
+                .attr('x2', '100%')
+                .attr('y2', '0%');
+            
+            gradientDef.append('stop')
+                .attr('offset', '0%')
+                .attr('stop-color', gradient[0]);
+            
+            gradientDef.append('stop')
+                .attr('offset', '100%')
+                .attr('stop-color', gradient[1]);
+            
+            // Create progress bar background
+            svg.append('rect')
+                .attr('width', '100%')
+                .attr('height', '100%')
+                .attr('fill', '#e9ecef')
+                .attr('rx', 10);
+            
+            // Create progress bar fill
+            const progressFill = svg.append('rect')
+                .attr('width', '0%')
+                .attr('height', '100%')
+                .attr('fill', `url(#gradient-${data.id})`)
+                .attr('rx', 10);
+            
+            // Add 90% threshold line
+            const containerElement = container.node();
+            const containerWidth = containerElement.getBoundingClientRect().width;
+            
+            // Add threshold line
+            const thresholdLine = container.append('div')
+                .attr('class', 'threshold-line')
+                .style('left', '90%');
+            
+            // Add threshold label
+            const thresholdLabel = container.append('div')
+                .attr('class', 'threshold-label')
+                .style('left', '90%')
+                .text('90%');
+            
+            // Animate progress bar
+            progressFill.transition()
+                .duration(1500)
+                .ease(d3.easeCubicOut)
+                .attr('width', `${data.value}%`);
+            
+            // Animate label
+            const label = d3.select(`#${data.labelId}`);
+            label.transition()
+                .duration(1500)
+                .ease(d3.easeCubicOut)
+                .tween('text', function() {
+                    const i = d3.interpolate(0, data.value);
+                    return function(t) {
+                        const currentValue = Math.round(i(t));
+                        this.textContent = currentValue + '%';
+                        
+                        // Update color based on current value during animation
+                        if (currentValue >= 90) {
+                            this.style.color = '#28a745';
+                        } else {
+                            this.style.color = '#dc3545';
+                        }
+                    };
+                });
+        }
+
+        // Initialize progress bars
+        progressData.forEach(createProgressBar);
+
+        // Filter functionality with multiple selection for Apex buttons
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const progressSections = document.querySelectorAll('.progress-section');
+        let activeFilters = new Set(['all']);
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter;
+                
+                if (filter === 'all') {
+                    // If "All" is clicked, deactivate all others and activate "All"
+                    activeFilters.clear();
+                    activeFilters.add('all');
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('all-active');
+                } else {
+                    // If an Apex button is clicked
+                    if (activeFilters.has('all')) {
+                        // Remove "All" if it was active
+                        activeFilters.delete('all');
+                        document.querySelector('[data-filter="all"]').classList.remove('all-active');
+                    }
+                    
+                    // Toggle the apex filter
+                    if (activeFilters.has(filter)) {
+                        activeFilters.delete(filter);
+                        btn.classList.remove('active');
+                    } else {
+                        activeFilters.add(filter);
+                        btn.classList.add('active');
+                    }
+                    
+                    // If no apex filters are active, activate "All"
+                    if (activeFilters.size === 0) {
+                        activeFilters.add('all');
+                        document.querySelector('[data-filter="all"]').classList.add('all-active');
+                    }
+                }
+                
+                // Show/hide sections based on active filters
+                progressSections.forEach(section => {
+                    const category = section.dataset.category;
+                    if (activeFilters.has('all') || activeFilters.has(category)) {
+                        section.style.display = 'block';
+                        section.style.animation = 'fadeIn 0.5s ease-in';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // Add fade-in animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Add hover effects to progress bars
+        progressData.forEach(data => {
+            const progressBar = document.querySelector(`#${data.id} rect:last-child`);
+            if (progressBar) {
+                progressBar.addEventListener('mouseenter', () => {
+                    progressBar.style.filter = 'brightness(1.1)';
+                });
+                progressBar.addEventListener('mouseleave', () => {
+                    progressBar.style.filter = 'brightness(1)';
+                });
+            }
+        });
+
+        // Initialize display - show all sections
+        progressSections.forEach(section => {
+            section.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
