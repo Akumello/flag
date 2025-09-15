@@ -1,0 +1,330 @@
+<script>
+    /**
+     * DataTableApp - Main Application Controller for Google Apps Script
+     * Handles data loading, filtering, and component coordination
+     */
+    class DataTableApp {
+        constructor() {
+            this.dataset = [];
+            this.currentStatus = 'Complete';
+            this.filters = {
+                department: [],
+                assignee: [],
+                priority: ''
+            };
+            this.searchTerm = '';
+            this.isLoading = false;
+            this.init();
+        }
+
+        async init() {
+            try {
+                this.showLoading(true);
+                await this.loadData();
+                this.setupEventListeners();
+                this.updateData();
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                this.showError('Failed to load application. Please refresh the page.');
+            } finally {
+                this.showLoading(false);
+            }
+        }
+
+        /**
+         * Load data from Google Apps Script backend
+         */
+        async loadData() {
+            return new Promise((resolve, reject) => {
+                google.script.run
+                    .withSuccessHandler((data) => {
+                        console.log('Data loaded successfully:', data.length, 'records');
+                        this.dataset = data;
+                        resolve(data);
+                    })
+                    .withFailureHandler((error) => {
+                        console.error('Error loading data:', error);
+                        reject(error);
+                    })
+                    .getTableData();
+            });
+        }
+
+        showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.toggle('hidden', !show);
+            }
+            this.isLoading = show;
+        }
+
+        showError(message) {
+            const container = document.querySelector('.container');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <strong>Error:</strong> ${message}
+                <button onclick="location.reload()" style="margin-left: 15px; padding: 5px 10px; border: none; background: #721c24; color: white; border-radius: 4px; cursor: pointer;">
+                    Reload Page
+                </button>
+            `;
+            container.insertBefore(errorDiv, container.firstChild);
+        }
+
+        setupEventListeners() {
+            // Status toggle buttons
+            document.querySelectorAll('.toggle-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    document.querySelectorAll('.toggle-option').forEach(opt => opt.classList.remove('active'));
+                    e.target.classList.add('active');
+                    this.currentStatus = e.target.dataset.status;
+                    this.updateData();
+                });
+            });
+
+            // Smart select components
+            const departmentSelect = document.getElementById('departmentSelect');
+            const assigneeSelect = document.getElementById('assigneeSelect');
+
+            if (departmentSelect) {
+                departmentSelect.addEventListener('change', (e) => {
+                    this.filters.department = e.detail.values;
+                    this.updateFilters();
+                });
+            }
+
+            if (assigneeSelect) {
+                assigneeSelect.addEventListener('change', (e) => {
+                    this.filters.assignee = e.detail.values;
+                    this.updateFilters();
+                });
+            }
+
+            // Priority radio filter
+            const radioFilter = document.querySelector('.radio-filter');
+            if (radioFilter) {
+                radioFilter.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('radio-option')) {
+                        document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.filters.priority = e.target.dataset.value;
+                        this.updateFilters();
+                    }
+                });
+            }
+
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        this.searchTerm = e.target.value;
+                        this.updateSearch();
+                    }, 300); // Debounce search
+                });
+            }
+
+            // Global click handler to close dropdowns
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('smart-select')) {
+                    document.querySelectorAll('smart-select').forEach(select => {
+                        if (select.close) select.close();
+                    });
+                }
+            });
+
+            // Handle browser back/forward buttons
+            window.addEventListener('popstate', () => {
+                this.restoreStateFromURL();
+            });
+
+            // Handle page visibility changes
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && !this.isLoading) {
+                    // Optionally refresh data when page becomes visible
+                    console.log('Page became visible');
+                }
+            });
+        }
+
+        updateData() {
+            if (this.isLoading) return;
+
+            try {
+                const filteredByStatus = this.dataset.filter(item => item.status === this.currentStatus);
+                
+                // Update smart select options with current status data
+                const departmentSelect = document.getElementById('departmentSelect');
+                const assigneeSelect = document.getElementById('assigneeSelect');
+                
+                if (departmentSelect) departmentSelect.setData(filteredByStatus);
+                if (assigneeSelect) assigneeSelect.setData(filteredByStatus);
+                
+                // Update table with filtered data
+                const table = document.getElementById('dataTable');
+                if (table) {
+                    table.setData(filteredByStatus);
+                    this.updateFilters();
+                }
+
+                // Update URL to reflect current state
+                this.updateURL();
+            } catch (error) {
+                console.error('Error updating data:', error);
+                this.showError('Error updating data display.');
+            }
+        }
+
+        updateFilters() {
+            if (this.isLoading) return;
+
+            try {
+                const table = document.getElementById('dataTable');
+                if (!table) return;
+
+                const activeFilters = {};
+                
+                // Process filters to only include non-empty values
+                Object.entries(this.filters).forEach(([key, value]) => {
+                    if (Array.isArray(value) && value.length > 0) {
+                        activeFilters[key] = value;
+                    } else if (!Array.isArray(value) && value) {
+                        activeFilters[key] = [value];
+                    }
+                });
+                
+                table.setFilters(activeFilters);
+                table.setSearchTerm(this.searchTerm);
+
+                // Update URL to reflect current state
+                this.updateURL();
+            } catch (error) {
+                console.error('Error updating filters:', error);
+            }
+        }
+
+        updateSearch() {
+            if (this.isLoading) return;
+
+            try {
+                const table = document.getElementById('dataTable');
+                if (table) {
+                    table.setSearchTerm(this.searchTerm);
+                    this.updateURL();
+                }
+            } catch (error) {
+                console.error('Error updating search:', error);
+            }
+        }
+
+        // URL state management for bookmarking and sharing
+        updateURL() {
+            try {
+                const params = new URLSearchParams();
+                
+                if (this.currentStatus !== 'Complete') {
+                    params.set('status', this.currentStatus);
+                }
+                
+                if (this.filters.department.length > 0) {
+                    params.set('dept', this.filters.department.join(','));
+                }
+                
+                if (this.filters.assignee.length > 0) {
+                    params.set('assignee', this.filters.assignee.join(','));
+                }
+                
+                if (this.filters.priority) {
+                    params.set('priority', this.filters.priority);
+                }
+                
+                if (this.searchTerm) {
+                    params.set('search', this.searchTerm);
+                }
+
+                const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+                window.history.replaceState({}, '', newURL);
+            } catch (error) {
+                console.error('Error updating URL:', error);
+            }
+        }
+
+        restoreStateFromURL() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                
+                // Restore status
+                const status = params.get('status') || 'Complete';
+                this.currentStatus = status;
+                
+                // Update toggle buttons
+                document.querySelectorAll('.toggle-option').forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.status === status);
+                });
+                
+                // Restore filters
+                this.filters.department = params.get('dept')?.split(',').filter(Boolean) || [];
+                this.filters.assignee = params.get('assignee')?.split(',').filter(Boolean) || [];
+                this.filters.priority = params.get('priority') || '';
+                this.searchTerm = params.get('search') || '';
+                
+                // Update UI elements
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) searchInput.value = this.searchTerm;
+                
+                // Update priority radio buttons
+                document.querySelectorAll('.radio-option').forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.value === this.filters.priority);
+                });
+                
+                // Apply restored state
+                this.updateData();
+            } catch (error) {
+                console.error('Error restoring state from URL:', error);
+            }
+        }
+
+        // Public method to refresh data from backend
+        async refreshData() {
+            try {
+                this.showLoading(true);
+                await this.loadData();
+                this.updateData();
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                this.showError('Failed to refresh data.');
+            } finally {
+                this.showLoading(false);
+            }
+        }
+    }
+
+    // Global app instance for debugging and manual control
+    let app;
+
+    // Initialize application when DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        app = new DataTableApp();
+        
+        // Restore state from URL on initial load
+        if (window.location.search) {
+            setTimeout(() => app.restoreStateFromURL(), 100);
+        }
+        
+        // Expose refresh function globally for manual use
+        window.refreshData = () => app.refreshData();
+        
+        console.log('Advanced Data Table App initialized');
+    });
+
+    // Handle any uncaught errors
+    window.addEventListener('error', (event) => {
+        console.error('Uncaught error:', event.error);
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled promise rejection:', event.reason);
+    });
+</script>

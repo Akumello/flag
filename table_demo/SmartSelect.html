@@ -1,0 +1,251 @@
+<script>
+    /**
+     * SmartSelect Web Component for Google Apps Script
+     * A reusable multi-select dropdown component
+     */
+    class SmartSelect extends HTMLElement {
+        constructor() {
+            super();
+            this.attachShadow({ mode: 'open' });
+            this.isMultiple = this.hasAttribute('multiple');
+            this.selectedValues = new Set();
+            this.options = [];
+            this.isOpen = false;
+        }
+
+        connectedCallback() {
+            this.render();
+            this.setupEventListeners();
+        }
+
+        static get observedAttributes() {
+            return ['data-column', 'placeholder', 'multiple'];
+        }
+
+        attributeChangedCallback(name, oldValue, newValue) {
+            if (oldValue !== newValue) {
+                this.render();
+                this.setupEventListeners();
+            }
+        }
+
+        setData(data) {
+            const column = this.getAttribute('data-column');
+            if (!column || !data) return;
+
+            this.options = [...new Set(data.map(item => item[column]))].sort();
+            this.render();
+            this.setupEventListeners();
+        }
+
+        render() {
+            const placeholder = this.getAttribute('placeholder') || 'Select...';
+            const selectedText = this.getSelectedText(placeholder);
+
+            this.shadowRoot.innerHTML = `
+                <style>
+                    :host {
+                        display: block;
+                        position: relative;
+                    }
+
+                    .select-trigger {
+                        background: white;
+                        border: 2px solid #e9ecef;
+                        border-radius: 10px;
+                        padding: 12px 16px;
+                        cursor: pointer;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        transition: all 0.3s ease;
+                        min-height: 48px;
+                    }
+
+                    .select-trigger:hover {
+                        border-color: #667eea;
+                    }
+
+                    .select-trigger.open {
+                        border-color: #667eea;
+                        border-bottom-left-radius: 0;
+                        border-bottom-right-radius: 0;
+                    }
+
+                    .selected-text {
+                        flex: 1;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+
+                    .arrow {
+                        margin-left: 8px;
+                        transition: transform 0.3s ease;
+                    }
+
+                    .arrow.rotated {
+                        transform: rotate(180deg);
+                    }
+
+                    .dropdown {
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        right: 0;
+                        background: white;
+                        border: 2px solid #667eea;
+                        border-top: none;
+                        border-bottom-left-radius: 10px;
+                        border-bottom-right-radius: 10px;
+                        max-height: 200px;
+                        overflow-y: auto;
+                        z-index: 1000;
+                        display: none;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    }
+
+                    .dropdown.show {
+                        display: block;
+                    }
+
+                    .option {
+                        padding: 12px 16px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        transition: background-color 0.2s ease;
+                    }
+
+                    .option:hover {
+                        background: #f8f9fa;
+                    }
+
+                    .option input[type="checkbox"] {
+                        margin: 0;
+                    }
+
+                    .clear-all {
+                        padding: 8px 16px;
+                        background: #f8f9fa;
+                        border-bottom: 1px solid #e9ecef;
+                        font-size: 0.85rem;
+                        color: #667eea;
+                        cursor: pointer;
+                    }
+
+                    .clear-all:hover {
+                        background: #e9ecef;
+                    }
+                </style>
+                <div class="select-trigger ${this.isOpen ? 'open' : ''}">
+                    <span class="selected-text">${selectedText}</span>
+                    <span class="arrow ${this.isOpen ? 'rotated' : ''}">▼</span>
+                </div>
+                <div class="dropdown ${this.isOpen ? 'show' : ''}">
+                    ${this.isMultiple && this.selectedValues.size > 0 ? 
+                        '<div class="clear-all">Clear All</div>' : ''}
+                    ${this.options.map(option => `
+                        <div class="option">
+                            ${this.isMultiple ? 
+                                `<input type="checkbox" ${this.selectedValues.has(option) ? 'checked' : ''} value="${option}">` : ''}
+                            <label>${option}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        getSelectedText(placeholder) {
+            if (this.selectedValues.size === 0) return placeholder;
+            if (this.selectedValues.size === 1) return [...this.selectedValues][0];
+            return `${this.selectedValues.size} selected`;
+        }
+
+        setupEventListeners() {
+            const trigger = this.shadowRoot.querySelector('.select-trigger');
+            const dropdown = this.shadowRoot.querySelector('.dropdown');
+            const clearAll = this.shadowRoot.querySelector('.clear-all');
+
+            if (trigger) {
+                const newTrigger = trigger.cloneNode(true);
+                trigger.parentNode.replaceChild(newTrigger, trigger);
+                
+                newTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggle();
+                });
+            }
+
+            if (clearAll) {
+                clearAll.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.selectedValues.clear();
+                    this.render();
+                    this.setupEventListeners();
+                    this.dispatchChangeEvent();
+                });
+            }
+
+            if (dropdown) {
+                const newDropdown = dropdown.cloneNode(true);
+                dropdown.parentNode.replaceChild(newDropdown, dropdown);
+                
+                newDropdown.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const option = e.target.closest('.option');
+                    if (!option) return;
+
+                    const value = option.querySelector('input')?.value || option.querySelector('label').textContent;
+
+                    if (this.isMultiple) {
+                        if (this.selectedValues.has(value)) {
+                            this.selectedValues.delete(value);
+                        } else {
+                            this.selectedValues.add(value);
+                        }
+                    } else {
+                        this.selectedValues.clear();
+                        this.selectedValues.add(value);
+                        this.close();
+                    }
+
+                    this.render();
+                    this.setupEventListeners();
+                    this.dispatchChangeEvent();
+                });
+            }
+        }
+
+        toggle() {
+            this.isOpen ? this.close() : this.open();
+        }
+
+        open() {
+            this.isOpen = true;
+            this.render();
+            this.setupEventListeners();
+        }
+
+        close() {
+            this.isOpen = false;
+            this.render();
+            this.setupEventListeners();
+        }
+
+        getSelectedValues() {
+            return [...this.selectedValues];
+        }
+
+        dispatchChangeEvent() {
+            this.dispatchEvent(new CustomEvent('change', {
+                detail: { values: this.getSelectedValues() },
+                bubbles: true
+            }));
+        }
+    }
+
+    // Register the custom element
+    customElements.define('smart-select', SmartSelect);
+</script>

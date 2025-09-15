@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Data Table System</title>
+    <?!= include('styles'); ?>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Advanced Data Table System</h1>
+            <p>Professional data management with Google Apps Script</p>
+        </div>
+
+        <div class="controls">
+            <div class="toggle-section">
+                <div class="toggle-button">
+                    <div class="toggle-option active" data-status="Complete">Complete Tasks</div>
+                    <div class="toggle-option" data-status="Incomplete">Incomplete Tasks</div>
+                </div>
+            </div>
+
+            <div class="filters-section">
+                <div class="filter-group">
+                    <h3>Department</h3>
+                    <smart-select 
+                        id="departmentSelect" 
+                        data-column="department" 
+                        placeholder="All Departments"
+                        multiple>
+                    </smart-select>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Assignee</h3>
+                    <smart-select 
+                        id="assigneeSelect" 
+                        data-column="assignee" 
+                        placeholder="All Assignees"
+                        multiple>
+                    </smart-select>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Priority</h3>
+                    <div class="radio-filter" data-filter="priority">
+                        <div class="radio-option active" data-value="">All</div>
+                        <div class="radio-option" data-value="High">High</div>
+                        <div class="radio-option" data-value="Medium">Medium</div>
+                        <div class="radio-option" data-value="Low">Low</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="utilities">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search tasks...">
+                </div>
+            </div>
+        </div>
+
+        <advanced-data-table id="dataTable"></advanced-data-table>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Loading data...</p>
+    </div>
+
+    <?!= include('SmartSelect'); ?>
+    <?!= include('AdvancedDataTable'); ?>
+    <?!= include('app'); ?>
+</body>
+</html>
