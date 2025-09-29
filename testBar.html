@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Progress Bar Component Demo</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <script>
+        class ApexProgressBar extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+                this._value = 0;
+                this._goalPercent = 90;
+                this._title = 'Progress';
+                this._animated = true;
+                this.svg = null;
+                this.progressFill = null;
+                this.labelElement = null;
+            }
+
+            static get observedAttributes() {
+                return ['value', 'goal-percent', 'title', 'animated'];
+            }
+
+            get value() {
+                return this._value;
+            }
+
+            set value(val) {
+                this._value = Math.max(0, Math.min(100, parseFloat(val) || 0));
+                this.updateProgress();
+            }
+
+            get goalPercent() {
+                return this._goalPercent;
+            }
+
+            set goalPercent(val) {
+                this._goalPercent = Math.max(0, Math.min(100, parseFloat(val) || 90));
+                this.updateThreshold();
+                this.updateProgress();
+            }
+
+            get title() {
+                return this._title;
+            }
+
+            set title(val) {
+                this._title = val || 'Progress';
+                this.updateTitle();
+            }
+
+            attributeChangedCallback(name, oldValue, newValue) {
+                switch (name) {
+                    case 'value':
+                        this.value = newValue;
+                        break;
+                    case 'goal-percent':
+                        this.goalPercent = newValue;
+                        break;
+                    case 'title':
+                        this.title = newValue;
+                        break;
+                    case 'animated':
+                        this._animated = newValue !== 'false';
+                        break;
+                }
+            }
+
+            connectedCallback() {
+                this.render();
+                this.setupProgressBar();
+            }
+
+            getGradient(value) {
+                if (value >= this._goalPercent) {
+                    return ['#28a745', '#20c997']; // Green gradient
+                } else {
+                    return ['#fd7e14', '#dc3545']; // Orange to red gradient
+                }
+            }
+
+            render() {
+                this.shadowRoot.innerHTML = `
+                    <style>
+                        :host {
+                            display: block;
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            margin-bottom: 30px;
+                        }
+
+                        .progress-title {
+                            font-size: 1.4em;
+                            margin-bottom: 15px;
+                            color: #495057;
+                            font-weight: 600;
+                        }
+
+                        .progress-container {
+                            display: flex;
+                            align-items: center;
+                            gap: 20px;
+                            position: relative;
+                        }
+
+                        .progress-bar {
+                            flex: 1;
+                            height: 20px;
+                            background: #e9ecef;
+                            border-radius: 10px;
+                            overflow: visible;
+                            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+                            position: relative;
+                        }
+
+                        .progress-label {
+                            font-size: 1.2em;
+                            font-weight: 700;
+                            min-width: 60px;
+                            text-align: right;
+                            transition: color 0.3s ease;
+                        }
+
+                        .threshold-line {
+                            position: absolute;
+                            top: -5px;
+                            height: 30px;
+                            width: 2px;
+                            background: #6c757d;
+                            z-index: 10;
+                            transform: translateX(-50%);
+                        }
+
+                        .threshold-label {
+                            position: absolute;
+                            top: -25px;
+                            font-size: 10px;
+                            color: #6c757d;
+                            font-weight: 600;
+                            transform: translateX(-50%);
+                            white-space: nowrap;
+                        }
+
+                        svg {
+                            width: 100%;
+                            height: 20px;
+                            border-radius: 10px;
+                        }
+
+                        .progress-fill {
+                            transition: all 0.3s ease;
+                        }
+
+                        .progress-fill:hover {
+                            filter: brightness(1.1);
+                        }
+
+                        @keyframes pulse {
+                            0% { opacity: 1; }
+                            50% { opacity: 0.8; }
+                            100% { opacity: 1; }
+                        }
+
+                        .progress-fill.pulsing {
+                            animation: pulse 2s infinite;
+                        }
+                    </style>
+                    
+                    <div class="progress-section">
+                        <div class="progress-title">${this._title}</div>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="threshold-line"></div>
+                                <div class="threshold-label">${this._goalPercent}%</div>
+                            </div>
+                            <div class="progress-label">0%</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            setupProgressBar() {
+                const progressBar = this.shadowRoot.querySelector('.progress-bar');
+                this.labelElement = this.shadowRoot.querySelector('.progress-label');
+                
+                // Create SVG with D3
+                this.svg = d3.select(progressBar).append('svg')
+                    .attr('width', '100%')
+                    .attr('height', '20px');
+
+                // Create gradient definition
+                const defs = this.svg.append('defs');
+                this.gradientDef = defs.append('linearGradient')
+                    .attr('id', `gradient-${this.generateId()}`)
+                    .attr('x1', '0%')
+                    .attr('y1', '0%')
+                    .attr('x2', '100%')
+                    .attr('y2', '0%');
+
+                // Create progress bar background
+                this.svg.append('rect')
+                    .attr('width', '100%')
+                    .attr('height', '100%')
+                    .attr('fill', '#e9ecef')
+                    .attr('rx', 10);
+
+                // Create progress bar fill
+                this.progressFill = this.svg.append('rect')
+                    .attr('width', '0%')
+                    .attr('height', '100%')
+                    .attr('rx', 10)
+                    .attr('class', 'progress-fill');
+
+                this.updateThreshold();
+                this.updateProgress();
+            }
+
+            updateProgress() {
+                if (!this.progressFill || !this.labelElement) return;
+
+                const gradient = this.getGradient(this._value);
+                
+                // Update gradient colors
+                this.gradientDef.selectAll('stop').remove();
+                this.gradientDef.append('stop')
+                    .attr('offset', '0%')
+                    .attr('stop-color', gradient[0]);
+                this.gradientDef.append('stop')
+                    .attr('offset', '100%')
+                    .attr('stop-color', gradient[1]);
+
+                // Update fill color
+                this.progressFill.attr('fill', `url(#gradient-${this.generateId()})`);
+
+                if (this._animated) {
+                    // Animate progress bar
+                    this.progressFill.transition()
+                        .duration(1000)
+                        .ease(d3.easeCubicOut)
+                        .attr('width', `${this._value}%`);
+
+                    // Animate label
+                    const currentValue = parseFloat(this.labelElement.textContent) || 0;
+                    d3.select(this.labelElement).transition()
+                        .duration(1000)
+                        .ease(d3.easeCubicOut)
+                        .tween('text', () => {
+                            const i = d3.interpolate(currentValue, this._value);
+                            return (t) => {
+                                const val = Math.round(i(t));
+                                this.labelElement.textContent = val + '%';
+                                
+                                // Update label color
+                                if (val >= this._goalPercent) {
+                                    this.labelElement.style.color = '#28a745';
+                                } else {
+                                    this.labelElement.style.color = '#dc3545';
+                                }
+                            };
+                        });
+                } else {
+                    // Instant update
+                    this.progressFill.attr('width', `${this._value}%`);
+                    this.labelElement.textContent = this._value + '%';
+                    
+                    if (this._value >= this._goalPercent) {
+                        this.labelElement.style.color = '#28a745';
+                    } else {
+                        this.labelElement.style.color = '#dc3545';
+                    }
+                }
+            }
+
+            updateThreshold() {
+                const thresholdLine = this.shadowRoot.querySelector('.threshold-line');
+                const thresholdLabel = this.shadowRoot.querySelector('.threshold-label');
+                
+                if (thresholdLine && thresholdLabel) {
+                    thresholdLine.style.left = `${this._goalPercent}%`;
+                    thresholdLabel.style.left = `${this._goalPercent}%`;
+                    thresholdLabel.textContent = `${this._goalPercent}%`;
+                }
+            }
+
+            updateTitle() {
+                const titleElement = this.shadowRoot.querySelector('.progress-title');
+                if (titleElement) {
+                    titleElement.textContent = this._title;
+                }
+            }
+
+            generateId() {
+                return 'apex-progress-' + Math.random().toString(36).substr(2, 9);
+            }
+
+            // Public methods for external control
+            setValue(value, animate = true) {
+                this._animated = animate;
+                this.value = value;
+            }
+
+            setGoal(goalPercent) {
+                this.goalPercent = goalPercent;
+            }
+
+            pulse() {
+                if (this.progressFill) {
+                    this.progressFill.classed('pulsing', true);
+                    setTimeout(() => {
+                        if (this.progressFill) {
+                            this.progressFill.classed('pulsing', false);
+                        }
+                    }, 4000);
+                }
+            }
+        }
+
+        // Register the custom element
+        customElements.define('apex-progress-bar', ApexProgressBar);
+    </script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            min-width: 100px;
+        }
+
+        .control-group input, .control-group button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .control-group button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .control-group button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+
+    <div class="container">
+        <h1>Apex Progress Bar Component Demo</h1>
+        
+        <!-- Progress bar instances -->
+        <apex-progress-bar 
+            value="85" 
+            goal-percent="90" 
+            title="Website Performance Score">
+        </apex-progress-bar>
+        
+        <apex-progress-bar 
+            value="72" 
+            goal-percent="80" 
+            title="User Engagement Rate">
+        </apex-progress-bar>
+
+        <apex-progress-bar 
+            value="95" 
+            goal-percent="75" 
+            title="Conversion Rate">
+        </apex-progress-bar>
+
+        <!-- Interactive Controls -->
+        <div class="controls">
+            <h3>Interactive Controls</h3>
+            
+            <div class="control-group">
+                <label>Bar 1 Value:</label>
+                <input type="range" id="bar1-value" min="0" max="100" value="85">
+                <span id="bar1-display">85%</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Bar 1 Goal:</label>
+                <input type="range" id="bar1-goal" min="0" max="100" value="90">
+                <span id="bar1-goal-display">90%</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Bar 2 Value:</label>
+                <input type="range" id="bar2-value" min="0" max="100" value="72">
+                <span id="bar2-display">72%</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Actions:</label>
+                <button onclick="randomizeValues()">Randomize All</button>
+                <button onclick="pulseAll()">Pulse All</button>
+                <button onclick="setHighValues()">Set High Values</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get references to progress bars
+        const bars = document.querySelectorAll('apex-progress-bar');
+        const bar1 = bars[0];
+        const bar2 = bars[1];
+        const bar3 = bars[2];
+
+        // Control handlers
+        const bar1ValueSlider = document.getElementById('bar1-value');
+        const bar1ValueDisplay = document.getElementById('bar1-display');
+        const bar1GoalSlider = document.getElementById('bar1-goal');
+        const bar1GoalDisplay = document.getElementById('bar1-goal-display');
+        const bar2ValueSlider = document.getElementById('bar2-value');
+        const bar2ValueDisplay = document.getElementById('bar2-display');
+
+        bar1ValueSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            bar1.setValue(value);
+            bar1ValueDisplay.textContent = value + '%';
+        });
+
+        bar1GoalSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            bar1.setGoal(value);
+            bar1GoalDisplay.textContent = value + '%';
+        });
+
+        bar2ValueSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            bar2.setValue(value);
+            bar2ValueDisplay.textContent = value + '%';
+        });
+
+        // Control functions
+        function randomizeValues() {
+            bars.forEach(bar => {
+                const randomValue = Math.floor(Math.random() * 100);
+                bar.setValue(randomValue);
+            });
+        }
+
+        function pulseAll() {
+            bars.forEach(bar => bar.pulse());
+        }
+
+        function setHighValues() {
+            bar1.setValue(95);
+            bar2.setValue(88);
+            bar3.setValue(92);
+            
+            // Update sliders
+            bar1ValueSlider.value = 95;
+            bar1ValueDisplay.textContent = '95%';
+            bar2ValueSlider.value = 88;
+            bar2ValueDisplay.textContent = '88%';
+        }
+
+        // Example of programmatic updates
+        setTimeout(() => {
+            console.log('Updating bar 3 after 3 seconds...');
+            bar3.setValue(65);
+        }, 3000);
+    </script>
+</body>
+</html>

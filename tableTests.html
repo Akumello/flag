@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Data Table System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .toggle-section {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .toggle-button {
+            position: relative;
+            background: #e9ecef;
+            border-radius: 50px;
+            padding: 4px;
+            display: inline-flex;
+        }
+
+        .toggle-option {
+            padding: 12px 24px;
+            border-radius: 46px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+            z-index: 2;
+        }
+
+        .toggle-option.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .filters-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .filter-group h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .radio-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .radio-option {
+            padding: 8px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .radio-option:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .radio-option.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .utilities {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                padding: 20px;
+            }
+
+            .filters-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .utilities {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Advanced Data Table System</h1>
+            <p>Professional data management with web components</p>
+        </div>
+
+        <div class="controls">
+            <div class="toggle-section">
+                <div class="toggle-button">
+                    <div class="toggle-option active" data-status="Complete">Complete Tasks</div>
+                    <div class="toggle-option" data-status="Incomplete">Incomplete Tasks</div>
+                </div>
+            </div>
+
+            <div class="filters-section">
+                <div class="filter-group">
+                    <h3>Department</h3>
+                    <smart-select 
+                        id="departmentSelect" 
+                        data-column="department" 
+                        placeholder="All Departments"
+                        multiple>
+                    </smart-select>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Assignee</h3>
+                    <smart-select 
+                        id="assigneeSelect" 
+                        data-column="assignee" 
+                        placeholder="All Assignees"
+                        multiple>
+                    </smart-select>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Priority</h3>
+                    <div class="radio-filter" data-filter="priority">
+                        <div class="radio-option active" data-value="">All</div>
+                        <div class="radio-option" data-value="High">High</div>
+                        <div class="radio-option" data-value="Medium">Medium</div>
+                        <div class="radio-option" data-value="Low">Low</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="utilities">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search tasks...">
+                </div>
+            </div>
+        </div>
+
+        <advanced-data-table id="dataTable"></advanced-data-table>
+    </div>
+
+    <script>
+        /**
+         * Generates a large dataset for testing table performance and virtualization
+         * @param {number} size - The number of records to generate
+         * @returns {Array<Object>} Array of generated data objects
+         */
+        function generateDataset(size = 1000) {
+            const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Operations', 'Design', 'Product'];
+            const priorities = ['High', 'Medium', 'Low'];
+            const statuses = ['Complete', 'Incomplete'];
+            const taskTypes = ['Website', 'Campaign', 'Report', 'Policy', 'Bug Fix', 'Strategy', 'Presentation', 'Analysis'];
+            const names = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson', 'Alex Chen', 'Emma Davis', 'David Brown', 'Lisa Taylor', 'Chris Lee', 'Amy White'];
+
+            const dataset = [];
+            for (let i = 1; i <= size; i++) {
+                const dept = departments[Math.floor(Math.random() * departments.length)];
+                const priority = priorities[Math.floor(Math.random() * priorities.length)];
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                const taskType = taskTypes[Math.floor(Math.random() * taskTypes.length)];
+                const assignee = names[Math.floor(Math.random() * names.length)];
+                
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + Math.floor(Math.random() * 60) - 30);
+                
+                dataset.push({
+                    id: i,
+                    taskName: `${taskType} ${dept} Task ${i}`,
+                    department: dept,
+                    priority: priority,
+                    status: status,
+                    dueDate: dueDate.toISOString().split('T')[0],
+                    assignee: assignee,
+                    progress: Math.floor(Math.random() * 101)
+                });
+            }
+            return dataset;
+        }
+
+        /**
+         * SmartSelect Web Component
+         * A reusable multi-select dropdown component that can automatically populate options
+         * from data columns and provide filtering capabilities.
+         * 
+         * @class SmartSelect
+         * @extends HTMLElement
+         * 
+         * @example
+         * <smart-select 
+         *   data-column="department" 
+         *   placeholder="All Departments"
+         *   multiple>
+         * </smart-select>
+         */
+        class SmartSelect extends HTMLElement {
+            /**
+             * Creates an instance of SmartSelect
+             * Initializes component state and shadow DOM
+             */
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+                this.isMultiple = this.hasAttribute('multiple');
+                this.selectedValues = new Set();
+                this.options = [];
+                this.isOpen = false;
+            }
+
+            /**
+             * Called when the element is connected to the DOM
+             * Initializes the component rendering and event listeners
+             */
+            connectedCallback() {
+                this.render();
+                this.setupEventListeners();
+            }
+
+            /**
+             * Defines which attributes to observe for changes
+             * @returns {string[]} Array of attribute names to observe
+             */
+            static get observedAttributes() {
+                return ['data-column', 'placeholder', 'multiple'];
+            }
+
+            /**
+             * Called when observed attributes change
+             * @param {string} name - The attribute name that changed
+             * @param {string} oldValue - The previous attribute value
+             * @param {string} newValue - The new attribute value
+             */
+            attributeChangedCallback(name, oldValue, newValue) {
+                if (oldValue !== newValue) {
+                    this.render();
+                    this.setupEventListeners();
+                }
+            }
+
+            /**
+             * Sets the data source for populating select options
+             * Automatically extracts unique values from the specified column
+             * @param {Array<Object>} data - Array of data objects
+             */
+            setData(data) {
+                const column = this.getAttribute('data-column');
+                if (!column || !data) return;
+
+                this.options = [...new Set(data.map(item => item[column]))].sort();
+                this.render();
+                this.setupEventListeners();
+            }
+
+            /**
+             * Renders the component's HTML structure and styles
+             * Creates the dropdown interface with proper styling
+             */
+            render() {
+                const placeholder = this.getAttribute('placeholder') || 'Select...';
+                const selectedText = this.getSelectedText(placeholder);
+
+                this.shadowRoot.innerHTML = `
+                    <style>
+                        :host {
+                            display: block;
+                            position: relative;
+                        }
+
+                        .select-trigger {
+                            background: white;
+                            border: 2px solid #e9ecef;
+                            border-radius: 10px;
+                            padding: 12px 16px;
+                            cursor: pointer;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            transition: all 0.3s ease;
+                            min-height: 48px;
+                        }
+
+                        .select-trigger:hover {
+                            border-color: #667eea;
+                        }
+
+                        .select-trigger.open {
+                            border-color: #667eea;
+                            border-bottom-left-radius: 0;
+                            border-bottom-right-radius: 0;
+                        }
+
+                        .selected-text {
+                            flex: 1;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                        }
+
+                        .arrow {
+                            margin-left: 8px;
+                            transition: transform 0.3s ease;
+                        }
+
+                        .arrow.rotated {
+                            transform: rotate(180deg);
+                        }
+
+                        .dropdown {
+                            position: absolute;
+                            top: 100%;
+                            left: 0;
+                            right: 0;
+                            background: white;
+                            border: 2px solid #667eea;
+                            border-top: none;
+                            border-bottom-left-radius: 10px;
+                            border-bottom-right-radius: 10px;
+                            max-height: 200px;
+                            overflow-y: auto;
+                            z-index: 1000;
+                            display: none;
+                        }
+
+                        .dropdown.show {
+                            display: block;
+                        }
+
+                        .option {
+                            padding: 12px 16px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                            transition: background-color 0.2s ease;
+                        }
+
+                        .option:hover {
+                            background: #f8f9fa;
+                        }
+
+                        .option input[type="checkbox"] {
+                            margin: 0;
+                        }
+
+                        .clear-all {
+                            padding: 8px 16px;
+                            background: #f8f9fa;
+                            border-bottom: 1px solid #e9ecef;
+                            font-size: 0.85rem;
+                            color: #667eea;
+                            cursor: pointer;
+                        }
+
+                        .clear-all:hover {
+                            background: #e9ecef;
+                        }
+                    </style>
+                    <div class="select-trigger ${this.isOpen ? 'open' : ''}">
+                        <span class="selected-text">${selectedText}</span>
+                        <span class="arrow ${this.isOpen ? 'rotated' : ''}">▼</span>
+                    </div>
+                    <div class="dropdown ${this.isOpen ? 'show' : ''}">
+                        ${this.isMultiple && this.selectedValues.size > 0 ? 
+                            '<div class="clear-all">Clear All</div>' : ''}
+                        ${this.options.map(option => `
+                            <div class="option">
+                                ${this.isMultiple ? 
+                                    `<input type="checkbox" ${this.selectedValues.has(option) ? 'checked' : ''} value="${option}">` : ''}
+                                <label>${option}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            /**
+             * Generates display text for selected values
+             * @param {string} placeholder - Default placeholder text
+             * @returns {string} Display text for the trigger button
+             */
+            getSelectedText(placeholder) {
+                if (this.selectedValues.size === 0) return placeholder;
+                if (this.selectedValues.size === 1) return [...this.selectedValues][0];
+                return `${this.selectedValues.size} selected`;
+            }
+
+            /**
+             * Sets up all event listeners for the component
+             * Handles clicks, option selection, and clear functionality
+             */
+            setupEventListeners() {
+                const trigger = this.shadowRoot.querySelector('.select-trigger');
+                const dropdown = this.shadowRoot.querySelector('.dropdown');
+                const clearAll = this.shadowRoot.querySelector('.clear-all');
+
+                // Remove existing listeners to prevent duplicates
+                if (trigger) {
+                    const newTrigger = trigger.cloneNode(true);
+                    trigger.parentNode.replaceChild(newTrigger, trigger);
+                    
+                    newTrigger.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggle();
+                    });
+                }
+
+                if (clearAll) {
+                    clearAll.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.selectedValues.clear();
+                        this.render();
+                        this.setupEventListeners();
+                        this.dispatchChangeEvent();
+                    });
+                }
+
+                if (dropdown) {
+                    const newDropdown = dropdown.cloneNode(true);
+                    dropdown.parentNode.replaceChild(newDropdown, dropdown);
+                    
+                    newDropdown.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const option = e.target.closest('.option');
+                        if (!option) return;
+
+                        const value = option.querySelector('input')?.value || option.querySelector('label').textContent;
+
+                        if (this.isMultiple) {
+                            const checkbox = option.querySelector('input[type="checkbox"]');
+                            if (this.selectedValues.has(value)) {
+                                this.selectedValues.delete(value);
+                            } else {
+                                this.selectedValues.add(value);
+                            }
+                        } else {
+                            this.selectedValues.clear();
+                            this.selectedValues.add(value);
+                            this.close();
+                        }
+
+                        this.render();
+                        this.setupEventListeners();
+                        this.dispatchChangeEvent();
+                    });
+                }
+            }
+
+            /**
+             * Toggles the dropdown open/closed state
+             */
+            toggle() {
+                this.isOpen ? this.close() : this.open();
+            }
+
+            /**
+             * Opens the dropdown
+             */
+            open() {
+                this.isOpen = true;
+                this.render();
+                this.setupEventListeners();
+            }
+
+            /**
+             * Closes the dropdown
+             */
+            close() {
+                this.isOpen = false;
+                this.render();
+                this.setupEventListeners();
+            }
+
+            /**
+             * Gets the currently selected values as an array
+             * @returns {string[]} Array of selected values
+             */
+            getSelectedValues() {
+                return [...this.selectedValues];
+            }
+
+            /**
+             * Dispatches a custom change event with selected values
+             * @fires SmartSelect#change
+             */
+            dispatchChangeEvent() {
+                this.dispatchEvent(new CustomEvent('change', {
+                    detail: { values: this.getSelectedValues() },
+                    bubbles: true
+                }));
+            }
+        }
+
+        /**
+         * AdvancedDataTable Web Component
+         * A high-performance data table with sorting, filtering, pagination, and virtualization
+         * 
+         * Features:
+         * - Virtual scrolling for large datasets
+         * - Column sorting with type detection
+         * - Pagination with configurable page sizes
+         * - Export to CSV functionality
+         * - Copy table data to clipboard
+         * - Responsive design
+         * - Column resizing
+         * 
+         * @class AdvancedDataTable
+         * @extends HTMLElement
+         * 
+         * @example
+         * <advanced-data-table id="myTable"></advanced-data-table>
+         */
+        class AdvancedDataTable extends HTMLElement {
+            /**
+             * Creates an instance of AdvancedDataTable
+             * Initializes component state and performance settings
+             */
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+                
+                // Data management
+                this.data = [];
+                this.filteredData = [];
+                
+                // Sorting state
+                this.sortColumn = null;
+                this.sortDirection = 'asc';
+                
+                // Pagination state
+                this.currentPage = 1;
+                this.itemsPerPage = 50;
+                
+                // Virtual scrolling state
+                this.virtualStartIndex = 0;
+                this.virtualEndIndex = 0;
+                this.rowHeight = 53; // Approximate row height in pixels
+                this.visibleRows = 20; // Number of rows to render in viewport
+                
+                // Filtering state
+                this.filters = {};
+                this.searchTerm = '';
+
+                // Column resizing state
+                this.columnWidths = {
+                    id: 80,
+                    taskName: 200,
+                    department: 120,
+                    priority: 100,
+                    status: 120,
+                    progress: 120,
+                    dueDate: 120,
+                    assignee: 140
+                };
+                this.isResizing = false;
+                this.resizeColumn = null;
+                this.startX = 0;
+                this.startWidth = 0;
+            }
+
+            /**
+             * Called when the element is connected to the DOM
+             * Initializes the component rendering, event listeners, and resize observer
+             */
+            connectedCallback() {
+                this.render();
+                this.setupEventListeners();
+                this.setupResizeObserver();
+            }
+
+            /**
+             * Sets the data for the table and triggers initial rendering
+             * @param {Array<Object>} data - Array of data objects to display
+             */
+            setData(data) {
+                this.data = data;
+                this.filteredData = [...data];
+                this.applyFilters();
+                this.renderTable();
+            }
+
+            /**
+             * Updates the active filters and reapplies them to the dataset
+             * @param {Object} filters - Object containing filter criteria by column
+             */
+            setFilters(filters) {
+                this.filters = filters;
+                this.applyFilters();
+            }
+
+            /**
+             * Sets the search term and reapplies all filters
+             * @param {string} term - Search term to filter data
+             */
+            setSearchTerm(term) {
+                this.searchTerm = term;
+                this.applyFilters();
+            }
+
+            /**
+             * Renders the complete table structure with styles
+             * Creates the main table container, controls, and pagination areas
+             */
+            render() {
+                this.shadowRoot.innerHTML = `
+                    <style>
+                        :host {
+                            display: block;
+                            padding: 30px;
+                        }
+
+                        .table-wrapper {
+                            background: white;
+                            border-radius: 15px;
+                            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                            overflow: hidden;
+                        }
+
+                        .table-controls {
+                            display: flex;
+                            justify-content: flex-end;
+                            align-items: center;
+                            padding: 20px;
+                            background: #f8f9fa;
+                            border-bottom: 1px solid #e9ecef;
+                            flex-wrap: wrap;
+                            gap: 15px;
+                        }
+
+                        .utility-buttons {
+                            display: flex;
+                            gap: 10px;
+                        }
+
+                        .btn {
+                            padding: 8px 16px;
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 500;
+                            font-size: 0.85rem;
+                            transition: all 0.3s ease;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                        }
+
+                        .btn-primary {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                        }
+
+                        .btn-secondary {
+                            background: #6c757d;
+                            color: white;
+                        }
+
+                        .btn:hover {
+                            transform: translateY(-1px);
+                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        }
+
+                        .btn:disabled {
+                            opacity: 0.5;
+                            cursor: not-allowed;
+                            transform: none;
+                        }
+
+                        .table-container {
+                            position: relative;
+                            height: 600px;
+                            overflow: auto;
+                            border-top: 1px solid #e9ecef;
+                        }
+
+                        .virtual-table {
+                            position: relative;
+                        }
+
+                        table {
+                            width: 100%;
+                            table-layout: fixed;
+                            border-collapse: separate;
+                            border-spacing: 0;
+                            position: relative;
+                        }
+
+                        .table-header {
+                            position: sticky;
+                            top: 0;
+                            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+                            z-index: 10;
+                        }
+
+                        th {
+                            color: white;
+                            padding: 15px 12px;
+                            text-align: left;
+                            font-weight: 600;
+                            font-size: 0.85rem;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            cursor: pointer;
+                            user-select: none;
+                            position: relative;
+                            border-right: 1px solid rgba(255,255,255,0.1);
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                        }
+
+                        th:hover {
+                            background: rgba(255,255,255,0.1);
+                        }
+
+                        th.sortable::after {
+                            content: '↕';
+                            position: absolute;
+                            right: 28px;
+                            opacity: 0.5;
+                            font-size: 12px;
+                        }
+
+                        th.sorted-asc::after {
+                            content: '↑';
+                            opacity: 1;
+                        }
+
+                        th.sorted-desc::after {
+                            content: '↓';
+                            opacity: 1;
+                        }
+
+                        .resize-handle {
+                            position: absolute;
+                            top: 0;
+                            right: 0;
+                            width: 6px;
+                            height: 100%;
+                            cursor: col-resize;
+                            background: transparent;
+                            z-index: 11;
+                        }
+
+                        .resize-handle:hover {
+                            background: rgba(255, 255, 255, 0.3);
+                        }
+
+                        .resize-handle.resizing {
+                            background: rgba(102, 126, 234, 0.5);
+                        }
+
+                        .table-body {
+                            position: relative;
+                        }
+
+                        .virtual-spacer-top,
+                        .virtual-spacer-bottom {
+                            height: 0;
+                        }
+
+                        tr {
+                            transition: background-color 0.2s ease;
+                        }
+
+                        .row-even {
+                            background: #f8f9fa;
+                        }
+
+                        .row-odd {
+                            background: white;
+                        }
+
+                        tr:hover {
+                            background: rgba(102, 126, 234, 0.05) !important;
+                        }
+
+                        td {
+                            padding: 12px;
+                            border-bottom: 1px solid #f1f3f4;
+                            font-size: 0.9rem;
+                            border-right: 1px solid #f1f3f4;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                        }
+
+                        .status-badge {
+                            padding: 4px 8px;
+                            border-radius: 12px;
+                            font-size: 0.75rem;
+                            font-weight: 500;
+                        }
+
+                        .status-complete {
+                            background: rgba(34, 197, 94, 0.1);
+                            color: #16a34a;
+                        }
+
+                        .status-incomplete {
+                            background: rgba(239, 68, 68, 0.1);
+                            color: #dc2626;
+                        }
+
+                        .priority-high { color: #dc2626; font-weight: 600; }
+                        .priority-medium { color: #f59e0b; font-weight: 600; }
+                        .priority-low { color: #16a34a; font-weight: 600; }
+
+                        .progress-bar {
+                            width: calc(100% - 30px);
+                            height: 8px;
+                            background: #e9ecef;
+                            border-radius: 4px;
+                            overflow: hidden;
+                            display: inline-block;
+                            margin-right: 8px;
+                            vertical-align: middle;
+                        }
+
+                        .progress-fill {
+                            height: 100%;
+                            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                            transition: width 0.3s ease;
+                        }
+
+                        .progress-text {
+                            font-size: 0.75rem;
+                            color: #6c757d;
+                            vertical-align: middle;
+                        }
+
+                        .table-footer {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 20px;
+                            background: #f8f9fa;
+                            border-top: 1px solid #e9ecef;
+                            flex-wrap: wrap;
+                            gap: 15px;
+                        }
+
+                        .pagination-info {
+                            color: #6c757d;
+                            font-size: 0.9rem;
+                        }
+
+                        .pagination {
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                        }
+
+                        .page-btn {
+                            padding: 8px 12px;
+                            border: 1px solid #e9ecef;
+                            background: white;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            font-size: 0.85rem;
+                        }
+
+                        .page-btn:hover:not(:disabled) {
+                            border-color: #667eea;
+                            background: rgba(102, 126, 234, 0.1);
+                        }
+
+                        .page-btn.active {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border-color: transparent;
+                        }
+
+                        .page-btn:disabled {
+                            opacity: 0.5;
+                            cursor: not-allowed;
+                        }
+
+                        .loading {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 200px;
+                            color: #6c757d;
+                        }
+
+                        .no-data {
+                            text-align: center;
+                            padding: 60px 20px;
+                            color: #6c757d;
+                            font-size: 1.1rem;
+                        }
+
+                        /* Column width styles */
+                        .col-id { width: ${this.columnWidths.id}px; }
+                        .col-taskName { width: ${this.columnWidths.taskName}px; }
+                        .col-department { width: ${this.columnWidths.department}px; }
+                        .col-priority { width: ${this.columnWidths.priority}px; }
+                        .col-status { width: ${this.columnWidths.status}px; }
+                        .col-progress { width: ${this.columnWidths.progress}px; }
+                        .col-dueDate { width: ${this.columnWidths.dueDate}px; }
+                        .col-assignee { width: ${this.columnWidths.assignee}px; }
+
+                        @media (max-width: 768px) {
+                            .table-controls {
+                                justify-content: center;
+                            }
+                            
+                            .table-footer {
+                                flex-direction: column;
+                                text-align: center;
+                            }
+                            
+                            .pagination {
+                                order: 2;
+                            }
+                            
+                            .pagination-info {
+                                order: 1;
+                            }
+                            
+                            th, td {
+                                padding: 8px;
+                                font-size: 0.8rem;
+                            }
+                        }
+                    </style>
+
+                    <div class="table-wrapper">
+                        <div class="table-controls">
+                            <div class="utility-buttons">
+                                <button class="btn btn-primary" id="exportCSV">📊 Export CSV</button>
+                                <button class="btn btn-secondary" id="copyTable">📋 Copy Table</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <div class="virtual-table">
+                                <table>
+                                    <thead class="table-header">
+                                        <tr>
+                                            <th data-column="id" class="sortable col-id">
+                                                ID
+                                                <div class="resize-handle" data-column="id"></div>
+                                            </th>
+                                            <th data-column="taskName" class="sortable col-taskName">
+                                                Task Name
+                                                <div class="resize-handle" data-column="taskName"></div>
+                                            </th>
+                                            <th data-column="department" class="sortable col-department">
+                                                Department
+                                                <div class="resize-handle" data-column="department"></div>
+                                            </th>
+                                            <th data-column="priority" class="sortable col-priority">
+                                                Priority
+                                                <div class="resize-handle" data-column="priority"></div>
+                                            </th>
+                                            <th data-column="status" class="sortable col-status">
+                                                Status
+                                                <div class="resize-handle" data-column="status"></div>
+                                            </th>
+                                            <th data-column="progress" class="sortable col-progress">
+                                                Progress
+                                                <div class="resize-handle" data-column="progress"></div>
+                                            </th>
+                                            <th data-column="dueDate" class="sortable col-dueDate">
+                                                Due Date
+                                                <div class="resize-handle" data-column="dueDate"></div>
+                                            </th>
+                                            <th data-column="assignee" class="sortable col-assignee">
+                                                Assignee
+                                                <div class="resize-handle" data-column="assignee"></div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="table-footer">
+                            <div class="pagination-info"></div>
+                            <div class="pagination"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            /**
+             * Sets up all event listeners for the table component
+             * Handles sorting, export functionality, copy functionality, virtual scrolling, and column resizing
+             */
+            setupEventListeners() {
+                // Sorting functionality
+                this.shadowRoot.addEventListener('click', (e) => {
+                    if (e.target.matches('th[data-column]')) {
+                        const column = e.target.dataset.column;
+                        this.sort(column);
+                    }
+                });
+
+                // Export and copy functionality
+                this.shadowRoot.getElementById('exportCSV').addEventListener('click', () => this.exportToCSV());
+                this.shadowRoot.getElementById('copyTable').addEventListener('click', () => this.copyTable());
+
+                // Virtual scrolling handler
+                const container = this.shadowRoot.querySelector('.table-container');
+                container.addEventListener('scroll', () => this.handleScroll());
+
+                // Column resizing handlers
+                this.setupColumnResizing();
+
+                // Global mouse events for column resizing
+                document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                document.addEventListener('mouseup', () => this.handleMouseUp());
+            }
+
+            /**
+             * Sets up column resizing functionality
+             * Handles mousedown events on resize handles
+             */
+            setupColumnResizing() {
+                this.shadowRoot.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('resize-handle')) {
+                        this.startResize(e);
+                    }
+                });
+            }
+
+            /**
+             * Starts the column resize operation
+             * @param {MouseEvent} e - The mousedown event
+             */
+            startResize(e) {
+                e.preventDefault();
+                this.isResizing = true;
+                this.resizeColumn = e.target.dataset.column;
+                this.startX = e.clientX;
+                this.startWidth = this.columnWidths[this.resizeColumn];
+                
+                e.target.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            }
+
+            /**
+             * Handles mouse move during column resize
+             * @param {MouseEvent} e - The mousemove event
+             */
+            handleMouseMove(e) {
+                if (!this.isResizing) return;
+                
+                const deltaX = e.clientX - this.startX;
+                const newWidth = Math.max(50, this.startWidth + deltaX); // Minimum width of 50px
+                
+                this.columnWidths[this.resizeColumn] = newWidth;
+                this.updateColumnWidths();
+            }
+
+            /**
+             * Handles mouse up to end column resize
+             */
+            handleMouseUp() {
+                if (!this.isResizing) return;
+                
+                this.isResizing = false;
+                this.resizeColumn = null;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                
+                // Remove resizing class from all handles
+                this.shadowRoot.querySelectorAll('.resize-handle').forEach(handle => {
+                    handle.classList.remove('resizing');
+                });
+            }
+
+            /**
+             * Updates the CSS with new column widths
+             */
+            updateColumnWidths() {
+                const style = this.shadowRoot.querySelector('style');
+                const currentCSS = style.textContent;
+                
+                // Update column width CSS rules
+                let updatedCSS = currentCSS;
+                Object.entries(this.columnWidths).forEach(([column, width]) => {
+                    const regex = new RegExp(`(\\.col-${column}\\s*{\\s*width:\\s*)\\d+px(;\\s*})`, 'g');
+                    updatedCSS = updatedCSS.replace(regex, `$1${width}px$2`);
+                });
+                
+                style.textContent = updatedCSS;
+            }
+
+            /**
+             * Sets up ResizeObserver to handle responsive behavior
+             * Automatically recalculates visible rows when container size changes
+             */
+            setupResizeObserver() {
+                const resizeObserver = new ResizeObserver(() => {
+                    this.calculateVisibleRows();
+                    this.renderTable();
+                });
+                resizeObserver.observe(this.shadowRoot.querySelector('.table-container'));
+            }
+
+            /**
+             * Calculates how many rows should be visible in the current viewport
+             * Used for virtual scrolling optimization
+             */
+            calculateVisibleRows() {
+                const container = this.shadowRoot.querySelector('.table-container');
+                if (container) {
+                    this.visibleRows = Math.ceil(container.clientHeight / this.rowHeight) + 5; // Add buffer
+                }
+            }
+
+            /**
+             * Applies all active filters to the dataset
+             * Combines column filters and search term filtering
+             * Resets pagination to first page after filtering
+             */
+            applyFilters() {
+                this.filteredData = this.data.filter(item => {
+                    // Apply column-specific filters
+                    for (const [key, values] of Object.entries(this.filters)) {
+                        if (values && values.length > 0 && !values.includes(item[key])) {
+                            return false;
+                        }
+                    }
+
+                    // Apply search term filter
+                    if (this.searchTerm) {
+                        const searchableText = Object.values(item).join(' ').toLowerCase();
+                        if (!searchableText.includes(this.searchTerm.toLowerCase())) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+                this.currentPage = 1;
+                this.renderTable();
+            }
+
+            /**
+             * Sorts the filtered data by the specified column
+             * Handles different data types (numeric, date, string) appropriately
+             * Updates sort indicators in column headers
+             * 
+             * @param {string} column - The column name to sort by
+             */
+            sort(column) {
+                if (this.sortColumn === column) {
+                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortColumn = column;
+                    this.sortDirection = 'asc';
+                }
+
+                this.filteredData.sort((a, b) => {
+                    let aVal = a[column];
+                    let bVal = b[column];
+
+                    // Handle numeric columns
+                    if (column === 'id' || column === 'progress') {
+                        aVal = parseFloat(aVal) || 0;
+                        bVal = parseFloat(bVal) || 0;
+                    }
+                    // Handle date columns
+                    else if (column === 'dueDate') {
+                        aVal = new Date(aVal);
+                        bVal = new Date(bVal);
+                    }
+                    // Handle string columns
+                    else {
+                        aVal = String(aVal).toLowerCase();
+                        bVal = String(bVal).toLowerCase();
+                    }
+
+                    if (aVal < bVal) return this.sortDirection === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return this.sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                this.updateSortHeaders();
+                this.renderTable();
+            }
+
+            /**
+             * Updates column headers to show current sort state
+             * Adds visual indicators for ascending/descending sort
+             */
+            updateSortHeaders() {
+                this.shadowRoot.querySelectorAll('th').forEach(th => {
+                    th.classList.remove('sorted-asc', 'sorted-desc');
+                    if (th.dataset.column === this.sortColumn) {
+                        th.classList.add(this.sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                    }
+                });
+            }
+
+            /**
+             * Handles scroll events for virtual scrolling
+             * Updates the virtual start index based on scroll position
+             */
+            handleScroll() {
+                const container = this.shadowRoot.querySelector('.table-container');
+                const scrollTop = container.scrollTop;
+                const newStartIndex = Math.floor(scrollTop / this.rowHeight);
+                
+                if (newStartIndex !== this.virtualStartIndex) {
+                    this.virtualStartIndex = newStartIndex;
+                    this.renderVirtualRows();
+                }
+            }
+
+            /**
+             * Main table rendering method
+             * Coordinates virtual row rendering, pagination, and info updates
+             */
+            renderTable() {
+                this.renderVirtualRows();
+                this.renderPagination();
+                this.updatePaginationInfo();
+            }
+
+            /**
+             * Renders only the visible rows using virtual scrolling
+             * Creates spacer elements for non-visible rows to maintain scroll height
+             * Optimizes performance for large datasets
+             * Fixed: Uses data index for row striping instead of DOM position
+             */
+            renderVirtualRows() {
+                const tbody = this.shadowRoot.querySelector('.table-body');
+                const pageStart = (this.currentPage - 1) * this.itemsPerPage;
+                const pageEnd = Math.min(pageStart + this.itemsPerPage, this.filteredData.length);
+                const pageData = this.filteredData.slice(pageStart, pageEnd);
+
+                if (pageData.length === 0) {
+                    tbody.innerHTML = `
+                        <tr><td colspan="8" class="no-data">No data matches your current filters</td></tr>
+                    `;
+                    return;
+                }
+
+                // Calculate virtual scrolling window
+                this.virtualStartIndex = Math.max(0, Math.min(this.virtualStartIndex, pageData.length - this.visibleRows));
+                this.virtualEndIndex = Math.min(this.virtualStartIndex + this.visibleRows, pageData.length);
+
+                const topSpacer = this.virtualStartIndex * this.rowHeight;
+                const bottomSpacer = (pageData.length - this.virtualEndIndex) * this.rowHeight;
+                const visibleData = pageData.slice(this.virtualStartIndex, this.virtualEndIndex);
+
+                tbody.innerHTML = `
+                    <tr class="virtual-spacer-top" style="height: ${topSpacer}px;"></tr>
+                    ${visibleData.map((item, index) => {
+                        // Calculate actual data index for consistent row striping
+                        const dataIndex = pageStart + this.virtualStartIndex + index;
+                        const rowClass = dataIndex % 2 === 0 ? 'row-even' : 'row-odd';
+                        
+                        return `
+                        <tr class="${rowClass}">
+                            <td class="col-id">${item.id}</td>
+                            <td class="col-taskName" title="${item.taskName}">${item.taskName}</td>
+                            <td class="col-department">${item.department}</td>
+                            <td class="col-priority priority-${item.priority.toLowerCase()}">${item.priority}</td>
+                            <td class="col-status"><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
+                            <td class="col-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${item.progress}%"></div>
+                                </div>
+                                <span class="progress-text">${item.progress}%</span>
+                            </td>
+                            <td class="col-dueDate">${item.dueDate}</td>
+                            <td class="col-assignee">${item.assignee}</td>
+                        </tr>
+                        `;
+                    }).join('')}
+                    <tr class="virtual-spacer-bottom" style="height: ${bottomSpacer}px;"></tr>
+                `;
+            }
+
+            /**
+             * Renders the pagination controls
+             * Creates page number buttons with proper navigation
+             * Handles edge cases for first/last pages
+             */
+            renderPagination() {
+                const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
+                const pagination = this.shadowRoot.querySelector('.pagination');
+                
+                if (totalPages <= 1) {
+                    pagination.innerHTML = '';
+                    return;
+                }
+
+                const startPage = Math.max(1, this.currentPage - 2);
+                const endPage = Math.min(totalPages, this.currentPage + 2);
+
+                let paginationHTML = `
+                    <button class="page-btn" ${this.currentPage === 1 ? 'disabled' : ''} data-page="prev">‹ Previous</button>
+                `;
+
+                if (startPage > 1) {
+                    paginationHTML += `<button class="page-btn" data-page="1">1</button>`;
+                    if (startPage > 2) {
+                        paginationHTML += `<span>...</span>`;
+                    }
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `
+                        <button class="page-btn ${i === this.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>
+                    `;
+                }
+
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span>...</span>`;
+                    }
+                    paginationHTML += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
+                }
+
+                paginationHTML += `
+                    <button class="page-btn" ${this.currentPage === totalPages ? 'disabled' : ''} data-page="next">Next ›</button>
+                `;
+
+                pagination.innerHTML = paginationHTML;
+
+                // Add pagination event listeners
+                pagination.addEventListener('click', (e) => {
+                    if (e.target.matches('.page-btn:not([disabled])')) {
+                        const page = e.target.dataset.page;
+                        if (page === 'prev') {
+                            this.currentPage = Math.max(1, this.currentPage - 1);
+                        } else if (page === 'next') {
+                            this.currentPage = Math.min(totalPages, this.currentPage + 1);
+                        } else {
+                            this.currentPage = parseInt(page);
+                        }
+                        this.virtualStartIndex = 0; // Reset virtual scroll position
+                        this.renderTable();
+                    }
+                });
+            }
+
+            /**
+             * Updates the pagination information display
+             * Shows current page range and total entries
+             */
+            updatePaginationInfo() {
+                const info = this.shadowRoot.querySelector('.pagination-info');
+                const start = (this.currentPage - 1) * this.itemsPerPage + 1;
+                const end = Math.min(start + this.itemsPerPage - 1, this.filteredData.length);
+                
+                info.textContent = `Showing ${start}-${end} of ${this.filteredData.length} entries`;
+            }
+
+            /**
+             * Exports the current filtered data to a CSV file
+             * Generates a downloadable file with proper CSV formatting
+             */
+            exportToCSV() {
+                if (this.filteredData.length === 0) {
+                    alert('No data to export');
+                    return;
+                }
+
+                const headers = ['ID', 'Task Name', 'Department', 'Priority', 'Status', 'Progress', 'Due Date', 'Assignee'];
+                const csvContent = [
+                    headers.join(','),
+                    ...this.filteredData.map(item => 
+                        [item.id, `"${item.taskName}"`, item.department, item.priority, item.status, item.progress, item.dueDate, `"${item.assignee}"`].join(',')
+                    )
+                ].join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `data_export_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+
+            /**
+             * Copies the current filtered table data to the clipboard
+             * Formats data as tab-separated values for easy pasting into spreadsheets
+             */
+            copyTable() {
+                if (this.filteredData.length === 0) {
+                    alert('No data to copy');
+                    return;
+                }
+
+                const headers = ['ID', 'Task Name', 'Department', 'Priority', 'Status', 'Progress', 'Due Date', 'Assignee'];
+                const tableText = [
+                    headers.join('\t'),
+                    ...this.filteredData.map(item => 
+                        [item.id, item.taskName, item.department, item.priority, item.status, `${item.progress}%`, item.dueDate, item.assignee].join('\t')
+                    )
+                ].join('\n');
+
+                navigator.clipboard.writeText(tableText).then(() => {
+                    const btn = this.shadowRoot.getElementById('copyTable');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✅ Copied!';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy table to clipboard');
+                });
+            }
+        }
+
+        // Register custom web components
+        customElements.define('smart-select', SmartSelect);
+        customElements.define('advanced-data-table', AdvancedDataTable);
+
+        /**
+         * DataTableApp - Main Application Controller
+         * 
+         * Coordinates the interaction between different components:
+         * - Manages data generation and filtering
+         * - Handles status toggle functionality
+         * - Coordinates filter updates between components
+         * - Manages search functionality
+         * 
+         * @class DataTableApp
+         * 
+         * @example
+         * const app = new DataTableApp();
+         */
+        class DataTableApp {
+            /**
+             * Creates an instance of DataTableApp
+             * Initializes application state and generates sample data
+             */
+            constructor() {
+                this.dataset = generateDataset(2000); // Generate 2000 rows for performance testing
+                this.currentStatus = 'Complete';
+                this.filters = {
+                    department: [],
+                    assignee: [],
+                    priority: ''
+                };
+                this.searchTerm = '';
+                this.init();
+            }
+
+            /**
+             * Initializes the application
+             * Sets up event listeners and performs initial data update
+             */
+            init() {
+                this.setupEventListeners();
+                this.updateData();
+            }
+
+            /**
+             * Sets up all application-level event listeners
+             * Handles toggle buttons, smart selects, radio filters, search, and global click events
+             */
+            setupEventListeners() {
+                // Status toggle buttons
+                document.querySelectorAll('.toggle-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        document.querySelectorAll('.toggle-option').forEach(opt => opt.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentStatus = e.target.dataset.status;
+                        this.updateData();
+                    });
+                });
+
+                // Smart select components
+                document.getElementById('departmentSelect').addEventListener('change', (e) => {
+                    this.filters.department = e.detail.values;
+                    this.updateFilters();
+                });
+
+                document.getElementById('assigneeSelect').addEventListener('change', (e) => {
+                    this.filters.assignee = e.detail.values;
+                    this.updateFilters();
+                });
+
+                // Priority radio filter
+                document.querySelector('.radio-filter').addEventListener('click', (e) => {
+                    if (e.target.classList.contains('radio-option')) {
+                        document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.filters.priority = e.target.dataset.value;
+                        this.updateFilters();
+                    }
+                });
+
+                // Search functionality
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.searchTerm = e.target.value;
+                    this.updateSearch();
+                });
+
+                // Global click handler to close dropdowns
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('smart-select')) {
+                        document.querySelectorAll('smart-select').forEach(select => {
+                            select.close();
+                        });
+                    }
+                });
+            }
+
+            /**
+             * Updates data based on current status filter
+             * Filters dataset by status and updates all dependent components
+             */
+            updateData() {
+                const filteredByStatus = this.dataset.filter(item => item.status === this.currentStatus);
+                
+                // Update smart select options with current status data
+                document.getElementById('departmentSelect').setData(filteredByStatus);
+                document.getElementById('assigneeSelect').setData(filteredByStatus);
+                
+                // Update table with filtered data
+                const table = document.getElementById('dataTable');
+                table.setData(filteredByStatus);
+                
+                // Reapply current filters
+                this.updateFilters();
+            }
+
+            /**
+             * Updates active filters and applies them to the table
+             * Processes filter object to only include non-empty filters
+             */
+            updateFilters() {
+                const table = document.getElementById('dataTable');
+                const activeFilters = {};
+                
+                // Process filters to only include non-empty values
+                Object.entries(this.filters).forEach(([key, value]) => {
+                    if (Array.isArray(value) && value.length > 0) {
+                        activeFilters[key] = value;
+                    } else if (!Array.isArray(value) && value) {
+                        activeFilters[key] = [value]; // Convert single value to array for consistency
+                    }
+                });
+                
+                table.setFilters(activeFilters);
+                table.setSearchTerm(this.searchTerm);
+            }
+
+            /**
+             * Updates search term and applies it to the table
+             */
+            updateSearch() {
+                const table = document.getElementById('dataTable');
+                table.setSearchTerm(this.searchTerm);
+            }
+        }
+
+        // Initialize application when DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new DataTableApp();
+        });
+    </script>
+</body>
+</html>
