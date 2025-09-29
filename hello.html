@@ -1,0 +1,148 @@
+// Create SLA functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const slaTypeSelect = document.getElementById('slaType');
+    const createSlaForm = document.getElementById('createSlaForm');
+    const slaConfigSection = document.getElementById('slaConfig');
+
+    // Handle SLA type change
+    slaTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        showSLAConfig(selectedType);
+    });
+
+    // Handle form submission
+    createSlaForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleCreateSLA();
+    });
+
+    // Add checklist item functionality
+    document.getElementById('addChecklistItem')?.addEventListener('click', addChecklistItem);
+
+    setupChecklistHandlers();
+});
+
+function showSLAConfig(type) {
+    const slaConfigSection = document.getElementById('slaConfig');
+    const allConfigs = document.querySelectorAll('.sla-config-section');
+    
+    // Hide all config sections
+    allConfigs.forEach(config => config.classList.add('hidden'));
+    
+    if (type) {
+        slaConfigSection.classList.remove('hidden');
+        const targetConfig = document.getElementById(`${type.replace('-', '')}Config`);
+        if (targetConfig) {
+            targetConfig.classList.remove('hidden');
+        }
+    } else {
+        slaConfigSection.classList.add('hidden');
+    }
+}
+
+function addChecklistItem() {
+    const checklistItems = document.getElementById('checklistItems');
+    const newItem = document.createElement('div');
+    newItem.className = 'flex gap-3';
+    newItem.innerHTML = `
+        <input type="text" placeholder="Enter checklist item" 
+               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary checklist-item">
+        <button type="button" onclick="removeChecklistItem(this)" 
+                class="px-3 py-2 text-red-600 hover:text-red-800">Remove</button>
+    `;
+    checklistItems.appendChild(newItem);
+}
+
+function removeChecklistItem(button) {
+    button.parentElement.remove();
+}
+
+function setupChecklistHandlers() {
+    // Make removeChecklistItem available globally
+    window.removeChecklistItem = removeChecklistItem;
+}
+
+function handleCreateSLA() {
+    const formData = new FormData(document.getElementById('createSlaForm'));
+    const slaData = {};
+
+    // Basic form data
+    for (let [key, value] of formData.entries()) {
+        if (key === 'days') {
+            if (!slaData.days) slaData.days = [];
+            slaData.days.push(value);
+        } else {
+            slaData[key] = value;
+        }
+    }
+
+    // Handle checklist items
+    if (slaData.slaType === 'checklist') {
+        const checklistInputs = document.querySelectorAll('.checklist-item');
+        slaData.checklistItems = Array.from(checklistInputs)
+            .map(input => input.value.trim())
+            .filter(item => item.length > 0)
+            .map(item => ({ text: item, completed: false }));
+    }
+
+    // Validate required fields based on SLA type
+    if (!validateSLAData(slaData)) {
+        return;
+    }
+
+    // Create the SLA
+    const newSLA = window.slaTracker.createSLA(slaData);
+    
+    if (newSLA) {
+        showNotification('SLA created successfully!');
+        setTimeout(() => {
+            window.location.href = `sla-detail.html?id=${newSLA.id}`;
+        }, 1000);
+    } else {
+        showNotification('Failed to create SLA', 'error');
+    }
+}
+
+function validateSLAData(data) {
+    // Basic validation
+    if (!data.taskName || !data.slaType || !data.priority) {
+        showNotification('Please fill in all required fields', 'error');
+        return false;
+    }
+
+    // Type-specific validation
+    switch (data.slaType) {
+        case 'performance':
+            if (!data.targetValue || parseFloat(data.targetValue) <= 0) {
+                showNotification('Please enter a valid target value', 'error');
+                return false;
+            }
+            break;
+        case 'uptime':
+            if (!data.uptimeTarget || parseFloat(data.uptimeTarget) <= 0 || parseFloat(data.uptimeTarget) > 100) {
+                showNotification('Please enter a valid uptime target (0-100%)', 'error');
+                return false;
+            }
+            break;
+        case 'checklist':
+            if (!data.checklistItems || data.checklistItems.length === 0) {
+                showNotification('Please add at least one checklist item', 'error');
+                return false;
+            }
+            break;
+        case 'response-time':
+            if (!data.maxResponseTime || parseFloat(data.maxResponseTime) <= 0) {
+                showNotification('Please enter a valid maximum response time', 'error');
+                return false;
+            }
+            break;
+        case 'availability':
+            if (!data.startTime || !data.endTime) {
+                showNotification('Please specify availability window times', 'error');
+                return false;
+            }
+            break;
+    }
+
+    return true;
+}

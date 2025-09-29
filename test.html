@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D3 Visualizations</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f8fa;
+      padding: 20px;
+      color: #333;
+    }
+    
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Interactive D3 Visualizations</h1>
+  
+  <div class="container">
+    <stacked-bar-chart></stacked-bar-chart>
+    <ring-chart></ring-chart>
+    <pie-chart></pie-chart>
+  </div>
+
+  <script>
+    // Stacked Bar Chart Web Component
+    class StackedBarChart extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        
+        // Sample data
+        this.data = [
+          {
+            category: 'Category A',
+            values: [
+              { name: 'Value 1', value: 30, color: '#FF6384' },
+              { name: 'Value 2', value: 20, color: '#36A2EB' },
+              { name: 'Value 3', value: 15, color: '#FFCE56' }
+            ]
+          },
+          {
+            category: 'Category B',
+            values: [
+              { name: 'Value 1', value: -10, color: '#FF6384' },
+              { name: 'Value 2', value: 25, color: '#36A2EB' },
+              { name: 'Value 3', value: 35, color: '#FFCE56' }
+            ]
+          },
+          {
+            category: 'Category C',
+            values: [
+              { name: 'Value 1', value: 40, color: '#FF6384' },
+              { name: 'Value 2', value: 15, color: '#36A2EB' },
+              { name: 'Value 3', value: 20, color: '#FFCE56' }
+            ]
+          },
+          {
+            category: 'Category D',
+            values: [
+              { name: 'Value 1', value: 25, color: '#FF6384' },
+              { name: 'Value 2', value: -15, color: '#36A2EB' },
+              { name: 'Value 3', value: 30, color: '#FFCE56' }
+            ]
+          }
+        ];
+      }
+
+      connectedCallback() {
+        this.render();
+      }
+
+      render() {
+        const style = document.createElement('style');
+        style.textContent = `
+          :host {
+            display: block;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 800px;
+          }
+          
+          h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+          }
+          
+          .tooltip {
+            position: absolute;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
+          }
+          
+          .bar {
+            transition: all 0.3s;
+          }
+          
+          .bar:hover {
+            opacity: 0.8;
+            filter: brightness(1.1);
+          }
+          
+          .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+          }
+          
+          .legend-item:hover {
+            background-color: #f0f0f0;
+          }
+          
+          .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            margin-right: 8px;
+          }
+          
+          .legend-text {
+            font-size: 14px;
+          }
+          
+          .chart-container {
+            display: flex;
+          }
+          
+          .chart {
+            flex: 1;
+          }
+          
+          .legend {
+            width: 120px;
+            padding-left: 15px;
+          }
+          
+          .bar-label {
+            font-size: 11px;
+            text-anchor: middle;
+            fill: #333;
+            font-weight: bold;
+          }
+          
+          .data-table {
+            border-collapse: collapse;
+            margin-right: 20px;
+            font-size: 14px;
+          }
+          
+          .data-table th, 
+          .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+          }
+          
+          .data-table th {
+            background-color: #f2f2f2;
+            color: #333;
+          }
+          
+          .data-table tbody tr:hover {
+            background-color: #f5f5f5;
+          }
+          
+          .visualization-container {
+            display: flex;
+            align-items: flex-start;
+          }
+          
+          .table-container {
+            margin-right: 20px;
+          }
+          
+          .positive {
+            color: #28a745;
+          }
+          
+          .negative {
+            color: #dc3545;
+          }
+        `;
+
+        const html = `
+          <h2>Stacked Bar Chart</h2>
+          <div class="tooltip"></div>
+          <div class="visualization-container">
+            <div class="table-container"></div>
+            <div class="chart-container">
+              <div class="chart"></div>
+              <div class="legend"></div>
+            </div>
+          </div>
+        `;
+
+        this.shadowRoot.innerHTML = '';
+        this.shadowRoot.appendChild(style);
+        
+        const container = document.createElement('div');
+        container.innerHTML = html;
+        this.shadowRoot.appendChild(container);
+
+        this.createTable();
+        this.createVisualization();
+      }
+
+      createTable() {
+        const tableContainer = this.shadowRoot.querySelector('.table-container');
+        const table = document.createElement('table');
+        table.className = 'data-table';
+        
+        // Create table header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        
+        const categoryHeader = document.createElement('th');
+        categoryHeader.textContent = 'Category';
+        headerRow.appendChild(categoryHeader);
+        
+        // Get value names for column headers
+        const valueNames = this.data[0].values.map(v => v.name);
+        valueNames.forEach(name => {
+          const th = document.createElement('th');
+          th.textContent = name;
+          headerRow.appendChild(th);
+        });
+        
+        // Add total column
+        const totalHeader = document.createElement('th');
+        totalHeader.textContent = 'Total';
+        headerRow.appendChild(totalHeader);
+        
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        
+        // Create table body
+        const tbody = document.createElement('tbody');
+        
+        this.data.forEach(category => {
+          const row = document.createElement('tr');
+          
+          // Category name
+          const categoryCell = document.createElement('td');
+          categoryCell.textContent = category.category;
+          row.appendChild(categoryCell);
+          
+          // Individual values
+          let total = 0;
+          valueNames.forEach(name => {
+            const valueObj = category.values.find(v => v.name === name);
+            const value = valueObj ? valueObj.value : 0;
+            total += value;
+            
+            const cell = document.createElement('td');
+            cell.textContent = value;
+            if (value > 0) cell.classList.add('positive');
+            if (value < 0) cell.classList.add('negative');
+            row.appendChild(cell);
+          });
+          
+          // Total
+          const totalCell = document.createElement('td');
+          totalCell.textContent = total;
+          if (total > 0) totalCell.classList.add('positive');
+          if (total < 0) totalCell.classList.add('negative');
+          totalCell.style.fontWeight = 'bold';
+          row.appendChild(totalCell);
+          
+          tbody.appendChild(row);
+        });
+        
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+      }
+
+      createVisualization() {
+        const margin = { top: 40, right: 20, bottom: 40, left: 50 };
+        const width = 450 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        // Process data for stacked bar chart
+        const categories = this.data.map(d => d.category);
+        const subgroups = this.data[0].values.map(d => d.name);
+        
+        // Find min and max values for y scale
+        let maxValue = d3.max(this.data, d => {
+          return d3.sum(d.values, v => Math.abs(v.value));
+        });
+        let minValue = d3.min(this.data, d => {
+          return d3.min(d.values, v => v.value);
+        });
+        
+        minValue = Math.min(0, minValue);
+        
+        // Create SVG
+        const svg = d3.select(this.shadowRoot.querySelector('.chart'))
+          .append('svg')
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom)
+          .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        // Create X axis
+        const x = d3.scaleBand()
+          .domain(categories)
+          .range([0, width])
+          .padding(0.3);
+        
+        svg.append('g')
+          .attr('transform', `translate(0,${height - (minValue < 0 ? Math.abs(minValue) / (maxValue - minValue) * height : 0)})`)
+          .call(d3.axisBottom(x))
+          .selectAll('text')
+            .attr('transform', 'rotate(-45)')
+            .style('text-anchor', 'end')
+            .attr('dx', '-.8em')
+            .attr('dy', '.15em');
+
+        // Create Y axis
+        const y = d3.scaleLinear()
+          .domain([minValue, maxValue])
+          .range([height, 0]);
+        
+        svg.append('g')
+          .call(d3.axisLeft(y));
+
+        // Add a zero line if we have negative values
+        if (minValue < 0) {
+          svg.append('line')
+            .attr('x1', 0)
+            .attr('x2', width)
+            .attr('y1', y(0))
+            .attr('y2', y(0))
+            .attr('stroke', '#aaa')
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '3,3');
+        }
+
+        // Create color mapping
+        const colorMap = {};
+        subgroups.forEach((name, i) => {
+          colorMap[name] = this.data[0].values[i].color;
+        });
+
+        // Tooltip
+        const tooltip = d3.select(this.shadowRoot.querySelector('.tooltip'));
+
+        // Add bars
+        this.data.forEach((d, i) => {
+          let yStart = 0;
+          let negStart = 0;
+          
+          d.values.forEach(value => {
+            const barHeight = Math.abs(y(0) - y(Math.abs(value.value)));
+            const yPos = value.value >= 0 ? y(yStart + value.value) : y(0) + negStart;
+            
+            const bar = svg.append('rect')
+              .attr('class', 'bar')
+              .attr('data-name', value.name)
+              .attr('data-category', d.category)
+              .attr('x', x(d.category))
+              .attr('y', yPos)
+              .attr('width', x.bandwidth())
+              .attr('height', 0) // Start with height 0 for animation
+              .attr('fill', value.color)
+              .attr('stroke', '#fff')
+              .attr('stroke-width', 1);
+            
+            // Animate bar height
+            bar.transition()
+              .duration(1000)
+              .delay(i * 100)
+              .attr('height', barHeight);
+            
+            // Add labels
+            svg.append('text')
+              .attr('class', 'bar-label')
+              .attr('x', x(d.category) + x.bandwidth() / 2)
+              .attr('y', yPos + (value.value >= 0 ? 15 : -5))
+              .text(value.value)
+              .style('opacity', 0)
+              .transition()
+              .duration(500)
+              .delay(i * 100 + 500)
+              .style('opacity', 1);
+            
+            // Update start position for next segment
+            if (value.value >= 0) {
+              yStart += value.value;
+            } else {
+              negStart += barHeight;
+            }
+            
+            // Add hover effects
+            bar.on('mouseover', (event) => {
+              tooltip.style('opacity', 1)
+                .html(`<strong>${d.category} - ${value.name}</strong>: ${value.value}`)
+                .style('left', (event.pageX - this.shadowRoot.host.getBoundingClientRect().left) + 'px')
+                .style('top', (event.pageY - this.shadowRoot.host.getBoundingClientRect().top - 40) + 'px');
+              
+              // Highlight legend
+              this.shadowRoot.querySelectorAll('.legend-item').forEach(item => {
+                if (item.dataset.name === value.name) {
+                  item.style.backgroundColor = '#f0f0f0';
+                }
+              });
+              
+              // Highlight table row
+              this.shadowRoot.querySelectorAll('.data-table tbody tr').forEach((row, index) => {
+                if (index === i) {
+                  row.style.backgroundColor = '#f0f0f0';
+                }
+              });
+            })
+            .on('mouseout', () => {
+              tooltip.style('opacity', 0);
+              
+              // Remove highlight from legend
+              this.shadowRoot.querySelectorAll('.legend-item').forEach(item => {
+                item.style.backgroundColor = '';
+              });
+              
+              // Remove highlight from table
+              this.shadowRoot.querySelectorAll('.data-table tbody tr').forEach(row => {
+                row.style.backgroundColor = '';
+              });
+            });
+          });
+        });
+        
+        // Create legend
+        const legend = d3.select(this.shadowRoot.querySelector('.legend'));
+        
+        subgroups.forEach(name => {
+          const item = legend.append('div')
+            .attr('class', 'legend-item')
+            .attr('data-name', name);
+          
+          item.append('div')
+            .attr('class', 'legend-color')
+            .style('background-color', colorMap[name]);
+          
+          item.append('div')
+            .attr('class', 'legend-text')
+            .text(name);
+          
+          // Add hover interaction
+          item.on('mouseover', () => {
+            // Dim all bars
+            svg.selectAll('.bar')
+              .style('opacity', 0.3);
+            
+            // Highlight matching bars
+            svg.selectAll(`.bar[data-name="${name}"]`)
+              .style('opacity', 1);
+              
+            // Highlight table cells for this value
+            const cells = this.shadowRoot.querySelectorAll('.data-table tbody tr');
+            cells.forEach((row, rowIndex) => {
+              const valueIndex = subgroups.indexOf(name);
+              if (valueIndex >= 0) {
+                // +1 because first cell is category name
+                const cell = row.children[valueIndex + 1]; 
+                cell.style.backgroundColor = '#f0f0f0';
+              }
+            });
+          })
+          .on('mouseout', () => {
+            // Restore all bars
+            svg.selectAll('.bar')
+              .style('opacity', 1);
+              
+            // Remove highlight from table
+            this.shadowRoot.querySelectorAll('.data-table td').forEach(cell => {
+              cell.style.backgroundColor = '';
+            });
+          });
+        });
+        
+        // Add table row hover effects
+        this.shadowRoot.querySelectorAll('.data-table tbody tr').forEach((row, rowIndex) => {
+          row.addEventListener('mouseover', () => {
+            // Highlight corresponding bar group
+            svg.selectAll('.bar')
+              .style('opacity', 0.3);
+            
+            svg.selectAll(`.bar[data-category="${this.data[rowIndex].category}"]`)
+              .style('opacity', 1);
+          });
+          
+          row.addEventListener('mouseout', () => {
+            // Restore all bars
+            svg.selectAll('.bar')
+              .style('opacity', 1);
+          });
+        });
+      }
+    }
+
+    customElements.define('stacked-bar-chart', StackedBarChart);
+
+    // Ring Chart Web Component
+    class RingChart extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        
+        // Sample data
+        this.data = [
+          { name: "Core", value: 20, color: "#FF6384" },
+          { name: "Ring 1", value: 30, color: "#36A2EB" },
+          { name: "Ring 2", value: 40, color: "#FFCE56" },
+          { name: "Ring 3", value: 25, color: "#4BC0C0" },
+          { name: "Ring 4", value: 15, color: "#9966FF" }
+        ];
+      }
+
+      connectedCallback() {
+        this.render();
+      }
+
+      render() {
+        const style = document.createElement('style');
+        style.textContent = `
+          :host {
+            display: block;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 600px;
+          }
+          
+          h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+          }
+          
+          .tooltip {
+            position: absolute;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
+          }
+          
+          .ring {
+            transition: all 0.3s;
+            stroke: white;
+            stroke-width: 2;
+          }
+          
+          .ring:hover {
+            filter: brightness(1.2) saturate(1.2);
+          }
+          
+          .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+          }
+          
+          .legend-item:hover {
+            background-color: #f0f0f0;
+          }
+          
+          .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            margin-right: 8px;
+          }
+          
+          .legend-text {
+            font-size: 14px;
+          }
+          
+          .chart-container {
+            display: flex;
+          }
+          
+          .chart {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+          }
+          
+          .legend {
+            width: 120px;
+            padding-left: 15px;
+          }
+          
+          .ring-label {
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #fff;
+            font-weight: bold;
+            pointer-events: none;
+          }
+        `;
+
+        const html = `
+          <h2>Concentric Ring Chart</h2>
+          <div class="tooltip"></div>
+          <div class="chart-container">
+            <div class="chart"></div>
+            <div class="legend"></div>
+          </div>
+        `;
+
+        this.shadowRoot.innerHTML = '';
+        this.shadowRoot.appendChild(style);
+        
+        const container = document.createElement('div');
+        container.innerHTML = html;
+        this.shadowRoot.appendChild(container);
+
+        this.createVisualization();
+      }
+
+      createVisualization() {
+        const width = 400;
+        const height = 400;
+        const radius = Math.min(width, height) / 2;
+        
+        // Create SVG
+        const svg = d3.select(this.shadowRoot.querySelector('.chart'))
+          .append('svg')
+            .attr('width', width)
+            .attr('height', height)
+          .append('g')
+            .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+        // Sort data from largest to smallest (except the core which stays first)
+        const core = this.data[0];
+        const sortedData = [core, ...this.data.slice(1).sort((a, b) => b.value - a.value)];
+        
+        // Calculate total to determine ring thickness proportions
+        const total = d3.sum(sortedData, d => d.value);
+        
+        // Tooltip
+        const tooltip = d3.select(this.shadowRoot.querySelector('.tooltip'));
+        
+        // Fixed approach for concentric rings
+        // Calculate max radius first, then allocate proportionally
+        const maxRadius = radius * 0.9; // Leave some margin
+        
+        // Create array of radii (outer radius for each ring)
+        let radii = [];
+        let cumulativeValue = 0;
+        
+        sortedData.forEach(d => {
+          cumulativeValue += d.value;
+          const outerRadius = Math.sqrt(cumulativeValue / total) * maxRadius;
+          radii.push(outerRadius);
+        });
+        
+        // Create concentric rings from inside out
+        sortedData.forEach((d, i) => {
+          const innerRadius = i === 0 ? 0 : radii[i-1];
+          const outerRadius = radii[i];
+          
+          // For the core (first item), we create a circle
+          if (i === 0) {
+            // Add entry animation
+            const circle = svg.append('circle')
+              .attr('class', 'ring')
+              .attr('data-name', d.name)
+              .attr('r', 0) // Start with radius 0
+              .attr('fill', d.color);
+            
+            // Animate circle growth
+            circle.transition()
+              .duration(1000)
+              .attr('r', outerRadius);
+            
+            // Add hover effects with tooltip following mouse
+            circle.on('mousemove', (event) => {
+              tooltip.style('opacity', 1)
+                .html(`<strong>${d.name}</strong>: ${d.value}`)
+                .style('left', (event.pageX - this.shadowRoot.host.getBoundingClientRect().left + 15) + 'px')
+                .style('top', (event.pageY - this.shadowRoot.host.getBoundingClientRect().top) + 'px');
+              
+              // Highlight legend
+              this.highlightLegend(d.name);
+            })
+            .on('mouseout', () => {
+              tooltip.style('opacity', 0);
+              this.resetLegend();
+            });
+            
+            // Add label if there's enough space
+            if (outerRadius > 20) {
+              svg.append('text')
+                .attr('class', 'ring-label')
+                .attr('x', 0)
+                .attr('y', 0)
+                .text(d.name)
+                .style('opacity', 0)
+                .transition()
+                .duration(500)
+                .delay(1000)
+                .style('opacity', 1);
+            }
+          } else {
+            // Create arc generator for rings
+            const arc = d3.arc()
+              .innerRadius(innerRadius)
+              .outerRadius(outerRadius)
+              .startAngle(0)
+              .endAngle(2 * Math.PI);
+            
+            // Create a temporary arc for animation
+            const arcTween = function() {
+              const interpolate = d3.interpolate(0, 2 * Math.PI);
+              return function(t) {
+                return d3.arc()
+                  .innerRadius(innerRadius)
+                  .outerRadius(outerRadius)
+                  .startAngle(0)
+                  .endAngle(interpolate(t))();
+              };
+            };
+            
+            const path = svg.append('path')
+              .attr('class', 'ring')
+              .attr('data-name', d.name)
+              .attr('d', arc.endAngle(0)) // Start with endAngle 0
+              .attr('fill', d.color);
+            
+            // Animate arc
+            path.transition()
+              .duration(1000)
+              .delay(i * 200)
+              .attrTween('d', arcTween);
+            
+            // Add hover effects with tooltip following mouse
+            path.on('mousemove', (event) => {
+              tooltip.style('opacity', 1)
+                .html(`<strong>${d.name}</strong>: ${d.value}`)
+                .style('left', (event.pageX - this.shadowRoot.host.getBoundingClientRect().left + 15) + 'px')
+                .style('top', (event.pageY - this.shadowRoot.host.getBoundingClientRect().top) + 'px');
+              
+              // Highlight legend
+              this.highlightLegend(d.name);
+            })
+            .on('mouseout', () => {
+              tooltip.style('opacity', 0);
+              this.resetLegend();
+            });
+            
+            // Add labels for larger rings
+            if (outerRadius - innerRadius > 25) {
+              const labelRadius = innerRadius + (outerRadius - innerRadius) / 2;
+              svg.append('text')
+                .attr('class', 'ring-label')
+                .attr('x', 0)
+                .attr('y', -labelRadius) // Position at top of ring
+                .text(d.name)
+                .style('opacity', 0)
+                .transition()
+                .duration(500)
+                .delay(i * 200 + 1000)
+                .style('opacity', 1);
+            }
+          }
+        });
+        
+        // Create legend
+        const legend = d3.select(this.shadowRoot.querySelector('.legend'));
+        
+        sortedData.forEach(d => {
+          const item = legend.append('div')
+            .attr('class', 'legend-item')
+            .attr('data-name', d.name);
+          
+          item.append('div')
+            .attr('class', 'legend-color')
+            .style('background-color', d.color);
+          
+          item.append('div')
+            .attr('class', 'legend-text')
+            .text(`${d.name} (${d.value})`);
+          
+          // Add hover interaction
+          item.on('mouseover', () => {
+            // Dim all rings
+            svg.selectAll('.ring')
+              .style('opacity', 0.3);
+            
+            // Highlight matching ring
+            svg.select(`.ring[data-name="${d.name}"]`)
+              .style('opacity', 1);
+            
+            tooltip.style('opacity', 1)
+              .html(`<strong>${d.name}</strong>: ${d.value}`)
+              .style('left', (this.shadowRoot.host.getBoundingClientRect().left + 300) + 'px')
+              .style('top', (this.shadowRoot.host.getBoundingClientRect().top + 200) + 'px');
+          })
+          .on('mouseout', () => {
+            // Restore all rings
+            svg.selectAll('.ring')
+              .style('opacity', 1);
+            
+            tooltip.style('opacity', 0);
+          });
+        });
+      }
+      
+      highlightLegend(name) {
+        this.shadowRoot.querySelectorAll('.legend-item').forEach(item => {
+          if (item.dataset.name === name) {
+            item.style.backgroundColor = '#f0f0f0';
+          }
+        });
+      }
+      
+      resetLegend() {
+        this.shadowRoot.querySelectorAll('.legend-item').forEach(item => {
+          item.style.backgroundColor = '';
+        });
+      }
+    }
+
+    customElements.define('ring-chart', RingChart);
+
+    // Pie Chart Web Component
+    class PieChart extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        
+        // Sample data
+        this.data = [
+          { name: "Segment 1", value: 30, color: "#FF6384" },
+          { name: "Segment 2", value: 25, color: "#36A2EB" },
+          { name: "Segment 3", value: 15, color: "#FFCE56" },
+          { name: "Segment 4", value: 20, color: "#4BC0C0" },
+          { name: "Segment 5", value: 10, color: "#9966FF" }
+        ];
+      }
+
+      connectedCallback() {
+        this.render();
+      }
+
+      render() {
+        const style = document.createElement('style');
+        style.textContent = `
+          :host {
+            display: block;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 600px;
+          }
+          
+          h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+          }
+          
+          .tooltip {
+            position: absolute;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
+          }
+          
+          .pie-slice {
+            transition: all 0.3s;
+            stroke: white;
+            stroke-width: 2;
+          }
+          
+          .slice-group {
+            transition: transform 0.3s ease;
+          }
+          
+          .slice-group:hover {
+            filter: brightness(1.2) saturate(1.2);
+          }
+          
+          .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+          }
+          
+          .legend-item:hover {
+            background-color: #f0f0f0;
+          }
+          
+          .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            margin-right: 8px;
+          }
+          
+          .legend-text {
+            font-size: 14px;
+          }
+          
+          .chart-container {
+            display: flex;
+          }
+          
+          .chart {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+          }
+          
+          .legend {
+            width: 120px;
+            padding-left: 15px;
+          }
+          
+          .pie-label {
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #fff;
+            font-weight: bold;
+            pointer-events: none;
+          }
+          
+          .percentage {
+            font-size: 11px;
+            fill: #fff;
+            font-weight: normal;
+          }
+        `;
+
+        const html = `
+          <h2>Pie Chart</h2>
+          <div class="tooltip"></div>
+          <div class="chart-container">
+            <div class="chart"></div>
+            <div class="legend"></div>
+          </div>
+        `;
+
+        this.shadowRoot.innerHTML = '';
+        this.shadowRoot.appendChild(style);
+        
+        const container = document.createElement('div');
+        container.innerHTML = html;
+        this.shadowRoot.appendChild(container);
+
+        this.createVisualization();
+      }
+
+      createVisualization() {
+        const width = 400;
+        const height = 400;
+        const radius = Math.min(width, height) / 2 * 0.8; // Leave some margin
+        
+        // Calculate total for percentages
+        const total = d3.sum(this.data, d => d.value);
+        
+        // Create SVG
+        const svg = d3.select(this.shadowRoot.querySelector('.chart'))
+          .append('svg')
+            .attr('width', width)
+            .attr('height', height)
+          .append('g')
+            .attr('transform', `translate(${width / 2}, ${height / 2})`);
+        
+        // Create pie layout
+        const pie = d3.pie()
+          .value(d => d.value)
+          .sort(null); // Don't sort, use the order as provided
+        
+        // Create arc generator
+        const arc = d3.arc()
+          .innerRadius(0) // For a pie chart, inner radius is 0
+          .outerRadius(radius);
+        
+        // Create arc for labels
+        const labelArc = d3.arc()
+          .innerRadius(radius * 0.6)
+          .outerRadius(radius * 0.6);
+        
+        // Tooltip
+        const tooltip = d3.select(this.shadowRoot.querySelector('.tooltip'));
+        
+        // Generate pie slices
+        const slices = svg.selectAll('.slice-group')
+          .data(pie(this.data))
+          .enter()
+          .append('g')
+          .attr('class', 'slice-group')
+          .attr('data-name', d => d.data.name);
+        
+        // Add paths for each slice with animation
+        slices.append('path')
+          .attr('class', 'pie-slice')
+          .attr('d', d => {
+            // Start from 0 angle for animation
+            const startArc = { ...d, startAngle: d.endAngle, endAngle: d.endAngle };
+            return arc(startArc);
+          })
+          .attr('fill', d => d.data.color)
+          .each(function(d) {
+            // Store the current angles for animation
+            this._current = { ...d, startAngle: d.endAngle, endAngle: d.endAngle };
+          })
+          .transition()
+          .duration(1000)
+          .attrTween('d', function(d) {
+            const interpolate = d3.interpolate(this._current, d);
+            this._current = interpolate(0);
+            return function(t) {
+              return arc(interpolate(t));
+            };
+          });
+        
+        // Store centroids for hover effect
+        slices.each(function(d) {
+          // Calculate the centroid of the slice for directional movement
+          const centroid = arc.centroid(d);
+          const midAngle = (d.startAngle + d.endAngle) / 2;
+          
+          // Normalize the centroid to get direction
+          const x = Math.sin(midAngle);
+          const y = -Math.cos(midAngle);
+          
+          // Store the direction in the data
+          d3.select(this).attr('data-direction-x', x);
+          d3.select(this).attr('data-direction-y', y);
+        });
+        
+        // Add hover effects with directional movement and tooltip following mouse
+        slices.on('mousemove', function(event, d) {
+          // Get the direction from the data attributes
+          const x = parseFloat(d3.select(this).attr('data-direction-x'));
+          const y = parseFloat(d3.select(this).attr('data-direction-y'));
+          
+          // Move slice in the direction of its centroid
+          d3.select(this).transition()
+            .duration(50)
+            .attr('transform', `translate(${x * 10}, ${y * 10})`);
+          
+          // Update tooltip
+          tooltip.style('opacity', 1)
+            .html(`<strong>${d.data.name}</strong>: ${d.data.value} (${(d.data.value / total * 100).toFixed(1)}%)`)
+            .style('left', (event.pageX - this.ownerDocument.defaultView.frameElement.getBoundingClientRect().left + 15) + 'px')
+            .style('top', (event.pageY - this.ownerDocument.defaultView.frameElement.getBoundingClientRect().top) + 'px');
+          
+          // Highlight legend
+          const pieChart = this.ownerDocument.defaultView.frameElement.__instance__;
+          if (pieChart) pieChart.highlightLegend(d.data.name);
+        });
+        
+        // Reset on mouseout
+        slices.on('mouseout', function(event, d) {
+          // Reset position
+          d3.select(this).transition()
+            .duration(150)
+            .attr('transform', 'translate(0, 0)');
+          
+          // Hide tooltip
+          tooltip.style('opacity', 0);
+          
+          // Reset legend
+          const pieChart = this.ownerDocument.defaultView.frameElement.__instance__;
+          if (pieChart) pieChart.resetLegend();
+        });
+        
+        // Store reference to component instance for slice event handlers
+        this.shadowRoot.querySelector('svg').__instance__ = this;
+        
+        // Add labels for larger slices
+        slices.append('text')
+          .attr('class', 'pie-label')
+          .attr('transform', d => {
+            // Position at the center of each arc
+            const pos = labelArc.centroid(d);
+            return `translate(${pos})`;
+          })
+          .attr('dy', '.35em')
+          .style('opacity', 0) // Start invisible for animation
+          .text(d => {
+            const percentage = (d.data.value / total * 100).toFixed(0);
+            return percentage >= 8 ? d.data.name : ''; // Only show label if slice is large enough
+          })
+          .transition()
+          .delay(1000)
+          .duration(500)
+          .style('opacity', 1);
+        
+        // Add percentage labels
+        slices.append('text')
+          .attr('class', 'percentage')
+          .attr('transform', d => {
+            // Position below the name
+            const pos = labelArc.centroid(d);
+            return `translate(${pos[0]}, ${pos[1] + 15})`;
+          })
+          .attr('dy', '.35em')
+          .style('opacity', 0) // Start invisible for animation
+          .text(d => {
+            const percentage = (d.data.value / total * 100).toFixed(0);
+            return percentage >= 8 ? `${percentage}%` : ''; // Only show if slice is large enough
+          })
+          .transition()
+          .delay(1200)
+          .duration(500)
+          .style('opacity', 1);
+        
+        // Create legend
+        const legend = d3.select(this.shadowRoot.querySelector('.legend'));
+        
+        this.data.forEach(d => {
+          const item = legend.append('div')
+            .attr('class', 'legend-item')
+            .attr('data-name', d.name);
+          
+          item.append('div')
+            .attr('class', 'legend-color')
+            .style('background-color', d.color);
+          
+          item.append('div')
+            .attr('class', 'legend-text')
+            .text(`${d.name} (${d.value})`);
+          
+          // Add hover interaction
+          item.on('mouseover', () => {
+            // Dim all slices
+            svg.selectAll('.slice-group')
+              .style('opacity', 0.3);
+            
+            // Highlight matching slice and pull it out
+            const slice = svg.select(`.slice-group[data-name="${d.name}"]`);
+            slice.style('opacity', 1);
+            
+            // Get the direction from the data attributes
+            const x = parseFloat(slice.attr('data-direction-x'));
+            const y = parseFloat(slice.attr('data-direction-y'));
+            
+            // Move slice in the direction of its centroid
+            slice.transition()
+              .duration(150)
+              .attr('transform', `translate(${x * 10}, ${y * 10})`);
+            
+            tooltip.style('opacity', 1)
+              .html(`<strong>${d.name}</strong>: ${d.value} (${(d.value / total * 100).toFixed(1)}%)`)
+              .style('left', (this.shadowRoot.host.getBoundingClientRect().left + 300) + 'px')
+              .style('top', (this.shadowRoot.host.getBoundingClientRect().top + 200) + 'px');
+          })
+          .on('mouseout', () => {
+            // Restore all slices
+            svg.selectAll('.slice-group')
+              .style('opacity', 1)
+              .transition()
+              .duration(150)
+              .attr('transform', 'translate(0, 0)');
+            
+            tooltip.style('opacity', 0);
+          });
+        });
+      }
+      
+      highlightLegend(name) {
+        this.shadowRoot.querySelectorAll('.legend-item').forEach(item => {
+          if (item.dataset.name === name) {
+            item.style.backgroundColor = '#f0f0f0';
+          }
+        });
+      }
+      
+      resetLegend() {
+        this.shadowRoot.querySelectorAll('.legend-item').forEach(item => {
+          item.style.backgroundColor = '';
+        });
+      }
+    }
+
+    customElements.define('pie-chart', PieChart);
+
+    // Entry animations
+    document.addEventListener('DOMContentLoaded', () => {
+      // Stacked Bar Chart animation
+      setTimeout(() => {
+        const stackedChart = document.querySelector('stacked-bar-chart');
+        stackedChart.style.opacity = 0;
+        stackedChart.style.transform = 'translateY(20px)';
+        stackedChart.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+        
+        setTimeout(() => {
+          stackedChart.style.opacity = 1;
+          stackedChart.style.transform = 'translateY(0)';
+        }, 100);
+      }, 300);
+      
+      // Ring Chart animation
+      setTimeout(() => {
+        const ringChart = document.querySelector('ring-chart');
+        ringChart.style.opacity = 0;
+        ringChart.style.transform = 'translateY(20px)';
+        ringChart.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+        
+        setTimeout(() => {
+          ringChart.style.opacity = 1;
+          ringChart.style.transform = 'translateY(0)';
+        }, 100);
+      }, 600);
+      
+      // Pie Chart animation
+      setTimeout(() => {
+        const pieChart = document.querySelector('pie-chart');
+        pieChart.style.opacity = 0;
+        pieChart.style.transform = 'translateY(20px)';
+        pieChart.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+        
+        setTimeout(() => {
+          pieChart.style.opacity = 1;
+          pieChart.style.transform = 'translateY(0)';
+        }, 100);
+      }, 900);
+    });
+  </script>
+</body>
+</html>
