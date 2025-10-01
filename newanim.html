@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Fireworks Animation</title>
+		<style>
+			/* Basic page styling for demonstration */
+			body {
+				margin: 0;
+				font-family: sans-serif;
+				background-color: #000; /* Darker background for fireworks */
+				color: #fff;
+				text-align: center;
+			}
+
+			/* Main content container */
+			.content {
+				position: relative;
+				z-index: 1; /* Ensure content is above the background but below the canvas */
+				padding: 2rem;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				min-height: 100vh;
+			}
+
+			h1 {
+				font-size: 3rem;
+				text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+			}
+
+			button {
+				padding: 10px 20px;
+				font-size: 1rem;
+				cursor: pointer;
+				border-radius: 5px;
+				border: 1px solid #fff;
+				background-color: transparent;
+				color: #fff;
+				transition: all 0.2s ease;
+			}
+
+			button:hover {
+				background-color: #fff;
+				color: #000;
+			}
+
+			/* This is the container for our animation */
+			#animation-container {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				z-index: 0; /* Behind the content */
+
+				/* This is the key property to allow clicks to pass through */
+				pointer-events: none;
+			}
+
+			canvas {
+				display: block;
+				width: 100%;
+				height: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- The container where the canvas will be rendered -->
+		<div id="animation-container">
+			<canvas id="fireworks-canvas"></canvas>
+		</div>
+
+		<!-- Example content to show that you can click through the animation -->
+		<div class="content">
+			<h1>Fireworks Animation</h1>
+			<p>You can click this button right through the animation!</p>
+			<button onclick="alert('Button clicked!')">Click Me</button>
+		</div>
+
+		<script>
+			// --- Configuration ---
+			const ROCKET_LAUNCH_CHANCE = 0.03; // Chance a new rocket launches each frame
+			const PARTICLES_PER_EXPLOSION = 50; // Number of particles in an explosion
+			const GRAVITY = 0.05; // Pulls particles down
+			const FRICTION = 0.98; // Slows particles down over time
+			const FADE_SPEED = 0.025; // How quickly particles fade
+
+			// --- Setup ---
+			const canvas = document.getElementById("fireworks-canvas");
+			const ctx = canvas.getContext("2d");
+			let rockets = [];
+			let particles = [];
+
+			// Returns a random HSL color string
+			function getRandomColor() {
+				const hue = Math.floor(Math.random() * 360);
+				return `hsl(${hue}, 100%, 50%)`;
+			}
+
+			// Represents a single firework rocket before it explodes
+			class Rocket {
+				constructor() {
+					this.x = canvas.width / 2;
+					this.y = canvas.height;
+					this.color = getRandomColor();
+					this.targetX =
+						Math.random() * canvas.width * 0.8 + canvas.width * 0.1;
+					this.targetY =
+						Math.random() * canvas.height * 0.5 + canvas.height * 0.2;
+
+					const angle = Math.atan2(
+						this.targetY - this.y,
+						this.targetX - this.x
+					);
+					const speed = Math.random() * 3 + 4;
+					this.vx = Math.cos(angle) * speed;
+					this.vy = Math.sin(angle) * speed;
+				}
+
+				update() {
+					this.x += this.vx;
+					this.y += this.vy;
+
+					// Check if the rocket has reached its target destination
+					if (Math.abs(this.y - this.targetY) < 20) {
+						return true; // Reached target, ready to explode
+					}
+					return false; // Still flying
+				}
+
+				draw() {
+					ctx.fillStyle = this.color;
+					ctx.beginPath();
+					ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+					ctx.fill();
+				}
+			}
+
+			// Represents a single particle from an explosion
+			class Particle {
+				constructor(x, y, color) {
+					this.x = x;
+					this.y = y;
+					this.color = color;
+					this.alpha = 1;
+
+					const angle = Math.random() * Math.PI * 2;
+					const speed = Math.random() * 4 + 1;
+					this.vx = Math.cos(angle) * speed;
+					this.vy = Math.sin(angle) * speed;
+				}
+
+				update() {
+					this.x += this.vx;
+					this.y += this.vy;
+					this.vy += GRAVITY; // Apply gravity
+					this.vx *= FRICTION; // Apply friction
+					this.vy *= FRICTION;
+					this.alpha -= FADE_SPEED; // Fade out
+				}
+
+				draw() {
+					ctx.save();
+					ctx.globalAlpha = Math.max(0, this.alpha);
+					ctx.fillStyle = this.color;
+					ctx.beginPath();
+					ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.restore();
+				}
+			}
+
+			// --- Animation Loop ---
+			function animate() {
+				// Use a semi-transparent background to create a trailing effect
+				ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+				// Launch new rockets randomly
+				if (Math.random() < ROCKET_LAUNCH_CHANCE) {
+					rockets.push(new Rocket());
+				}
+
+				// --- Update and draw rockets ---
+				// Iterate backwards to safely remove items from the array
+				for (let i = rockets.length - 1; i >= 0; i--) {
+					const rocket = rockets[i];
+					const exploded = rocket.update();
+					rocket.draw();
+
+					if (exploded) {
+						// Create explosion particles
+						for (let j = 0; j < PARTICLES_PER_EXPLOSION; j++) {
+							particles.push(new Particle(rocket.x, rocket.y, rocket.color));
+						}
+						rockets.splice(i, 1); // Remove the exploded rocket
+					}
+				}
+
+				// --- Update and draw particles ---
+				for (let i = particles.length - 1; i >= 0; i--) {
+					const particle = particles[i];
+					particle.update();
+					particle.draw();
+
+					// Remove faded particles
+					if (particle.alpha <= 0) {
+						particles.splice(i, 1);
+					}
+				}
+
+				requestAnimationFrame(animate);
+			}
+
+			// --- Initialization and Resize Handling ---
+			function setup() {
+				canvas.width = canvas.offsetWidth;
+				canvas.height = canvas.offsetHeight;
+				// Clear arrays on resize to start fresh
+				rockets = [];
+				particles = [];
+			}
+
+			window.addEventListener("resize", setup);
+
+			// Initial setup and start the animation
+			setup();
+			animate();
+		</script>
+	</body>
+</html>

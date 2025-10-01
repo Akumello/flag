@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLA Tracker - Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            /* Base Colors - Original GSA Palette */
+            --color-gray-light: #F2F2F2;
+            --color-gray-medium: #BBBDBF;
+            --color-gray-dark: #424143;
+            --color-blue-dark: #004F87;
+            --color-orange: #CF4817;
+            --color-green: #286D3B;
+            --color-red-dark: #522032;
+            --color-blue-light: #1B7CAC;
+            
+            /* Semantic Color Mappings */
+            --color-background: var(--color-gray-light);
+            --color-surface: #FFFFFF;
+            --color-border: var(--color-gray-medium);
+            
+            --color-text-primary: var(--color-gray-dark);
+            --color-text-secondary: #6B6B6B;
+            --color-text-muted: #8E8E8E;
+            
+            --color-primary: var(--color-blue-dark);
+            --color-primary-hover: var(--color-blue-light);
+            
+            --color-status-success: var(--color-green);
+            --color-status-success-bg: #E6F4EA;
+            --color-status-warning: var(--color-orange);
+            --color-status-warning-bg: #FEF0E5;
+            --color-status-error: var(--color-red-dark);
+            --color-status-error-bg: #F9E6EB;
+            --color-status-info: var(--color-blue-light);
+            --color-status-info-bg: #E5F3F9;
+            
+            --color-priority-critical: var(--color-red-dark);
+            --color-priority-critical-bg: var(--color-status-error-bg);
+            --color-priority-high: var(--color-orange);
+            --color-priority-high-bg: var(--color-status-warning-bg);
+            --color-priority-medium: var(--color-blue-light);
+            --color-priority-medium-bg: var(--color-status-info-bg);
+            --color-priority-low: var(--color-green);
+            --color-priority-low-bg: var(--color-status-success-bg);
+            
+            --font-family: Calibri, sans-serif;
+        }
+        
+        body {
+            font-family: var(--font-family);
+        }
+        
+        .section { 
+            display: none; 
+        }
+        
+        .section.active { 
+            display: block; 
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        
+        /* Custom Tailwind overrides */
+        .bg-background {
+            background-color: var(--color-background);
+        }
+        
+        .bg-surface {
+            background-color: var(--color-surface);
+        }
+        
+        .text-primary-color {
+            color: var(--color-text-primary);
+        }
+        
+        .text-secondary-color {
+            color: var(--color-text-secondary);
+        }
+        
+        .text-muted {
+            color: var(--color-text-muted);
+        }
+        
+        .border-color {
+            border-color: var(--color-border);
+        }
+        
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--color-primary-hover);
+        }
+        
+        .btn-secondary {
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--color-gray-light);
+        }
+        
+        .btn-danger {
+            background-color: var(--color-status-error);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #6B2A42;
+        }
+        
+        .btn-success {
+            background-color: var(--color-status-success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #1F5630;
+        }
+        
+        .link-primary {
+            color: var(--color-primary);
+        }
+        
+        .link-primary:hover {
+            color: var(--color-primary-hover);
+        }
+        
+        .badge-success {
+            background-color: var(--color-status-success-bg);
+            color: var(--color-status-success);
+        }
+        
+        .badge-warning {
+            background-color: var(--color-status-warning-bg);
+            color: var(--color-status-warning);
+        }
+        
+        .badge-error {
+            background-color: var(--color-status-error-bg);
+            color: var(--color-status-error);
+        }
+        
+        .badge-info {
+            background-color: var(--color-status-info-bg);
+            color: var(--color-status-info);
+        }
+        
+        .badge-priority-critical {
+            background-color: var(--color-priority-critical-bg);
+            color: var(--color-priority-critical);
+        }
+        
+        .badge-priority-high {
+            background-color: var(--color-priority-high-bg);
+            color: var(--color-priority-high);
+        }
+        
+        .badge-priority-medium {
+            background-color: var(--color-priority-medium-bg);
+            color: var(--color-priority-medium);
+        }
+        
+        .badge-priority-low {
+            background-color: var(--color-priority-low-bg);
+            color: var(--color-priority-low);
+        }
+        
+        .progress-success {
+            background-color: var(--color-status-success);
+        }
+        
+        .progress-warning {
+            background-color: var(--color-status-warning);
+        }
+        
+        .progress-error {
+            background-color: var(--color-status-error);
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 1px var(--color-primary);
+        }
+        
+        .stat-card-blue {
+            background-color: var(--color-status-info-bg);
+        }
+        
+        .stat-card-green {
+            background-color: var(--color-status-success-bg);
+        }
+        
+        .stat-card-orange {
+            background-color: var(--color-status-warning-bg);
+        }
+        
+        .stat-card-red {
+            background-color: var(--color-status-error-bg);
+        }
+    </style>
+</head>
+<body class="bg-background">
+    <!-- Navigation -->
+    <nav class="bg-surface shadow-sm border-b border-color">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-primary-color">SLA Tracker</h1>
+                </div>
+                <div class="flex space-x-4">
+                    <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn link-primary font-medium">Dashboard</button>
+                    <button onclick="showSection('create')" id="nav-create" class="nav-btn text-secondary-color hover:text-primary-color">Create SLA</button>
+                    <button onclick="showSection('list')" id="nav-list" class="nav-btn text-secondary-color hover:text-primary-color">All SLAs</button>
+                    <button onclick="showSection('detail')" id="nav-detail" class="nav-btn text-secondary-color hover:text-primary-color">SLA Details</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard" class="section active">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-surface p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-secondary-color">Total SLAs</p>
+                            <p class="text-3xl font-bold text-primary-color">12</p>
+                        </div>
+                        <div class="w-12 h-12 stat-card-blue rounded-lg flex items-center justify-center">
+                            <span style="color: var(--color-status-info)">📊</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-surface p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-secondary-color">Met SLAs</p>
+                            <p class="text-3xl font-bold" style="color: var(--color-status-success)">8</p>
+                        </div>
+                        <div class="w-12 h-12 stat-card-green rounded-lg flex items-center justify-center">
+                            <span style="color: var(--color-status-success)">✅</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-surface p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-secondary-color">At Risk</p>
+                            <p class="text-3xl font-bold" style="color: var(--color-status-warning)">3</p>
+                        </div>
+                        <div class="w-12 h-12 stat-card-orange rounded-lg flex items-center justify-center">
+                            <span style="color: var(--color-status-warning)">⚠️</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-surface p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-secondary-color">Missed SLAs</p>
+                            <p class="text-3xl font-bold" style="color: var(--color-status-error)">1</p>
+                        </div>
+                        <div class="w-12 h-12 stat-card-red rounded-lg flex items-center justify-center">
+                            <span style="color: var(--color-status-error)">❌</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-surface rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-primary-color">Recent SLAs</h2>
+                        <button onclick="showSection('list')" class="link-primary text-sm hover:underline">View all</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between py-3 border-b border-color">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-medium text-primary-color cursor-pointer hover:text-primary" style="color: var(--color-text-primary)" onclick="showSection('detail')">API Response Time</h4>
+                                <p class="text-xs text-muted">RESPONSE TIME</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-16 bg-gray-light rounded-full h-2" style="background-color: var(--color-gray-light)">
+                                        <div class="progress-success h-2 rounded-full progress-bar" style="width: 95%"></div>
+                                    </div>
+                                    <span class="text-sm text-secondary-color">95%</span>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-success">met</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between py-3 border-b border-color">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-medium text-primary-color cursor-pointer hover:text-primary" style="color: var(--color-text-primary)" onclick="showSection('detail')">Database Uptime</h4>
+                                <p class="text-xs text-muted">UPTIME</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-16 rounded-full h-2" style="background-color: var(--color-gray-light)">
+                                        <div class="progress-warning h-2 rounded-full progress-bar" style="width: 78%"></div>
+                                    </div>
+                                    <span class="text-sm text-secondary-color">78%</span>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-warning">at risk</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between py-3 border-b border-color">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-medium text-primary-color cursor-pointer hover:text-primary" style="color: var(--color-text-primary)" onclick="showSection('detail')">Customer Support Tasks</h4>
+                                <p class="text-xs text-muted">CHECKLIST</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-16 rounded-full h-2" style="background-color: var(--color-gray-light)">
+                                        <div class="progress-success h-2 rounded-full progress-bar" style="width: 100%"></div>
+                                    </div>
+                                    <span class="text-sm text-secondary-color">100%</span>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-success">met</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-surface rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-semibold text-primary-color">SLA Performance</h2>
+                    <div class="h-64 flex items-center justify-center">
+                        <div class="w-full">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-secondary-color">This Month</span>
+                                    <span class="text-sm font-medium" style="color: var(--color-status-success)">85% Success Rate</span>
+                                </div>
+                                <div class="w-full rounded-full h-4" style="background-color: var(--color-gray-light)">
+                                    <div class="progress-success h-4 rounded-full progress-bar" style="width: 85%"></div>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-4 mt-6">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold" style="color: var(--color-status-success)">67%</div>
+                                        <div class="text-xs text-muted">Met</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold" style="color: var(--color-status-warning)">25%</div>
+                                        <div class="text-xs text-muted">At Risk</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold" style="color: var(--color-status-error)">8%</div>
+                                        <div class="text-xs text-muted">Missed</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create SLA Section -->
+    <div id="create" class="section">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-surface rounded-lg shadow-sm p-8">
+                <h2 class="text-2xl font-bold text-primary-color mb-6">Create New SLA</h2>
+                
+                <form id="createSlaForm" class="space-y-6">
+                    <!-- Basic Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="taskName" class="block text-sm font-medium text-primary-color mb-2">Task Name</label>
+                            <input type="text" id="taskName" name="taskName" required
+                                   class="w-full px-3 py-2 border border-color rounded-md">
+                        </div>
+                        
+                        <div>
+                            <label for="priority" class="block text-sm font-medium text-primary-color mb-2">Priority</label>
+                            <select id="priority" name="priority" required
+                                    class="w-full px-3 py-2 border border-color rounded-md">
+                                <option value="">Select Priority</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-primary-color mb-2">Description</label>
+                        <textarea id="description" name="description" rows="3" required
+                                  class="w-full px-3 py-2 border border-color rounded-md"
+                                  placeholder="Describe the SLA requirements and objectives..."></textarea>
+                    </div>
+
+                    <!-- SLA Type Selection -->
+                    <div>
+                        <label for="slaType" class="block text-sm font-medium text-primary-color mb-2">SLA Type</label>
+                        <select id="slaType" name="slaType" required
+                                class="w-full px-3 py-2 border border-color rounded-md"
+                                onchange="showSLAConfig(this.value)">
+                            <option value="">Select SLA Type</option>
+                            <option value="performance">Performance Goal</option>
+                            <option value="uptime">Uptime Monitoring</option>
+                            <option value="checklist">Task Checklist</option>
+                            <option value="response-time">Response Time</option>
+                            <option value="availability">Availability Window</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic SLA Configuration -->
+                    <div id="slaConfig" class="hidden">
+                        <!-- Performance Goal -->
+                        <div id="performanceConfig" class="sla-config-section hidden">
+                            <h3 class="text-lg font-medium text-primary-color mb-4">Performance Goal Configuration</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="targetValue" class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                                    <input type="number" id="targetValue" name="targetValue"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                                <div>
+                                    <label for="currentValue" class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                                    <input type="number" id="currentValue" name="currentValue" value="0"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                                <div>
+                                    <label for="unit" class="block text-sm font-medium text-primary-color mb-2">Unit</label>
+                                    <input type="text" id="unit" name="unit" placeholder="e.g., requests, items"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Uptime Configuration -->
+                        <div id="uptimeConfig" class="sla-config-section hidden">
+                            <h3 class="text-lg font-medium text-primary-color mb-4">Uptime Monitoring Configuration</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="uptimeTarget" class="block text-sm font-medium text-primary-color mb-2">Target Uptime (%)</label>
+                                    <input type="number" id="uptimeTarget" name="uptimeTarget" min="0" max="100" step="0.01"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                                <div>
+                                    <label for="monitoringUrl" class="block text-sm font-medium text-primary-color mb-2">Service URL</label>
+                                    <input type="url" id="monitoringUrl" name="monitoringUrl"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Checklist Configuration -->
+                        <div id="checklistConfig" class="sla-config-section hidden">
+                            <h3 class="text-lg font-medium text-primary-color mb-4">Task Checklist Configuration</h3>
+                            <div id="checklistItems" class="space-y-3">
+                                <div class="flex gap-3">
+                                    <input type="text" placeholder="Enter checklist item" 
+                                           class="flex-1 px-3 py-2 border border-color rounded-md checklist-item">
+                                    <button type="button" onclick="removeChecklistItem(this)" 
+                                            class="px-3 py-2 hover:opacity-80" style="color: var(--color-status-error)">Remove</button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addChecklistItem()" 
+                                    class="mt-3 px-4 py-2 border rounded-md" style="color: var(--color-primary); border-color: var(--color-primary)">
+                                Add Item
+                            </button>
+                        </div>
+
+                        <!-- Response Time Configuration -->
+                        <div id="responseTimeConfig" class="sla-config-section hidden">
+                            <h3 class="text-lg font-medium text-primary-color mb-4">Response Time Configuration</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="maxResponseTime" class="block text-sm font-medium text-primary-color mb-2">Maximum Response Time</label>
+                                    <input type="number" id="maxResponseTime" name="maxResponseTime"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                                <div>
+                                    <label for="responseTimeUnit" class="block text-sm font-medium text-primary-color mb-2">Time Unit</label>
+                                    <select id="responseTimeUnit" name="responseTimeUnit"
+                                            class="w-full px-3 py-2 border border-color rounded-md">
+                                        <option value="seconds">Seconds</option>
+                                        <option value="minutes">Minutes</option>
+                                        <option value="hours">Hours</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Availability Configuration -->
+                        <div id="availabilityConfig" class="sla-config-section hidden">
+                            <h3 class="text-lg font-medium text-primary-color mb-4">Availability Window Configuration</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="startTime" class="block text-sm font-medium text-primary-color mb-2">Start Time</label>
+                                    <input type="time" id="startTime" name="startTime"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                                <div>
+                                    <label for="endTime" class="block text-sm font-medium text-primary-color mb-2">End Time</label>
+                                    <input type="time" id="endTime" name="endTime"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-primary-color mb-2">Days of Week</label>
+                                <div class="grid grid-cols-7 gap-2">
+                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="monday" class="mr-1"> Mon</label>
+                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="tuesday" class="mr-1"> Tue</label>
+                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="wednesday" class="mr-1"> Wed</label>
+                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="thursday" class="mr-1"> Thu</label>
+                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="friday" class="mr-1"> Fri</label>
+                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="saturday" class="mr-1"> Sat</label>
+                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="sunday" class="mr-1"> Sun</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Time Period -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="startDate" class="block text-sm font-medium text-primary-color mb-2">Start Date</label>
+                            <input type="date" id="startDate" name="startDate" required
+                                   class="w-full px-3 py-2 border border-color rounded-md">
+                        </div>
+                        
+                        <div>
+                            <label for="endDate" class="block text-sm font-medium text-primary-color mb-2">End Date</label>
+                            <input type="date" id="endDate" name="endDate"
+                                   class="w-full px-3 py-2 border border-color rounded-md">
+                        </div>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div>
+                        <h3 class="text-lg font-medium text-primary-color mb-4">Notification Settings</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="notifyOnRisk" name="notifyOnRisk" class="mr-2">
+                                <span class="text-sm text-primary-color">Notify when SLA is at risk</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="notifyOnMiss" name="notifyOnMiss" class="mr-2">
+                                <span class="text-sm text-primary-color">Notify when SLA is missed</span>
+                            </label>
+                            <div class="mt-3">
+                                <label for="notificationEmail" class="block text-sm font-medium text-primary-color mb-2">Notification Email</label>
+                                <input type="email" id="notificationEmail" name="notificationEmail"
+                                       class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="showSection('dashboard')" class="px-6 py-2 rounded-md btn-secondary">Cancel</button>
+                        <button type="submit" class="px-6 py-2 rounded-md btn-primary">Create SLA</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLA List Section -->
+    <div id="list" class="section">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header and Filters -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+                <h2 class="text-2xl font-bold text-primary-color mb-4 sm:mb-0">All SLAs</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <select id="statusFilter" class="px-3 py-2 border border-color rounded-md">
+                        <option value="">All Statuses</option>
+                        <option value="met">Met</option>
+                        <option value="at-risk">At Risk</option>
+                        <option value="missed">Missed</option>
+                    </select>
+                    <select id="priorityFilter" class="px-3 py-2 border border-color rounded-md">
+                        <option value="">All Priorities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                    <input type="text" id="searchInput" placeholder="Search SLAs..." 
+                           class="px-3 py-2 border border-color rounded-md">
+                </div>
+            </div>
+
+            <!-- SLA Table -->
+            <div class="bg-surface rounded-lg shadow-sm overflow-hidden">
+                <table class="w-full">
+                    <thead class="border-b border-color" style="background-color: var(--color-gray-light)">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Task Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Priority</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Progress</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">End Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-surface divide-y" style="border-color: var(--color-border)">
+                        <tr style="background-color: white">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSection('detail')">API Response Time</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Response Time</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-high">High</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-success">Met</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
+                                        <div class="progress-success h-2 rounded-full" style="width: 95%"></div>
+                                    </div>
+                                    <span class="text-sm text-secondary-color">95%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Dec 31, 2024</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="showSection('detail')" class="link-primary mr-3">View</button>
+                                <button style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
+                            </td>
+                        </tr>
+                        
+                        <tr style="background-color: white">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSection('detail')">Database Uptime</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Uptime</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-critical">Critical</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-warning">At Risk</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
+                                        <div class="progress-warning h-2 rounded-full" style="width: 78%"></div>
+                                    </div>
+                                    <span class="text-sm text-secondary-color">78%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Nov 30, 2024</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="showSection('detail')" class="link-primary mr-3">View</button>
+                                <button style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
+                            </td>
+                        </tr>
+
+                        <tr style="background-color: white">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSection('detail')">Customer Support Tasks</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Checklist</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-medium">Medium</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-success">Met</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
+                                        <div class="progress-success h-2 rounded-full" style="width: 100%"></div>
+                                    </div>
+                                    <span class="text-sm text-secondary-color">100%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Oct 15, 2024</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="showSection('detail')" class="link-primary mr-3">View</button>
+                                <button style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
+                            </td>
+                        </tr>
+
+                        <tr style="background-color: white">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSection('detail')">Performance Goal Q4</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Performance</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-low">Low</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-error">Missed</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
+                                        <div class="progress-error h-2 rounded-full" style="width: 45%"></div>
+                                    </div>
+                                    <span class="text-sm text-secondary-color">45%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Sep 30, 2024</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="showSection('detail')" class="link-primary mr-3">View</button>
+                                <button style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLA Detail Section -->
+    <div id="detail" class="section">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <button onclick="showSection('list')" class="mr-4 text-secondary-color hover:text-primary-color">← Back to List</button>
+                    <h2 class="text-2xl font-bold text-primary-color">API Response Time SLA</h2>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="showUpdateModal()" class="px-4 py-2 rounded-md btn-success">Update Progress</button>
+                    <button class="px-4 py-2 rounded-md btn-secondary">Edit</button>
+                    <button class="px-4 py-2 rounded-md btn-danger">Delete</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Content -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- SLA Overview -->
+                    <div class="bg-surface rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-primary-color mb-4">Overview</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span class="text-sm text-muted">Task Name</span>
+                                    <p class="text-sm font-medium text-primary-color">API Response Time</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm text-muted">Type</span>
+                                    <p class="text-sm font-medium text-primary-color">Response Time</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm text-muted">Priority</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-high">High</span>
+                                </div>
+                                <div>
+                                    <span class="text-sm text-muted">Created</span>
+                                    <p class="text-sm font-medium text-primary-color">Oct 1, 2024</p>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-sm text-muted">Description</span>
+                                <p class="text-sm text-primary-color mt-1">Monitor API response times to ensure they stay under 200ms for optimal user experience. This is critical for our customer-facing applications.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Tracking -->
+                    <div class="bg-surface rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-primary-color mb-4">Progress Tracking</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                                    <div class="text-2xl font-bold text-primary-color">150ms</div>
+                                    <div class="text-sm text-muted">Current Avg</div>
+                                </div>
+                                <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                                    <div class="text-2xl font-bold text-primary-color">200ms</div>
+                                    <div class="text-sm text-muted">Target Max</div>
+                                </div>
+                                <div class="text-center p-4 rounded-lg stat-card-green">
+                                    <div class="text-2xl font-bold" style="color: var(--color-status-success)">95%</div>
+                                    <div class="text-sm text-muted">Success Rate</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-primary-color">Overall Progress</span>
+                                    <span class="text-sm text-muted">95%</span>
+                                </div>
+                                <div class="w-full rounded-full h-3" style="background-color: var(--color-gray-light)">
+                                    <div class="progress-success h-3 rounded-full progress-bar" style="width: 95%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Log -->
+                    <div class="bg-surface rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-primary-color mb-4">Activity Log</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-3 py-2">
+                                <div class="w-2 h-2 rounded-full mt-2" style="background-color: var(--color-status-success)"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-primary-color">SLA target met - Response time averaged 145ms</p>
+                                    <p class="text-xs text-muted">2 hours ago</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 py-2">
+                                <div class="w-2 h-2 rounded-full mt-2" style="background-color: var(--color-status-info)"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-primary-color">Progress updated - Current average: 150ms</p>
+                                    <p class="text-xs text-muted">1 day ago</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 py-2">
+                                <div class="w-2 h-2 rounded-full mt-2" style="background-color: var(--color-status-warning)"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-primary-color">Warning: Response time spike detected (230ms average)</p>
+                                    <p class="text-xs text-muted">3 days ago</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 py-2">
+                                <div class="w-2 h-2 rounded-full mt-2" style="background-color: var(--color-gray-medium)"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-primary-color">SLA created</p>
+                                    <p class="text-xs text-muted">Oct 1, 2024</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <!-- Status Card -->
+                    <div class="bg-surface rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-primary-color mb-4">Status</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-muted">Current Status</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-success">Met</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-muted">Time Remaining</span>
+                                <span class="text-sm font-medium text-primary-color">67 days</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-muted">End Date</span>
+                                <span class="text-sm font-medium text-primary-color">Dec 31, 2024</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="bg-surface rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-primary-color mb-4">Quick Stats</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-muted">Best Response</span>
+                                <span class="text-sm font-medium" style="color: var(--color-status-success)">89ms</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-muted">Worst Response</span>
+                                <span class="text-sm font-medium" style="color: var(--color-status-error)">245ms</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-muted">Total Requests</span>
+                                <span class="text-sm font-medium text-primary-color">125,439</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-muted">Violations</span>
+                                <span class="text-sm font-medium" style="color: var(--color-status-error)">6,272</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="bg-surface rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-primary-color mb-4">Notifications</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-primary-color">At Risk Alerts</span>
+                                <div class="w-5 h-5 rounded-full flex items-center justify-center" style="background-color: var(--color-status-success)">
+                                    <span class="text-white text-xs">✓</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-primary-color">Miss Notifications</span>
+                                <div class="w-5 h-5 rounded-full flex items-center justify-center" style="background-color: var(--color-status-success)">
+                                    <span class="text-white text-xs">✓</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 pt-3 border-t border-color">
+                                <span class="text-sm text-muted">Email</span>
+                                <p class="text-sm font-medium text-primary-color">admin@company.com</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Progress Modal -->
+    <div id="updateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-surface rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold text-primary-color mb-4">Update Response Time Progress</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="currentResponseTime" class="block text-sm font-medium text-primary-color mb-2">Current Average Response Time (ms)</label>
+                    <input type="number" id="currentResponseTime" value="150" 
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                <div>
+                    <label for="updateNotes" class="block text-sm font-medium text-primary-color mb-2">Notes</label>
+                    <textarea id="updateNotes" rows="3" placeholder="Optional notes about this update..."
+                              class="w-full px-3 py-2 border border-color rounded-md"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="hideUpdateModal()" class="px-4 py-2 rounded-md btn-secondary">Cancel</button>
+                <button onclick="saveUpdate()" class="px-4 py-2 rounded-md btn-primary">Save Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed top-4 right-4 px-6 py-3 rounded-md z-50"></div>
+
+    <script>
+        // Navigation and Section Management
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.add('active');
+            
+            // Update navigation active state
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('link-primary', 'font-medium');
+                btn.classList.add('text-secondary-color');
+            });
+            
+            const activeBtn = document.getElementById(`nav-${sectionName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-secondary-color');
+                activeBtn.classList.add('link-primary', 'font-medium');
+            }
+        }
+
+        // SLA Configuration Management
+        function showSLAConfig(type) {
+            const slaConfigSection = document.getElementById('slaConfig');
+            const allConfigs = document.querySelectorAll('.sla-config-section');
+            
+            // Hide all config sections
+            allConfigs.forEach(config => config.classList.add('hidden'));
+            
+            if (type) {
+                slaConfigSection.classList.remove('hidden');
+                const targetConfig = document.getElementById(`${type.replace('-', '')}Config`);
+                if (targetConfig) {
+                    targetConfig.classList.remove('hidden');
+                }
+            } else {
+                slaConfigSection.classList.add('hidden');
+            }
+        }
+
+        // Checklist Management
+        function addChecklistItem() {
+            const checklistItems = document.getElementById('checklistItems');
+            const newItem = document.createElement('div');
+            newItem.className = 'flex gap-3';
+            newItem.innerHTML = `
+                <input type="text" placeholder="Enter checklist item" 
+                       class="flex-1 px-3 py-2 border border-color rounded-md checklist-item">
+                <button type="button" onclick="removeChecklistItem(this)" 
+                        class="px-3 py-2 hover:opacity-80" style="color: var(--color-status-error)">Remove</button>
+            `;
+            checklistItems.appendChild(newItem);
+        }
+
+        function removeChecklistItem(button) {
+            button.parentElement.remove();
+        }
+
+        // Modal Management
+        function showUpdateModal() {
+            document.getElementById('updateModal').classList.remove('hidden');
+        }
+
+        function hideUpdateModal() {
+            document.getElementById('updateModal').classList.add('hidden');
+        }
+
+        function saveUpdate() {
+            const responseTime = document.getElementById('currentResponseTime').value;
+            const notes = document.getElementById('updateNotes').value;
+            
+            showNotification('Progress updated successfully!');
+            hideUpdateModal();
+            
+            // Reset form
+            document.getElementById('updateNotes').value = '';
+        }
+
+        // Notification System
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            
+            const bgColor = type === 'success' ? 'var(--color-status-success)' : 'var(--color-status-error)';
+            notification.style.backgroundColor = bgColor;
+            notification.style.color = 'white';
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Form Management
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            const startDateInput = document.getElementById('startDate');
+            if (startDateInput) {
+                startDateInput.value = today;
+            }
+
+            // Handle form submission
+            const createSlaForm = document.getElementById('createSlaForm');
+            if (createSlaForm) {
+                createSlaForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const taskName = document.getElementById('taskName').value;
+                    const slaType = document.getElementById('slaType').value;
+                    const priority = document.getElementById('priority').value;
+                    
+                    if (!taskName || !slaType || !priority) {
+                        showNotification('Please fill in all required fields', 'error');
+                        return;
+                    }
+                    
+                    showNotification('SLA created successfully!');
+                    setTimeout(() => {
+                        showSection('detail');
+                    }, 1000);
+                });
+            }
+
+            // Add search and filter functionality
+            const searchInput = document.getElementById('searchInput');
+            const statusFilter = document.getElementById('statusFilter');
+            const priorityFilter = document.getElementById('priorityFilter');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    showNotification('Search functionality would filter results here');
+                });
+            }
+
+            if (statusFilter) {
+                statusFilter.addEventListener('change', function() {
+                    showNotification('Status filter applied');
+                });
+            }
+
+            if (priorityFilter) {
+                priorityFilter.addEventListener('change', function() {
+                    showNotification('Priority filter applied');
+                });
+            }
+        });
+
+        // Initialize progress bar animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBars = document.querySelectorAll('.progress-bar');
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 500);
+            });
+        });
+    </script>
+</body>
+</html>

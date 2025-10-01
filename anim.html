@@ -1,0 +1,329 @@
+<html>
+  <body>
+    <svg
+  width="300"
+  height="200"
+  viewBox="0 0 300 200"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Finish Line -->
+  <g id="finish-line">
+    <rect x="240" y="80" width="20" height="20" fill="#000" />
+    <rect x="240" y="100" width="20" height="20" fill="#fff" />
+    <rect x="240" y="120" width="20" height="20" fill="#000" />
+    <rect x="260" y="80" width="20" height="20" fill="#fff" />
+    <rect x="260" y="100" width="20" height="20" fill="#000" />
+    <rect x="260" y="120" width="20" height="20" fill="#fff" />
+  </g>
+
+  <!-- Race Car -->
+  <g id="car">
+    <!-- Car body -->
+    <rect x="0" y="110" width="40" height="15" fill="#e74c3c" rx="3" />
+    <!-- Car top -->
+    <rect x="8" y="100" width="20" height="10" fill="#c0392b" rx="2" />
+    <!-- Windows -->
+    <rect x="10" y="102" width="7" height="6" fill="#a8d8ff" />
+    <rect x="20" y="102" width="7" height="6" fill="#a8d8ff" />
+    <!-- Wheels -->
+    <circle cx="10" cy="127" r="5" fill="#2c3e50" />
+    <circle cx="30" cy="127" r="5" fill="#2c3e50" />
+    <!-- Wheel details -->
+    <circle cx="10" cy="127" r="2" fill="#95a5a6" />
+    <circle cx="30" cy="127" r="2" fill="#95a5a6" />
+
+    <!-- Car movement animation -->
+    <animateTransform
+      attributeName="transform"
+      type="translate"
+      from="-50 0"
+      to="250 0"
+      dur="2s"
+      fill="freeze"
+    />
+  </g>
+
+  <!-- Firework 1 -->
+  <g id="firework1" opacity="0">
+    <circle cx="220" cy="40" r="2" fill="#FFD700">
+      <animate
+        attributeName="r"
+        values="2; 25; 28"
+        dur="1s"
+        begin="2s"
+      />
+      <animate
+        attributeName="opacity"
+        values="1; 0.8; 0"
+        dur="1s"
+        begin="2s"
+      />
+    </circle>
+    <line
+      x1="220"
+      y1="40"
+      x2="220"
+      y2="20"
+      stroke="#FFD700"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2s"
+      />
+    </line>
+    <line
+      x1="220"
+      y1="40"
+      x2="235"
+      y2="30"
+      stroke="#FFD700"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2s"
+      />
+    </line>
+    <line
+      x1="220"
+      y1="40"
+      x2="205"
+      y2="30"
+      stroke="#FFD700"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2s"
+      />
+    </line>
+    <line
+      x1="220"
+      y1="40"
+      x2="235"
+      y2="50"
+      stroke="#FFD700"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2s"
+      />
+    </line>
+    <line
+      x1="220"
+      y1="40"
+      x2="205"
+      y2="50"
+      stroke="#FFD700"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2s"
+      />
+    </line>
+  </g>
+
+  <!-- Firework 2 -->
+  <g id="firework2" opacity="0">
+    <circle cx="180" cy="50" r="2" fill="#e74c3c">
+      <animate
+        attributeName="r"
+        values="2; 20; 23"
+        dur="1s"
+        begin="2.3s"
+      />
+      <animate
+        attributeName="opacity"
+        values="1; 0.8; 0"
+        dur="1s"
+        begin="2.3s"
+      />
+    </circle>
+    <line
+      x1="180"
+      y1="50"
+      x2="180"
+      y2="30"
+      stroke="#e74c3c"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2.3s"
+      />
+    </line>
+    <line
+      x1="180"
+      y1="50"
+      x2="195"
+      y2="40"
+      stroke="#e74c3c"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2.3s"
+      />
+    </line>
+    <line
+      x1="180"
+      y1="50"
+      x2="165"
+      y2="40"
+      stroke="#e74c3c"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2.3s"
+      />
+    </line>
+    <line
+      x1="180"
+      y1="50"
+      x2="195"
+      y2="60"
+      stroke="#e74c3c"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2.3s"
+      />
+    </line>
+  </g>
+
+  <!-- Firework 3 -->
+  <g id="firework3" opacity="0">
+    <circle cx="260" cy="35" r="2" fill="#3498db">
+      <animate
+        attributeName="r"
+        values="2; 22; 25"
+        dur="1s"
+        begin="2.5s"
+      />
+      <animate
+        attributeName="opacity"
+        values="1; 0.8; 0"
+        dur="1s"
+        begin="2.5s"
+      />
+    </circle>
+    <line
+      x1="260"
+      y1="35"
+      x2="260"
+      y2="15"
+      stroke="#3498db"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2.5s"
+      />
+    </line>
+    <line
+      x1="260"
+      y1="35"
+      x2="275"
+      y2="25"
+      stroke="#3498db"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2.5s"
+      />
+    </line>
+    <line
+      x1="260"
+      y1="35"
+      x2="245"
+      y2="25"
+      stroke="#3498db"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2.5s"
+      />
+    </line>
+    <line
+      x1="260"
+      y1="35"
+      x2="275"
+      y2="45"
+      stroke="#3498db"
+      stroke-width="2"
+    >
+      <animate
+        attributeName="opacity"
+        values="0; 1; 0"
+        dur="1s"
+        begin="2.5s"
+      />
+    </line>
+  </g>
+
+  <!-- Victory text -->
+  <text
+    x="150"
+    y="170"
+    text-anchor="middle"
+    font-size="20"
+    font-weight="bold"
+    fill="#2c3e50"
+    opacity="0"
+  >
+    Goal Reached! 🏁
+    <animate
+      attributeName="opacity"
+      values="0; 1; 1; 1"
+      dur="3.5s"
+      begin="2s"
+      fill="freeze"
+    />
+  </text>
+</svg>
+  </body>
+<script>
+// Trigger when your metric crosses 90%
+  const celebrationDiv = document.getElementById('celebration');
+  celebrationDiv.innerHTML = `<!-- paste SVG here -->`;
+  celebrationDiv.style.display = 'block';
+
+  // Hide after animation completes
+  setTimeout(() => {
+    celebrationDiv.style.display = 'none';
+  }, 3500);
+
+</script>
+
+</html>
