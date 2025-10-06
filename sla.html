@@ -17,7 +17,7 @@
             --color-red-dark: #522032;
             --color-blue-light: #1B7CAC;
             
-            /* Semantic Color Mappings */
+            /* Light Mode Semantic Colors */
             --color-background: var(--color-gray-light);
             --color-surface: #FFFFFF;
             --color-border: var(--color-gray-medium);
@@ -49,6 +49,187 @@
             
             --font-family: Calibri, sans-serif;
         }
+
+        /* Dark Mode Variables */
+        [data-theme="dark"] {
+            /* Dark Mode Semantic Colors */
+            --color-background: #1a1a1a;
+            --color-surface: #2d2d2d;
+            --color-border: #4a4a4a;
+            
+            --color-text-primary: #e5e5e5;
+            --color-text-secondary: #b8b8b8;
+            --color-text-muted: #999999;
+            
+            --color-primary: #3a7bc8;
+            --color-primary-hover: #5c94d4;
+            
+            /* Slightly adjusted colors for better contrast on dark */
+            --color-status-success: #4caf50;
+            --color-status-success-bg: #1b4d1f;
+            --color-status-warning: #ff9800;
+            --color-status-warning-bg: #4d2c00;
+            --color-status-error: #f44336;
+            --color-status-error-bg: #4d1319;
+            --color-status-info: #2196f3;
+            --color-status-info-bg: #0d2c4d;
+            
+            --color-priority-critical: #f44336;
+            --color-priority-critical-bg: var(--color-status-error-bg);
+            --color-priority-high: #ff9800;
+            --color-priority-high-bg: var(--color-status-warning-bg);
+            --color-priority-medium: #2196f3;
+            --color-priority-medium-bg: var(--color-status-info-bg);
+            --color-priority-low: #4caf50;
+            --color-priority-low-bg: var(--color-status-success-bg);
+        }
+
+        /* Dark mode specific adjustments */
+        [data-theme="dark"] .stat-card-blue,
+        [data-theme="dark"] .stat-card-green,
+        [data-theme="dark"] .stat-card-orange,
+        [data-theme="dark"] .stat-card-red {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+        }
+
+        [data-theme="dark"] input,
+        [data-theme="dark"] select,
+        [data-theme="dark"] textarea {
+            background-color: var(--color-surface);
+            color: var(--color-text-primary);
+            border-color: var(--color-border);
+        }
+
+        [data-theme="dark"] input:focus,
+        [data-theme="dark"] select:focus,
+        [data-theme="dark"] textarea:focus {
+            background-color: var(--color-surface);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 1px var(--color-primary);
+        }
+
+        [data-theme="dark"] input::placeholder,
+        [data-theme="dark"] textarea::placeholder {
+            color: var(--color-text-muted);
+        }
+
+        [data-theme="dark"] table thead {
+            background-color: var(--color-surface) !important;
+            border-color: var(--color-border);
+        }
+
+        [data-theme="dark"] table tbody tr {
+            background-color: var(--color-background) !important;
+            border-color: var(--color-border);
+        }
+
+        [data-theme="dark"] table tbody tr:hover {
+            background-color: var(--color-surface) !important;
+        }
+
+        [data-theme="dark"] .sla-card {
+            background-color: var(--color-surface) !important;
+        }
+
+        /* Additional Dark Mode Improvements */
+        [data-theme="dark"] .badge-success,
+        [data-theme="dark"] .badge-warning,
+        [data-theme="dark"] .badge-error,
+        [data-theme="dark"] .badge-info,
+        [data-theme="dark"] .badge-priority-critical,
+        [data-theme="dark"] .badge-priority-high,
+        [data-theme="dark"] .badge-priority-medium,
+        [data-theme="dark"] .badge-priority-low {
+            color: var(--color-text-primary);
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .progress-bar {
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        [data-theme="dark"] .shadow-sm {
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .border-t {
+            border-color: var(--color-border) !important;
+        }
+
+        [data-theme="dark"] .border-b {
+            border-color: var(--color-border) !important;
+        }
+
+        [data-theme="dark"] .divide-y > * + * {
+            border-color: var(--color-border) !important;
+        }
+
+        /* Dark mode modal */
+        [data-theme="dark"] #updateModal .bg-surface {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+        }
+
+        /* Dark mode notification */
+        [data-theme="dark"] #notification {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Transition for smooth theme switching */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Theme Toggle Switch */
+        .theme-toggle {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .theme-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .theme-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-gray-medium);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .theme-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .theme-slider {
+            background-color: var(--color-primary);
+        }
+
+        input:checked + .theme-slider:before {
+            transform: translateX(24px);
+        }
+
+        [data-theme="dark"] .theme-slider:before {
+            background-color: var(--color-text-primary);
+        }
         
         body {
             font-family: var(--font-family);
@@ -64,6 +245,60 @@
         
         .progress-bar {
             transition: width 0.3s ease;
+        }
+        
+        .sla-card {
+            border: 2px solid var(--color-border);
+            transition: all 0.3s ease;
+        }
+        
+        .sla-card.collapsed {
+            border-color: var(--color-status-success);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-gray-medium);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--color-primary);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(24px);
         }
         
         /* Custom Tailwind overrides */
@@ -218,11 +453,21 @@
                 <div class="flex items-center">
                     <h1 class="text-xl font-semibold text-primary-color">SLA Tracker</h1>
                 </div>
-                <div class="flex space-x-4">
-                    <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn link-primary font-medium">Dashboard</button>
-                    <button onclick="showSection('create')" id="nav-create" class="nav-btn text-secondary-color hover:text-primary-color">Create SLA</button>
-                    <button onclick="showSection('list')" id="nav-list" class="nav-btn text-secondary-color hover:text-primary-color">All SLAs</button>
-                    <button onclick="showSection('detail')" id="nav-detail" class="nav-btn text-secondary-color hover:text-primary-color">SLA Details</button>
+                <div class="flex items-center space-x-6">
+                    <div class="flex space-x-4">
+                        <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn link-primary font-medium">Dashboard</button>
+                        <button onclick="showSection('list')" id="nav-list" class="nav-btn text-secondary-color hover:text-primary-color">All SLAs</button>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-secondary-color">🌞</span>
+                        <label class="theme-toggle">
+                            <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+                            <span class="theme-slider"></span>
+                        </label>
+                        <span class="text-sm text-secondary-color">🌙</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -293,7 +538,7 @@
                         <div class="flex items-center justify-between py-3 border-b border-color">
                             <div class="flex-1">
                                 <h4 class="text-sm font-medium text-primary-color cursor-pointer hover:text-primary" style="color: var(--color-text-primary)" onclick="showSection('detail')">API Response Time</h4>
-                                <p class="text-xs text-muted">RESPONSE TIME</p>
+                                <p class="text-xs text-muted">TIMELINESS</p>
                             </div>
                             <div class="flex items-center space-x-3">
                                 <div class="flex items-center space-x-2">
@@ -309,7 +554,7 @@
                         <div class="flex items-center justify-between py-3 border-b border-color">
                             <div class="flex-1">
                                 <h4 class="text-sm font-medium text-primary-color cursor-pointer hover:text-primary" style="color: var(--color-text-primary)" onclick="showSection('detail')">Database Uptime</h4>
-                                <p class="text-xs text-muted">UPTIME</p>
+                                <p class="text-xs text-muted">AVAILABILITY</p>
                             </div>
                             <div class="flex items-center space-x-3">
                                 <div class="flex items-center space-x-2">
@@ -325,7 +570,7 @@
                         <div class="flex items-center justify-between py-3 border-b border-color">
                             <div class="flex-1">
                                 <h4 class="text-sm font-medium text-primary-color cursor-pointer hover:text-primary" style="color: var(--color-text-primary)" onclick="showSection('detail')">Customer Support Tasks</h4>
-                                <p class="text-xs text-muted">CHECKLIST</p>
+                                <p class="text-xs text-muted">QUANTITY</p>
                             </div>
                             <div class="flex items-center space-x-3">
                                 <div class="flex items-center space-x-2">
@@ -377,356 +622,74 @@
 
     <!-- Create SLA Section -->
     <div id="create" class="section">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="bg-surface rounded-lg shadow-sm p-8">
-                <h2 class="text-2xl font-bold text-primary-color mb-6">Create New SLA</h2>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-primary-color">Create SLAs</h2>
+                    <button type="button" onclick="addNewSLA()" class="px-4 py-2 rounded-md btn-primary">+ Add SLA</button>
+                </div>
                 
                 <form id="createSlaForm" class="space-y-6">
-                    <!-- Basic Information -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="taskName" class="block text-sm font-medium text-primary-color mb-2">Task Name</label>
-                            <input type="text" id="taskName" name="taskName" required
-                                   class="w-full px-3 py-2 border border-color rounded-md">
-                        </div>
-                        
-                        <div>
-                            <label for="priority" class="block text-sm font-medium text-primary-color mb-2">Priority</label>
-                            <select id="priority" name="priority" required
-                                    class="w-full px-3 py-2 border border-color rounded-md">
-                                <option value="">Select Priority</option>
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                                <option value="critical">Critical</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label for="description" class="block text-sm font-medium text-primary-color mb-2">Description</label>
-                        <textarea id="description" name="description" rows="3" required
-                                  class="w-full px-3 py-2 border border-color rounded-md"
-                                  placeholder="Describe the SLA requirements and objectives..."></textarea>
-                    </div>
-
-                    <!-- SLA Type Selection -->
-                    <div>
-                        <label for="slaType" class="block text-sm font-medium text-primary-color mb-2">SLA Type</label>
-                        <select id="slaType" name="slaType" required
-                                class="w-full px-3 py-2 border border-color rounded-md"
-                                onchange="showSLAConfig(this.value)">
-                            <option value="">Select SLA Type</option>
-                            <option value="performance">Performance Goal</option>
-                            <option value="uptime">Uptime Monitoring</option>
-                            <option value="checklist">Task Checklist</option>
-                            <option value="response-time">Response Time</option>
-                            <option value="availability">Availability Window</option>
-                        </select>
-                    </div>
-
-                    <!-- Dynamic SLA Configuration -->
-                    <div id="slaConfig" class="hidden">
-                        <!-- Performance Goal -->
-                        <div id="performanceConfig" class="sla-config-section hidden">
-                            <h3 class="text-lg font-medium text-primary-color mb-4">Performance Goal Configuration</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label for="targetValue" class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
-                                    <input type="number" id="targetValue" name="targetValue"
-                                           class="w-full px-3 py-2 border border-color rounded-md">
-                                </div>
-                                <div>
-                                    <label for="currentValue" class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
-                                    <input type="number" id="currentValue" name="currentValue" value="0"
-                                           class="w-full px-3 py-2 border border-color rounded-md">
-                                </div>
-                                <div>
-                                    <label for="unit" class="block text-sm font-medium text-primary-color mb-2">Unit</label>
-                                    <input type="text" id="unit" name="unit" placeholder="e.g., requests, items"
-                                           class="w-full px-3 py-2 border border-color rounded-md">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Uptime Configuration -->
-                        <div id="uptimeConfig" class="sla-config-section hidden">
-                            <h3 class="text-lg font-medium text-primary-color mb-4">Uptime Monitoring Configuration</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="uptimeTarget" class="block text-sm font-medium text-primary-color mb-2">Target Uptime (%)</label>
-                                    <input type="number" id="uptimeTarget" name="uptimeTarget" min="0" max="100" step="0.01"
-                                           class="w-full px-3 py-2 border border-color rounded-md">
-                                </div>
-                                <div>
-                                    <label for="monitoringUrl" class="block text-sm font-medium text-primary-color mb-2">Service URL</label>
-                                    <input type="url" id="monitoringUrl" name="monitoringUrl"
-                                           class="w-full px-3 py-2 border border-color rounded-md">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Checklist Configuration -->
-                        <div id="checklistConfig" class="sla-config-section hidden">
-                            <h3 class="text-lg font-medium text-primary-color mb-4">Task Checklist Configuration</h3>
-                            <div id="checklistItems" class="space-y-3">
-                                <div class="flex gap-3">
-                                    <input type="text" placeholder="Enter checklist item" 
-                                           class="flex-1 px-3 py-2 border border-color rounded-md checklist-item">
-                                    <button type="button" onclick="removeChecklistItem(this)" 
-                                            class="px-3 py-2 hover:opacity-80" style="color: var(--color-status-error)">Remove</button>
-                                </div>
-                            </div>
-                            <button type="button" onclick="addChecklistItem()" 
-                                    class="mt-3 px-4 py-2 border rounded-md" style="color: var(--color-primary); border-color: var(--color-primary)">
-                                Add Item
-                            </button>
-                        </div>
-
-                        <!-- Response Time Configuration -->
-                        <div id="responseTimeConfig" class="sla-config-section hidden">
-                            <h3 class="text-lg font-medium text-primary-color mb-4">Response Time Configuration</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="maxResponseTime" class="block text-sm font-medium text-primary-color mb-2">Maximum Response Time</label>
-                                    <input type="number" id="maxResponseTime" name="maxResponseTime"
-                                           class="w-full px-3 py-2 border border-color rounded-md">
-                                </div>
-                                <div>
-                                    <label for="responseTimeUnit" class="block text-sm font-medium text-primary-color mb-2">Time Unit</label>
-                                    <select id="responseTimeUnit" name="responseTimeUnit"
-                                            class="w-full px-3 py-2 border border-color rounded-md">
-                                        <option value="seconds">Seconds</option>
-                                        <option value="minutes">Minutes</option>
-                                        <option value="hours">Hours</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Availability Configuration -->
-                        <div id="availabilityConfig" class="sla-config-section hidden">
-                            <h3 class="text-lg font-medium text-primary-color mb-4">Availability Window Configuration</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="startTime" class="block text-sm font-medium text-primary-color mb-2">Start Time</label>
-                                    <input type="time" id="startTime" name="startTime"
-                                           class="w-full px-3 py-2 border border-color rounded-md">
-                                </div>
-                                <div>
-                                    <label for="endTime" class="block text-sm font-medium text-primary-color mb-2">End Time</label>
-                                    <input type="time" id="endTime" name="endTime"
-                                           class="w-full px-3 py-2 border border-color rounded-md">
-                                </div>
-                            </div>
-                            <div class="mt-4">
-                                <label class="block text-sm font-medium text-primary-color mb-2">Days of Week</label>
-                                <div class="grid grid-cols-7 gap-2">
-                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="monday" class="mr-1"> Mon</label>
-                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="tuesday" class="mr-1"> Tue</label>
-                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="wednesday" class="mr-1"> Wed</label>
-                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="thursday" class="mr-1"> Thu</label>
-                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="friday" class="mr-1"> Fri</label>
-                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="saturday" class="mr-1"> Sat</label>
-                                    <label class="flex items-center text-sm"><input type="checkbox" name="days" value="sunday" class="mr-1"> Sun</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Time Period -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="startDate" class="block text-sm font-medium text-primary-color mb-2">Start Date</label>
-                            <input type="date" id="startDate" name="startDate" required
-                                   class="w-full px-3 py-2 border border-color rounded-md">
-                        </div>
-                        
-                        <div>
-                            <label for="endDate" class="block text-sm font-medium text-primary-color mb-2">End Date</label>
-                            <input type="date" id="endDate" name="endDate"
-                                   class="w-full px-3 py-2 border border-color rounded-md">
-                        </div>
-                    </div>
-
-                    <!-- Notification Settings -->
-                    <div>
-                        <h3 class="text-lg font-medium text-primary-color mb-4">Notification Settings</h3>
-                        <div class="space-y-3">
-                            <label class="flex items-center">
-                                <input type="checkbox" id="notifyOnRisk" name="notifyOnRisk" class="mr-2">
-                                <span class="text-sm text-primary-color">Notify when SLA is at risk</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="notifyOnMiss" name="notifyOnMiss" class="mr-2">
-                                <span class="text-sm text-primary-color">Notify when SLA is missed</span>
-                            </label>
-                            <div class="mt-3">
-                                <label for="notificationEmail" class="block text-sm font-medium text-primary-color mb-2">Notification Email</label>
-                                <input type="email" id="notificationEmail" name="notificationEmail"
-                                       class="w-full px-3 py-2 border border-color rounded-md">
-                            </div>
-                        </div>
+                    <div id="slaContainer" class="space-y-6">
+                        <!-- SLA items will be added here -->
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="flex justify-end space-x-4">
-                        <button type="button" onclick="showSection('dashboard')" class="px-6 py-2 rounded-md btn-secondary">Cancel</button>
-                        <button type="submit" class="px-6 py-2 rounded-md btn-primary">Create SLA</button>
+                    <div class="flex justify-end space-x-4 pt-6 border-t border-color">
+                        <button type="button" onclick="cancelEdit()" class="px-6 py-2 rounded-md btn-secondary">Cancel</button>
+                        <button type="submit" class="px-6 py-2 rounded-md btn-primary">Create All SLAs</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- SLA List Section -->
-    <div id="list" class="section">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Header and Filters -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-                <h2 class="text-2xl font-bold text-primary-color mb-4 sm:mb-0">All SLAs</h2>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <select id="statusFilter" class="px-3 py-2 border border-color rounded-md">
-                        <option value="">All Statuses</option>
-                        <option value="met">Met</option>
-                        <option value="at-risk">At Risk</option>
-                        <option value="missed">Missed</option>
-                    </select>
-                    <select id="priorityFilter" class="px-3 py-2 border border-color rounded-md">
-                        <option value="">All Priorities</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="critical">Critical</option>
-                    </select>
-                    <input type="text" id="searchInput" placeholder="Search SLAs..." 
-                           class="px-3 py-2 border border-color rounded-md">
-                </div>
-            </div>
-
-            <!-- SLA Table -->
-            <div class="bg-surface rounded-lg shadow-sm overflow-hidden">
-                <table class="w-full">
-                    <thead class="border-b border-color" style="background-color: var(--color-gray-light)">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Task Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Priority</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Progress</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">End Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-surface divide-y" style="border-color: var(--color-border)">
-                        <tr style="background-color: white">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSection('detail')">API Response Time</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Response Time</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-high">High</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-success">Met</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
-                                        <div class="progress-success h-2 rounded-full" style="width: 95%"></div>
-                                    </div>
-                                    <span class="text-sm text-secondary-color">95%</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Dec 31, 2024</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button onclick="showSection('detail')" class="link-primary mr-3">View</button>
-                                <button style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
-                            </td>
-                        </tr>
-                        
-                        <tr style="background-color: white">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSection('detail')">Database Uptime</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Uptime</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-critical">Critical</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-warning">At Risk</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
-                                        <div class="progress-warning h-2 rounded-full" style="width: 78%"></div>
-                                    </div>
-                                    <span class="text-sm text-secondary-color">78%</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Nov 30, 2024</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button onclick="showSection('detail')" class="link-primary mr-3">View</button>
-                                <button style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
-                            </td>
-                        </tr>
-
-                        <tr style="background-color: white">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSection('detail')">Customer Support Tasks</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Checklist</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-medium">Medium</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-success">Met</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
-                                        <div class="progress-success h-2 rounded-full" style="width: 100%"></div>
-                                    </div>
-                                    <span class="text-sm text-secondary-color">100%</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Oct 15, 2024</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button onclick="showSection('detail')" class="link-primary mr-3">View</button>
-                                <button style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
-                            </td>
-                        </tr>
-
-                        <tr style="background-color: white">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSection('detail')">Performance Goal Q4</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Performance</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-low">Low</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-error">Missed</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
-                                        <div class="progress-error h-2 rounded-full" style="width: 45%"></div>
-                                    </div>
-                                    <span class="text-sm text-secondary-color">45%</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">Sep 30, 2024</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button onclick="showSection('detail')" class="link-primary mr-3">View</button>
-                                <button style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+<!-- SLA List Section -->
+<div id="list" class="section">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header and Filters -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <h2 class="text-2xl font-bold text-primary-color mb-4 sm:mb-0">All SLAs</h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button onclick="showSection('create')" class="px-4 py-2 rounded-md btn-primary">+ Add SLA</button>
+                <select id="statusFilter" class="px-3 py-2 border border-color rounded-md">
+                    <option value="">All Statuses</option>
+                    <option value="met">Met</option>
+                    <option value="at-risk">At Risk</option>
+                    <option value="missed">Missed</option>
+                </select>
+                <select id="priorityFilter" class="px-3 py-2 border border-color rounded-md">
+                    <option value="">All Priorities</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                </select>
+                <input type="text" id="searchInput" placeholder="Search SLAs..." class="px-3 py-2 border border-color rounded-md">
             </div>
         </div>
+
+        <!-- SLA Table -->
+        <div class="bg-surface rounded-lg shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead class="border-b border-color" style="background-color: var(--color-gray-light)">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">SLA Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Team</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Progress</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">End Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-surface divide-y" style="border-color: var(--color-border)">
+                    <!-- Dynamic content will be inserted here -->
+                </tbody>
+            </table>
+        </div>
     </div>
+</div>
 
     <!-- SLA Detail Section -->
     <div id="detail" class="section">
@@ -734,11 +697,11 @@
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center">
                     <button onclick="showSection('list')" class="mr-4 text-secondary-color hover:text-primary-color">← Back to List</button>
-                    <h2 class="text-2xl font-bold text-primary-color">API Response Time SLA</h2>
+                    <h2 class="text-2xl font-bold text-primary-color">API Response Performance SLA</h2>
                 </div>
                 <div class="flex space-x-3">
                     <button onclick="showUpdateModal()" class="px-4 py-2 rounded-md btn-success">Update Progress</button>
-                    <button class="px-4 py-2 rounded-md btn-secondary">Edit</button>
+                    <button onclick="editCurrentSLA()" class="px-4 py-2 rounded-md btn-secondary">Edit</button>
                     <button class="px-4 py-2 rounded-md btn-danger">Delete</button>
                 </div>
             </div>
@@ -752,16 +715,20 @@
                         <div class="space-y-4">
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <span class="text-sm text-muted">Task Name</span>
-                                    <p class="text-sm font-medium text-primary-color">API Response Time</p>
+                                    <span class="text-sm text-muted">SLA Name</span>
+                                    <p class="text-sm font-medium text-primary-color">API Response Performance</p>
                                 </div>
                                 <div>
                                     <span class="text-sm text-muted">Type</span>
-                                    <p class="text-sm font-medium text-primary-color">Response Time</p>
+                                    <p class="text-sm font-medium text-primary-color">Timeliness</p>
                                 </div>
                                 <div>
-                                    <span class="text-sm text-muted">Priority</span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-priority-high">High</span>
+                                    <span class="text-sm text-muted">Team</span>
+                                    <p class="text-sm font-medium text-primary-color">Engineering</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm text-muted">Task</span>
+                                    <p class="text-sm font-medium text-primary-color">Monitoring API Response Times</p>
                                 </div>
                                 <div>
                                     <span class="text-sm text-muted">Created</span>
@@ -926,11 +893,11 @@
     <!-- Update Progress Modal -->
     <div id="updateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-surface rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 class="text-lg font-semibold text-primary-color mb-4">Update Response Time Progress</h3>
+            <h3 class="text-lg font-semibold text-primary-color mb-4">Update Progress</h3>
             <div class="space-y-4">
                 <div>
-                    <label for="currentResponseTime" class="block text-sm font-medium text-primary-color mb-2">Current Average Response Time (ms)</label>
-                    <input type="number" id="currentResponseTime" value="150" 
+                    <label for="currentValue" class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                    <input type="number" id="currentValue" value="150" 
                            class="w-full px-3 py-2 border border-color rounded-md">
                 </div>
                 <div>
@@ -949,41 +916,1533 @@
     <!-- Notification Toast -->
     <div id="notification" class="hidden fixed top-4 right-4 px-6 py-3 rounded-md z-50"></div>
 
-    <script>
-        // Navigation and Section Management
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('active');
+<script>
+        let slaCounter = 0;
+        let currentSlaId = null;
+        let isEditMode = false;
+        let editingSlaId = null;
+
+        // Demo Data
+const demoData = {
+    timestamp: "2024-10-05T20:00:00.000Z",
+    slaCount: 8,
+    slas: [
+        {
+            id: "sla-001",
+            slaName: "APM Team Acquisition Support",
+            teamName: "APM Team",
+            description: "Maintain an experienced team of APMs to support an estimated 10-16 acquisitions at any phase of the acquisition lifecycle.",
+            taskName: "Acquisition Lifecycle Support",
+            slaType: "quantity",
+            startDate: "2024-10-01",
+            endDate: "2024-12-31",
+            status: "met",
+            progress: 88,
+            notifications: {
+                onRisk: true,
+                onMiss: true,
+                email: "apm-team@company.com"
+            },
+            configuration: {
+                action: "supporting",
+                unit: "acquisitions",
+                targetType: "range",
+                target: {
+                    min: 10,
+                    max: 16
+                }
+            },
+            currentValue: 14,
+            metrics: {
+                completed: 14,
+                inProgress: 2,
+                avgSupportTime: 45,
+                satisfactionRating: 4.6
+            },
+            activityLog: [
+                {
+                    type: "success",
+                    message: "Successfully supporting 14 acquisitions - within target range",
+                    timestamp: "1 day ago"
+                },
+                {
+                    type: "info",
+                    message: "New acquisition added to portfolio",
+                    timestamp: "3 days ago"
+                }
+            ]
+        },
+        {
+            id: "sla-002",
+            slaName: "Annual Deliverables Support",
+            teamName: "APM Team",
+            description: "Support between 40-60 deliverables a year including CRB submissions, technical evaluations, due diligence sessions, market research report approval, consolidation and bundling determination approval, MAD Sessions, INFORM Debriefs, TO/Contract Awards, and protest responses.",
+            taskName: "Deliverables Management",
+            slaType: "quantity",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            status: "met",
+            progress: 76,
+            notifications: {
+                onRisk: true,
+                onMiss: true,
+                email: "apm-team@company.com"
+            },
+            configuration: {
+                action: "supporting",
+                unit: "deliverables",
+                targetType: "range",
+                target: {
+                    min: 40,
+                    max: 60
+                }
+            },
+            currentValue: 46,
+            metrics: {
+                completed: 46,
+                pending: 8,
+                avgCompletionTime: 12,
+                qualityScore: 4.8
+            },
+            activityLog: [
+                {
+                    type: "success",
+                    message: "Completed 46 deliverables - on track for annual target",
+                    timestamp: "2 hours ago"
+                },
+                {
+                    type: "info",
+                    message: "CRB submission completed ahead of schedule",
+                    timestamp: "1 day ago"
+                }
+            ]
+        },
+        {
+            id: "sla-003",
+            slaName: "CRB Package Reviews",
+            teamName: "TW/Template Team",
+            description: "Review 100 CRB Packages with specific document requirements: 4 documents per AP package, 2 documents per pre-solicitation package, and 2 documents per pre-award package.",
+            taskName: "CRB Package Documentation Review",
+            slaType: "quantity",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            status: "at-risk",
+            progress: 67,
+            notifications: {
+                onRisk: true,
+                onMiss: true,
+                email: "tw-template@company.com"
+            },
+            configuration: {
+                action: "reviewing",
+                unit: "CRB packages",
+                targetType: "single",
+                target: 100,
+                childSLAs: [
+                    {
+                        targetValue: 4,
+                        unitDescription: "documents per AP package"
+                    },
+                    {
+                        targetValue: 2,
+                        unitDescription: "documents per pre-solicitation package"
+                    },
+                    {
+                        targetValue: 2,
+                        unitDescription: "documents per pre-award package"
+                    }
+                ]
+            },
+            currentValue: 67,
+            metrics: {
+                completed: 67,
+                inReview: 12,
+                avgReviewTime: 3.2,
+                accuracyRate: 94.5
+            },
+            activityLog: [
+                {
+                    type: "warning",
+                    message: "Behind target - 67 packages completed, need to accelerate pace",
+                    timestamp: "4 hours ago"
+                },
+                {
+                    type: "info",
+                    message: "Weekly batch of 8 packages completed",
+                    timestamp: "2 days ago"
+                }
+            ]
+        },
+        {
+            id: "sla-004",
+            slaName: "Document Review Standards",
+            teamName: "TW/Template Team",
+            description: "Review 25 documents covering ONs, SOPs, and related items. Feedback and edits provided within agreed timelines with final products meeting clarity, consistency, and compliance standards.",
+            taskName: "Standards Documentation Review",
+            slaType: "quantity",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            status: "met",
+            progress: 92,
+            notifications: {
+                onRisk: true,
+                onMiss: true,
+                email: "tw-template@company.com"
+            },
+            configuration: {
+                action: "reviewing",
+                unit: "documents",
+                targetType: "single",
+                target: 25,
+                childSLAs: [
+                    {
+                        targetValue: 100,
+                        unitDescription: "percent meeting clarity standards"
+                    },
+                    {
+                        targetValue: 100,
+                        unitDescription: "percent meeting consistency standards"
+                    },
+                    {
+                        targetValue: 100,
+                        unitDescription: "percent meeting compliance standards"
+                    }
+                ]
+            },
+            currentValue: 23,
+            metrics: {
+                completed: 23,
+                inReview: 2,
+                clarityScore: 96.8,
+                consistencyScore: 98.2,
+                complianceScore: 100
+            },
+            activityLog: [
+                {
+                    type: "success",
+                    message: "Document review completed - 23/25 documents processed with high quality scores",
+                    timestamp: "1 day ago"
+                },
+                {
+                    type: "info",
+                    message: "SOP revision completed with 100% compliance rating",
+                    timestamp: "4 days ago"
+                }
+            ]
+        },
+        {
+            id: "sla-005",
+            slaName: "Cost Tools Accuracy",
+            teamName: "Cost Team",
+            description: "Maintain 95% accuracy to update and maintain current AAS cost and pricing tools at known milestones of updates including BLS reporting, FY changes, and SDM changes.",
+            taskName: "Cost Tools Maintenance",
+            slaType: "percentage",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            status: "met",
+            progress: 97,
+            notifications: {
+                onRisk: true,
+                onMiss: true,
+                email: "cost-team@company.com"
+            },
+            configuration: {
+                targetType: "single",
+                target: 95
+            },
+            currentValue: 97.3,
+            metrics: {
+                totalUpdates: 48,
+                accurateUpdates: 47,
+                blsUpdates: 12,
+                fyUpdates: 4,
+                sdmUpdates: 8
+            },
+            activityLog: [
+                {
+                    type: "success",
+                    message: "97.3% accuracy achieved - exceeding 95% target",
+                    timestamp: "3 hours ago"
+                },
+                {
+                    type: "info",
+                    message: "BLS quarterly update completed successfully",
+                    timestamp: "1 week ago"
+                }
+            ]
+        },
+        {
+            id: "sla-006",
+            slaName: "AAS Impact Assessment",
+            teamName: "Cost Team",
+            description: "Identify AAS impacts from FAS level automation updates in a timely manner and implement changes in conjunction with federal lead.",
+            taskName: "FAS Automation Impact Analysis",
+            slaType: "compliance",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            status: "met",
+            progress: 100,
+            notifications: {
+                onRisk: true,
+                onMiss: true,
+                email: "cost-team@company.com"
+            },
+            configuration: {
+                targetValue: true
+            },
+            currentValue: true,
+            metrics: {
+                impactsIdentified: 15,
+                changesImplemented: 15,
+                avgResponseTime: 2.3,
+                federalCoordination: 100
+            },
+            activityLog: [
+                {
+                    type: "success",
+                    message: "All FAS automation impacts identified and implemented timely",
+                    timestamp: "2 days ago"
+                },
+                {
+                    type: "info",
+                    message: "Coordination meeting with federal lead completed",
+                    timestamp: "5 days ago"
+                }
+            ]
+        },
+        {
+            id: "sla-007",
+            slaName: "IGCE Development",
+            teamName: "Cost Team",
+            description: "Provide SME level assistance in the development of IGCE for NTE 25 awards. Develop 25 IGCEs annually with comprehensive cost analysis.",
+            taskName: "IGCE Analysis and Development",
+            slaType: "quantity",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            status: "at-risk",
+            progress: 72,
+            notifications: {
+                onRisk: true,
+                onMiss: true,
+                email: "cost-team@company.com"
+            },
+            configuration: {
+                action: "developing",
+                unit: "IGCEs",
+                targetType: "single",
+                target: 25
+            },
+            currentValue: 18,
+            metrics: {
+                completed: 18,
+                inProgress: 4,
+                avgDevelopmentTime: 8.5,
+                accuracyRating: 96.2
+            },
+            activityLog: [
+                {
+                    type: "warning",
+                    message: "Behind schedule - 18 IGCEs completed, 7 remaining for target",
+                    timestamp: "1 day ago"
+                },
+                {
+                    type: "info",
+                    message: "IGCE for major acquisition completed ahead of deadline",
+                    timestamp: "3 days ago"
+                }
+            ]
+        },
+        {
+            id: "sla-008",
+            slaName: "Staffing Plan Analysis",
+            teamName: "Cost Team",
+            description: "Provide SME level assistance in the development of cost proposal and staffing plan analysis for NTE 25 awards. Develop 25 project staffing plan analyses annually.",
+            taskName: "Project Staffing Analysis",
+            slaType: "quantity",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            status: "met",
+            progress: 84,
+            notifications: {
+                onRisk: true,
+                onMiss: true,
+                email: "cost-team@company.com"
+            },
+            configuration: {
+                action: "developing",
+                unit: "staffing analyses",
+                targetType: "single",
+                target: 25
+            },
+            currentValue: 21,
+            metrics: {
+                completed: 21,
+                inProgress: 2,
+                avgAnalysisTime: 6.8,
+                clientSatisfaction: 4.7
+            },
+            activityLog: [
+                {
+                    type: "success",
+                    message: "21 staffing analyses completed - on track for annual target",
+                    timestamp: "2 hours ago"
+                },
+                {
+                    type: "info",
+                    message: "Complex multi-year staffing analysis delivered on time",
+                    timestamp: "1 week ago"
+                }
+            ]
+        }
+    ]
+};
+
+        // Utility Functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
             });
-            
-            // Show selected section
-            document.getElementById(sectionName).classList.add('active');
-            
-            // Update navigation active state
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('link-primary', 'font-medium');
-                btn.classList.add('text-secondary-color');
-            });
-            
-            const activeBtn = document.getElementById(`nav-${sectionName}`);
-            if (activeBtn) {
-                activeBtn.classList.remove('text-secondary-color');
-                activeBtn.classList.add('link-primary', 'font-medium');
+        }
+
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'met': return 'badge-success';
+                case 'at-risk': return 'badge-warning';
+                case 'missed': return 'badge-error';
+                default: return 'badge-info';
             }
         }
 
-        // SLA Configuration Management
-        function showSLAConfig(type) {
-            const slaConfigSection = document.getElementById('slaConfig');
-            const allConfigs = document.querySelectorAll('.sla-config-section');
+        function getProgressBarClass(status) {
+            switch (status) {
+                case 'met': return 'progress-success';
+                case 'at-risk': return 'progress-warning';
+                case 'missed': return 'progress-error';
+                default: return 'progress-success';
+            }
+        }
+
+        function getActivityIconColor(type) {
+            switch (type) {
+                case 'success': return 'var(--color-status-success)';
+                case 'warning': return 'var(--color-status-warning)';
+                case 'error': return 'var(--color-status-error)';
+                case 'info': return 'var(--color-status-info)';
+                default: return 'var(--color-gray-medium)';
+            }
+        }
+
+        // Render Functions
+        function renderSLAList() {
+            const tbody = document.querySelector('#list tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            demoData.slas.forEach(sla => {
+                const row = document.createElement('tr');
+                row.style.backgroundColor = 'white';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-primary-color cursor-pointer link-primary" onclick="showSLADetail('${sla.id}')">${sla.slaName}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">${sla.slaType.charAt(0).toUpperCase() + sla.slaType.slice(1)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">${sla.teamName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(sla.status)}">${sla.status.replace('-', ' ')}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
+                                <div class="${getProgressBarClass(sla.status)} h-2 rounded-full" style="width: ${sla.progress}%"></div>
+                            </div>
+                            <span class="text-sm text-secondary-color">${sla.progress}%</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">${formatDate(sla.endDate)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="showSLADetail('${sla.id}')" class="link-primary mr-3">View</button>
+                        <button onclick="deleteSLA('${sla.id}')" style="color: var(--color-status-error)" class="hover:opacity-80">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+function renderSLADetail(slaId) {
+    const sla = demoData.slas.find(s => s.id === slaId);
+    if (!sla) return;
+    
+    // Calculate current progress
+    const currentProgress = calculateProgress(sla);
+    sla.progress = currentProgress; // Update the stored progress
+
+    // Update header
+    const detailHeader = document.querySelector('#detail h2');
+    if (detailHeader) {
+        detailHeader.textContent = sla.slaName + ' SLA';
+    }
+
+    // Update overview section
+    const overviewSection = document.querySelector('#detail .bg-surface');
+    if (overviewSection) {
+        const overviewContent = overviewSection.querySelector('.space-y-4');
+        if (overviewContent) {
+            overviewContent.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-sm text-muted">SLA Name</span>
+                        <p class="text-sm font-medium text-primary-color">${sla.slaName}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Type</span>
+                        <p class="text-sm font-medium text-primary-color">${sla.slaType.charAt(0).toUpperCase() + sla.slaType.slice(1)}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Team</span>
+                        <p class="text-sm font-medium text-primary-color">${sla.teamName}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Task</span>
+                        <p class="text-sm font-medium text-primary-color">${sla.taskName}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Created</span>
+                        <p class="text-sm font-medium text-primary-color">${formatDate(sla.startDate)}</p>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-sm text-muted">Description</span>
+                    <p class="text-sm text-primary-color mt-1">${sla.description}</p>
+                </div>
+            `;
+        }
+    }
+
+    // Update progress tracking section
+    renderProgressTracking(sla);
+
+    // Update activity log
+    renderActivityLog(sla);
+
+    // Update sidebar
+    renderSLASidebar(sla);
+}
+
+function editCurrentSLA() {
+    if (!currentSlaId) return;
+    
+    const sla = demoData.slas.find(s => s.id === currentSlaId);
+    if (!sla) return;
+    
+    isEditMode = true;
+    editingSlaId = currentSlaId;
+    
+    // Clear existing SLA forms
+    const slaContainer = document.getElementById('slaContainer');
+    slaContainer.innerHTML = '';
+    
+    // Update the header and submit button
+    const header = document.querySelector('#create h2');
+    const submitButton = document.querySelector('#create button[type="submit"]');
+    
+    if (header) header.textContent = 'Edit SLA';
+    if (submitButton) submitButton.textContent = 'Update SLA';
+    
+    // Navigate to create section first
+    showSection('create');
+    
+    // Add the form and populate it
+    setTimeout(() => {
+        addNewSLA();
+        // Wait for the form to be fully rendered
+        setTimeout(() => {
+            populateSLAForm(slaCounter, sla);
+        }, 100);
+    }, 100);
+}
+
+// Add this function to populate the form with existing data
+function populateSLAForm(formId, sla) {
+    console.log('Populating form with:', sla);
+    
+    // Helper functions
+    const setFieldValue = (fieldId, value) => {
+        const field = document.getElementById(`${fieldId}-${formId}`);
+        if (field) {
+            field.value = value || '';
+            console.log(`Set ${fieldId}:`, value);
+        } else {
+            console.warn(`Field not found: ${fieldId}-${formId}`);
+        }
+    };
+    
+    const setCheckboxValue = (fieldId, value) => {
+        const field = document.getElementById(`${fieldId}-${formId}`);
+        if (field) {
+            field.checked = Boolean(value);
+            console.log(`Set checkbox ${fieldId}:`, value);
+        } else {
+            console.warn(`Checkbox not found: ${fieldId}-${formId}`);
+        }
+    };
+    
+    // Populate basic fields
+    setFieldValue('slaName', sla.slaName);
+    setFieldValue('teamName', sla.teamName);
+    setFieldValue('description', sla.description);
+    setFieldValue('taskName', sla.taskName);
+    setFieldValue('startDate', sla.startDate);
+    setFieldValue('endDate', sla.endDate);
+    setFieldValue('notificationEmail', sla.notifications?.email);
+    setCheckboxValue('notifyOnRisk', sla.notifications?.onRisk);
+    setCheckboxValue('notifyOnMiss', sla.notifications?.onMiss);
+    
+    // Set SLA type and show configuration
+    const slaTypeField = document.getElementById(`slaType-${formId}`);
+    if (slaTypeField && sla.slaType) {
+        slaTypeField.value = sla.slaType;
+        
+        // Manually call showSLAConfig to display the right configuration
+        showSLAConfig(formId, sla.slaType);
+        
+        // Wait for configuration section to be shown, then populate specific fields
+        setTimeout(() => {
+            populateTypeSpecificFields(formId, sla);
+        }, 200);
+    }
+}
+
+// Separate function to populate type-specific fields
+function populateTypeSpecificFields(formId, sla) {
+    console.log('Populating type-specific fields for:', sla.slaType);
+    
+    const setFieldValue = (fieldId, value) => {
+        const field = document.getElementById(`${fieldId}-${formId}`);
+        if (field) {
+            field.value = value || '';
+            console.log(`Set ${fieldId}:`, value);
+        } else {
+            console.warn(`Field not found: ${fieldId}-${formId}`);
+        }
+    };
+    
+    const setCheckboxValue = (fieldId, value) => {
+        const field = document.getElementById(`${fieldId}-${formId}`);
+        if (field) {
+            field.checked = Boolean(value);
+            console.log(`Set checkbox ${fieldId}:`, value);
+        }
+    };
+    
+    if (!sla.configuration) return;
+    
+    switch (sla.slaType) {
+        case 'quantity':
+            setFieldValue('quantityAction', sla.configuration.action);
+            setFieldValue('quantityUnit', sla.configuration.unit);
+            
+            if (sla.configuration.targetType === 'range') {
+                setCheckboxValue('quantityRange', true);
+                setTimeout(() => {
+                    toggleQuantityRange(formId);
+                    setTimeout(() => {
+                        const minField = document.querySelector(`#quantityTarget-${formId} input[placeholder*="Minimum"]`);
+                        const maxField = document.querySelector(`#quantityTarget-${formId} input[placeholder*="Maximum"]`);
+                        if (minField && sla.configuration.target?.min) minField.value = sla.configuration.target.min;
+                        if (maxField && sla.configuration.target?.max) maxField.value = sla.configuration.target.max;
+                    }, 100);
+                }, 50);
+            } else if (typeof sla.configuration.target === 'number') {
+                setFieldValue('quantityTargetValue', sla.configuration.target);
+            }
+            break;
+            
+        case 'percentage':
+            if (sla.configuration.targetType === 'range') {
+                setCheckboxValue('percentageRange', true);
+                setTimeout(() => {
+                    togglePercentageRange(formId);
+                    setTimeout(() => {
+                        const minField = document.querySelector(`#percentageTarget-${formId} input[placeholder*="Minimum"]`);
+                        const maxField = document.querySelector(`#percentageTarget-${formId} input[placeholder*="Maximum"]`);
+                        if (minField && sla.configuration.target?.min) minField.value = sla.configuration.target.min;
+                        if (maxField && sla.configuration.target?.max) maxField.value = sla.configuration.target.max;
+                    }, 100);
+                }, 50);
+            } else if (typeof sla.configuration.target === 'number') {
+                setFieldValue('percentageTargetValue', sla.configuration.target);
+            }
+            break;
+            
+        case 'timeliness':
+            setFieldValue('timelinessTarget', sla.configuration.targetValue);
+            setFieldValue('timelinessCadence', sla.configuration.cadence);
+            break;
+            
+        case 'availability':
+            setFieldValue('availabilityStartTime', sla.configuration.startTime);
+            setFieldValue('availabilityEndTime', sla.configuration.endTime);
+            
+            // Set day checkboxes
+            if (sla.configuration.daysOfWeek && Array.isArray(sla.configuration.daysOfWeek)) {
+                setTimeout(() => {
+                    sla.configuration.daysOfWeek.forEach(day => {
+                        const checkbox = document.querySelector(`input[name="availabilityDays-${formId}"][value="${day}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }, 50);
+            }
+            break;
+            
+        case 'compliance':
+            const complianceValue = sla.configuration.targetValue === true ? 'yes' : 
+                                    sla.configuration.targetValue === false ? 'no' : '';
+            setFieldValue('complianceTarget', complianceValue);
+            break;
+    }
+}
+
+function calculateProgress(sla) {
+    if (!sla.configuration || !sla.configuration.target) {
+        return sla.progress || 0;
+    }
+    
+    const current = sla.currentValue || 0;
+    const target = sla.configuration.target;
+    
+    if (sla.configuration.targetType === 'range' && typeof target === 'object') {
+        const min = target.min || 0;
+        const max = target.max || min;
+        
+        if (current >= min) {
+            // Once we hit the minimum, we're at 100%
+            return 100;
+        } else {
+            // Calculate progress toward the minimum
+            return Math.round((current / min) * 100);
+        }
+    } else if (typeof target === 'number') {
+        return Math.min(Math.round((current / target) * 100), 100);
+    } else {
+        return sla.progress || 0;
+    }
+}
+
+function renderProgressTracking(sla) {
+    const progressSection = document.querySelectorAll('#detail .bg-surface')[1];
+    if (!progressSection) return;
+
+    const currentProgress = calculateProgress(sla);
+    const metricsHtml = generateMetricsHTML(sla);
+    const progressContent = progressSection.querySelector('.space-y-4');
+    if (progressContent) {
+        progressContent.innerHTML = `
+            ${metricsHtml}
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-primary-color">Overall Progress</span>
+                    <span class="text-sm text-muted">${currentProgress}%</span>
+                </div>
+                <div class="w-full rounded-full h-3" style="background-color: var(--color-gray-light)">
+                    <div class="${getProgressBarClass(sla.status)} h-3 rounded-full progress-bar" style="width: ${currentProgress}%"></div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function generateMetricsHTML(sla) {
+    switch (sla.slaType) {
+        case 'timeliness':
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${sla.currentValue}ms</div>
+                        <div class="text-sm text-muted">Current Avg</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${sla.configuration.targetValue}ms</div>
+                        <div class="text-sm text-muted">Target Max</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg stat-card-green">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-success)">${calculateProgress(sla)}%</div>
+                        <div class="text-sm text-muted">Success Rate</div>
+                    </div>
+                </div>
+            `;
+        case 'quantity':
+            const targetDisplay = getTargetDisplay(sla.configuration);
+            const progressPercent = calculateProgress(sla);
+            const statusText = sla.configuration.targetType === 'range' ? 
+                (sla.currentValue >= sla.configuration.target.min ? 'Target Met' : 'In Progress') : 
+                'Complete';
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${sla.currentValue}</div>
+                        <div class="text-sm text-muted">Current</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${targetDisplay}</div>
+                        <div class="text-sm text-muted">Target Range</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${progressPercent >= 100 ? 'stat-card-green' : 'stat-card-orange'}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${progressPercent >= 100 ? 'success' : 'warning'})">${progressPercent}%</div>
+                        <div class="text-sm text-muted">${statusText}</div>
+                    </div>
+                </div>
+            `;
+        case 'percentage':
+            const percentTargetDisplay = getTargetDisplay(sla.configuration);
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${sla.currentValue}%</div>
+                        <div class="text-sm text-muted">Current</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${percentTargetDisplay}</div>
+                        <div class="text-sm text-muted">Target</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg stat-card-green">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-success)">${calculateProgress(sla)}%</div>
+                        <div class="text-sm text-muted">Complete</div>
+                    </div>
+                </div>
+            `;
+        case 'availability':
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${sla.currentValue}%</div>
+                        <div class="text-sm text-muted">Current Uptime</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">99.5%</div>
+                        <div class="text-sm text-muted">Target</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${sla.status === 'met' ? 'stat-card-green' : 'stat-card-orange'}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${sla.status === 'met' ? 'success' : 'warning'})">${calculateProgress(sla)}%</div>
+                        <div class="text-sm text-muted">Health</div>
+                    </div>
+                </div>
+            `;
+        case 'compliance':
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${sla.currentValue ? 'Yes' : 'No'}</div>
+                        <div class="text-sm text-muted">Current Status</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${sla.configuration.targetValue ? 'Yes' : 'No'}</div>
+                        <div class="text-sm text-muted">Target</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${sla.status === 'met' ? 'stat-card-green' : 'stat-card-red'}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${sla.status === 'met' ? 'success' : 'error'})">${calculateProgress(sla)}%</div>
+                        <div class="text-sm text-muted">Complete</div>
+                    </div>
+                </div>
+            `;
+        default:
+            const defaultTargetDisplay = getTargetDisplay(sla.configuration);
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${sla.currentValue}</div>
+                        <div class="text-sm text-muted">Current</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${defaultTargetDisplay}</div>
+                        <div class="text-sm text-muted">Target</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg stat-card-green">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-success)">${calculateProgress(sla)}%</div>
+                        <div class="text-sm text-muted">Progress</div>
+                    </div>
+                </div>
+            `;
+    }
+}
+
+function getTargetDisplay(configuration) {
+    if (!configuration || !configuration.target) {
+        return 'N/A';
+    }
+    
+    if (configuration.targetType === 'range' && typeof configuration.target === 'object') {
+        const min = configuration.target.min || 0;
+        const max = configuration.target.max || 0;
+        return `${min}-${max}`;
+    } else if (typeof configuration.target === 'number') {
+        return configuration.target;
+    } else {
+        return configuration.target.toString();
+    }
+}
+
+        function renderActivityLog(sla) {
+            const activitySection = document.querySelectorAll('#detail .bg-surface')[2];
+            if (!activitySection) return;
+
+            const logContainer = activitySection.querySelector('.space-y-3');
+            if (logContainer && sla.activityLog) {
+                logContainer.innerHTML = sla.activityLog.map(activity => `
+                    <div class="flex items-start space-x-3 py-2">
+                        <div class="w-2 h-2 rounded-full mt-2" style="background-color: ${getActivityIconColor(activity.type)}"></div>
+                        <div class="flex-1">
+                            <p class="text-sm text-primary-color">${activity.message}</p>
+                            <p class="text-xs text-muted">${activity.timestamp}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderSLASidebar(sla) {
+            // Update status card
+            const statusCards = document.querySelectorAll('#detail .lg\\:col-span-1 .bg-surface');
+            if (statusCards[0]) {
+                const statusContent = statusCards[0].querySelector('.space-y-3');
+                if (statusContent) {
+                    const timeRemaining = calculateTimeRemaining(sla.endDate);
+                    statusContent.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-muted">Current Status</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(sla.status)}">${sla.status.replace('-', ' ')}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-muted">Time Remaining</span>
+                            <span class="text-sm font-medium text-primary-color">${timeRemaining}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-muted">End Date</span>
+                            <span class="text-sm font-medium text-primary-color">${formatDate(sla.endDate)}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            // Update quick stats (if available)
+            if (statusCards[1] && sla.metrics) {
+                const quickStatsContent = statusCards[1].querySelector('.space-y-3');
+                if (quickStatsContent) {
+                    quickStatsContent.innerHTML = generateQuickStatsHTML(sla);
+                }
+            }
+
+            // Update notifications
+            if (statusCards[2]) {
+                const notificationContent = statusCards[2].querySelector('.space-y-3');
+                if (notificationContent) {
+                    notificationContent.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-primary-color">At Risk Alerts</span>
+                            <div class="w-5 h-5 rounded-full flex items-center justify-center" style="background-color: var(--color-status-${sla.notifications.onRisk ? 'success' : 'error'})">
+                                <span class="text-white text-xs">${sla.notifications.onRisk ? '✓' : '✕'}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-primary-color">Miss Notifications</span>
+                            <div class="w-5 h-5 rounded-full flex items-center justify-center" style="background-color: var(--color-status-${sla.notifications.onMiss ? 'success' : 'error'})">
+                                <span class="text-white text-xs">${sla.notifications.onMiss ? '✓' : '✕'}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-color">
+                            <span class="text-sm text-muted">Email</span>
+                            <p class="text-sm font-medium text-primary-color">${sla.notifications.email || 'None'}</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function generateQuickStatsHTML(sla) {
+            if (sla.slaType === 'timeliness' && sla.metrics) {
+                return `
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted">Best Response</span>
+                        <span class="text-sm font-medium" style="color: var(--color-status-success)">${sla.metrics.bestResponse}ms</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted">Worst Response</span>
+                        <span class="text-sm font-medium" style="color: var(--color-status-error)">${sla.metrics.worstResponse}ms</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted">Total Requests</span>
+                        <span class="text-sm font-medium text-primary-color">${sla.metrics.totalRequests.toLocaleString()}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted">Violations</span>
+                        <span class="text-sm font-medium" style="color: var(--color-status-error)">${sla.metrics.violations.toLocaleString()}</span>
+                    </div>
+                `;
+            }
+            // Add other metric types as needed
+            return `
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">Current Value</span>
+                    <span class="text-sm font-medium text-primary-color">${sla.currentValue}</span>
+                </div>
+            `;
+        }
+
+        function calculateTimeRemaining(endDate) {
+            const now = new Date();
+            const end = new Date(endDate);
+            const diffTime = end - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return 'Expired';
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return '1 day';
+            return `${diffDays} days`;
+        }
+
+function updateDashboardStats() {
+    const stats = {
+        total: demoData.slas.length,
+        met: demoData.slas.filter(sla => sla.status === 'met').length,
+        atRisk: demoData.slas.filter(sla => sla.status === 'at-risk').length,
+        missed: demoData.slas.filter(sla => sla.status === 'missed').length
+    };
+
+    // Update stat cards with actual data
+    const statCards = document.querySelectorAll('#dashboard .bg-surface p.text-3xl');
+    if (statCards[0]) statCards[0].textContent = stats.total;
+    if (statCards[1]) statCards[1].textContent = stats.met;
+    if (statCards[2]) statCards[2].textContent = stats.atRisk;
+    if (statCards[3]) statCards[3].textContent = stats.missed;
+    
+    // Update performance percentages
+    const successRate = stats.total > 0 ? Math.round((stats.met / stats.total) * 100) : 0;
+    const atRiskRate = stats.total > 0 ? Math.round((stats.atRisk / stats.total) * 100) : 0;
+    const missedRate = stats.total > 0 ? Math.round((stats.missed / stats.total) * 100) : 0;
+    
+    // Update the performance chart
+    const performanceSection = document.querySelector('#dashboard .space-y-4');
+    if (performanceSection) {
+        const chartContainer = performanceSection.closest('.bg-surface').querySelector('.h-64');
+        if (chartContainer) {
+            chartContainer.innerHTML = `
+                <div class="w-full">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-secondary-color">This Month</span>
+                            <span class="text-sm font-medium" style="color: var(--color-status-success)">${successRate}% Success Rate</span>
+                        </div>
+                        <div class="w-full rounded-full h-4" style="background-color: var(--color-gray-light)">
+                            <div class="progress-success h-4 rounded-full progress-bar" style="width: ${successRate}%"></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4 mt-6">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold" style="color: var(--color-status-success)">${successRate}%</div>
+                                <div class="text-xs text-muted">Met</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold" style="color: var(--color-status-warning)">${atRiskRate}%</div>
+                                <div class="text-xs text-muted">At Risk</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold" style="color: var(--color-status-error)">${missedRate}%</div>
+                                <div class="text-xs text-muted">Missed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+
+        function updateDashboardRecentSLAs() {
+            const recentContainer = document.querySelector('#dashboard .space-y-4');
+            if (!recentContainer) return;
+
+            const recentSLAs = demoData.slas.slice(0, 3); // Show first 3 SLAs
+            recentContainer.innerHTML = recentSLAs.map(sla => `
+                <div class="flex items-center justify-between py-3 border-b border-color">
+                    <div class="flex-1">
+                        <h4 class="text-sm font-medium text-primary-color cursor-pointer hover:text-primary" style="color: var(--color-text-primary)" onclick="showSLADetail('${sla.id}')">${sla.slaName}</h4>
+                        <p class="text-xs text-muted">${sla.slaType.toUpperCase()}</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-16 rounded-full h-2" style="background-color: var(--color-gray-light)">
+                                <div class="${getProgressBarClass(sla.status)} h-2 rounded-full progress-bar" style="width: ${sla.progress}%"></div>
+                            </div>
+                            <span class="text-sm text-secondary-color">${sla.progress}%</span>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(sla.status)}">${sla.status.replace('-', ' ')}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Navigation and Section Management
+function showSection(sectionName) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Show selected section
+    document.getElementById(sectionName).classList.add('active');
+    
+    // Update navigation active state
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('link-primary', 'font-medium');
+        btn.classList.add('text-secondary-color');
+    });
+    
+    // Only update nav button if it exists (since we removed some)
+    const activeBtn = document.getElementById(`nav-${sectionName}`);
+    if (activeBtn) {
+        activeBtn.classList.remove('text-secondary-color');
+        activeBtn.classList.add('link-primary', 'font-medium');
+    }
+
+    // Render section-specific content
+    if (sectionName === 'list') {
+        renderSLAList();
+    } else if (sectionName === 'dashboard') {
+        updateDashboardStats();
+        updateDashboardRecentSLAs();
+    }
+    
+    // Reset edit mode when leaving create section
+    if (sectionName !== 'create' && isEditMode) {
+        isEditMode = false;
+        editingSlaId = null;
+        
+        // Reset header and button
+        const header = document.querySelector('#create h2');
+        const submitButton = document.querySelector('#create button[type="submit"]');
+        if (header) header.textContent = 'Create SLAs';
+        if (submitButton) submitButton.textContent = 'Create All SLAs';
+    }
+}
+
+        function showSLADetail(slaId) {
+            currentSlaId = slaId;
+            renderSLADetail(slaId);
+            showSection('detail');
+        }
+
+        function deleteSLA(slaId) {
+            if (confirm('Are you sure you want to delete this SLA?')) {
+                const index = demoData.slas.findIndex(sla => sla.id === slaId);
+                if (index > -1) {
+                    demoData.slas.splice(index, 1);
+                    demoData.slaCount = demoData.slas.length;
+                    renderSLAList();
+                    showNotification('SLA deleted successfully!');
+                }
+            }
+        }
+
+        // SLA Management (rest of the functions remain the same)
+        function addNewSLA() {
+            slaCounter++;
+            const slaContainer = document.getElementById('slaContainer');
+            const slaHtml = createSLAForm(slaCounter);
+            slaContainer.insertAdjacentHTML('beforeend', slaHtml);
+        }
+
+        function createSLAForm(id) {
+            return `
+                <div id="sla-${id}" class="sla-card bg-gray-50 rounded-lg p-6" style="background-color: var(--color-gray-light)">
+                    <div class="sla-content">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-primary-color">SLA Configuration</h3>
+                            <div class="flex space-x-2">
+                                <button type="button" onclick="saveSLA(${id})" class="px-3 py-1 text-sm rounded-md btn-success">Save</button>
+                                <button type="button" onclick="removeSLA(${id})" class="px-3 py-1 text-sm rounded-md btn-danger">Remove</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Basic Information -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label for="slaName-${id}" class="block text-sm font-medium text-primary-color mb-2">SLA Name *</label>
+                                <input type="text" id="slaName-${id}" name="slaName" required
+                                       class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                            
+                            <div>
+                                <label for="teamName-${id}" class="block text-sm font-medium text-primary-color mb-2">Team Name *</label>
+                                <input type="text" id="teamName-${id}" name="teamName" required
+                                       class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="description-${id}" class="block text-sm font-medium text-primary-color mb-2">Description *</label>
+                            <textarea id="description-${id}" name="description" rows="2" required
+                                      class="w-full px-3 py-2 border border-color rounded-md"
+                                      placeholder="Describe the SLA requirements and objectives..."></textarea>
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="taskName-${id}" class="block text-sm font-medium text-primary-color mb-2">Task Name *</label>
+                            <input type="text" id="taskName-${id}" name="taskName" required
+                                   class="w-full px-3 py-2 border border-color rounded-md">
+                        </div>
+
+                        <!-- SLA Type Selection -->
+                        <div class="mb-6">
+                            <label for="slaType-${id}" class="block text-sm font-medium text-primary-color mb-2">SLA Type *</label>
+                            <select id="slaType-${id}" name="slaType" required
+                                    class="w-full px-3 py-2 border border-color rounded-md"
+                                    onchange="showSLAConfig(${id}, this.value)">
+                                <option value="">Select SLA Type</option>
+                                <option value="quantity">Quantity</option>
+                                <option value="percentage">Percentage</option>
+                                <option value="timeliness">Timeliness</option>
+                                <option value="availability">Availability</option>
+                                <option value="compliance">Compliance</option>
+                            </select>
+                        </div>
+
+                        <!-- Dynamic SLA Configuration -->
+                        <div id="slaConfig-${id}" class="hidden mb-6">
+                            <!-- Quantity -->
+                            <div id="quantityConfig-${id}" class="sla-config-section hidden">
+                                <h4 class="text-md font-medium text-primary-color mb-3">Quantity Configuration</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Action</label>
+                                        <input type="text" id="quantityAction-${id}" placeholder="e.g., reviewing, supporting"
+                                               class="w-full px-3 py-2 border border-color rounded-md">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Unit</label>
+                                        <input type="text" id="quantityUnit-${id}" placeholder="e.g., requests, documents"
+                                               class="w-full px-3 py-2 border border-color rounded-md">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Target Type</label>
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-sm">Single</span>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="quantityRange-${id}" onchange="toggleQuantityRange(${id})">
+                                                <span class="slider"></span>
+                                            </label>
+                                            <span class="text-sm">Range</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="quantityTarget-${id}" class="grid grid-cols-1 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                                        <input type="number" id="quantityTargetValue-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                                    </div>
+                                </div>
+                                <div id="childSLAs-${id}" class="mt-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h5 class="text-sm font-medium text-primary-color">Child SLAs</h5>
+                                        <button type="button" onclick="addChildSLA(${id})" class="px-3 py-1 text-sm rounded-md border" style="color: var(--color-primary); border-color: var(--color-primary)">Add Child SLA</button>
+                                    </div>
+                                    <div id="childSLAContainer-${id}" class="space-y-3">
+                                        <!-- Child SLAs will be added here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Percentage -->
+                            <div id="percentageConfig-${id}" class="sla-config-section hidden">
+                                <h4 class="text-md font-medium text-primary-color mb-3">Percentage Configuration</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Target Type</label>
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-sm">Single</span>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="percentageRange-${id}" onchange="togglePercentageRange(${id})">
+                                                <span class="slider"></span>
+                                            </label>
+                                            <span class="text-sm">Range</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="percentageTarget-${id}" class="grid grid-cols-1 gap-4 mt-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Target Percentage</label>
+                                        <input type="number" id="percentageTargetValue-${id}" min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Timeliness -->
+                            <div id="timelinessConfig-${id}" class="sla-config-section hidden">
+                                <h4 class="text-md font-medium text-primary-color mb-3">Timeliness Configuration</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                                        <input type="number" id="timelinessTarget-${id}" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Cadence</label>
+                                        <select id="timelinessCadence-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                                            <option value="">Select Cadence</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="monthly">Monthly</option>
+                                            <option value="quarterly">Quarterly</option>
+                                            <option value="yearly">Yearly</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Availability -->
+                            <div id="availabilityConfig-${id}" class="sla-config-section hidden">
+                                <h4 class="text-md font-medium text-primary-color mb-3">Availability Configuration</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">Start Time</label>
+                                        <input type="time" id="availabilityStartTime-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-primary-color mb-2">End Time</label>
+                                        <input type="time" id="availabilityEndTime-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-primary-color mb-2">Days of Week</label>
+                                    <div class="grid grid-cols-7 gap-2">
+                                        <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="monday" class="mr-1"> Mon</label>
+                                        <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="tuesday" class="mr-1"> Tue</label>
+                                        <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="wednesday" class="mr-1"> Wed</label>
+                                        <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="thursday" class="mr-1"> Thu</label>
+                                        <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="friday" class="mr-1"> Fri</label>
+                                        <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="saturday" class="mr-1"> Sat</label>
+                                        <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="sunday" class="mr-1"> Sun</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Compliance -->
+                            <div id="complianceConfig-${id}" class="sla-config-section hidden">
+                                <h4 class="text-md font-medium text-primary-color mb-3">Compliance Configuration</h4>
+                                <div>
+                                    <label class="block text-sm font-medium text-primary-color mb-2">Target Compliance</label>
+                                    <select id="complianceTarget-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                                        <option value="">Select Target</option>
+                                        <option value="yes">Yes</option>
+                                        <option value="no">No</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time Period -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label for="startDate-${id}" class="block text-sm font-medium text-primary-color mb-2">Start Date *</label>
+                                <input type="date" id="startDate-${id}" name="startDate" required
+                                       class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                            
+                            <div>
+                                <label for="endDate-${id}" class="block text-sm font-medium text-primary-color mb-2">End Date</label>
+                                <input type="date" id="endDate-${id}" name="endDate"
+                                       class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- Notification Settings -->
+                        <div>
+                            <h4 class="text-md font-medium text-primary-color mb-3">Notification Settings</h4>
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="notifyOnRisk-${id}" name="notifyOnRisk" class="mr-2">
+                                    <span class="text-sm text-primary-color">Notify when SLA is at risk</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="notifyOnMiss-${id}" name="notifyOnMiss" class="mr-2">
+                                    <span class="text-sm text-primary-color">Notify when SLA is missed</span>
+                                </label>
+                                <div>
+                                    <label for="notificationEmail-${id}" class="block text-sm font-medium text-primary-color mb-2">Notification Email</label>
+                                    <input type="email" id="notificationEmail-${id}" name="notificationEmail"
+                                           class="w-full px-3 py-2 border border-color rounded-md">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sla-summary hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-medium text-primary-color sla-title">SLA Name</h3>
+                                <p class="text-sm text-muted sla-type">Type</p>
+                            </div>
+                            <button type="button" onclick="editSLA(${id})" class="px-3 py-1 text-sm rounded-md btn-secondary">Edit</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function collectSLAData() {
+            const slaCards = document.querySelectorAll('.sla-card');
+            const slaData = [];
+
+            slaCards.forEach(card => {
+                const id = card.id.replace('sla-', '');
+                
+                // Get basic information
+                const slaName = document.getElementById(`slaName-${id}`)?.value;
+                const teamName = document.getElementById(`teamName-${id}`)?.value;
+                const description = document.getElementById(`description-${id}`)?.value;
+                const taskName = document.getElementById(`taskName-${id}`)?.value;
+                const slaType = document.getElementById(`slaType-${id}`)?.value;
+                const startDate = document.getElementById(`startDate-${id}`)?.value;
+                const endDate = document.getElementById(`endDate-${id}`)?.value;
+                const notifyOnRisk = document.getElementById(`notifyOnRisk-${id}`)?.checked;
+                const notifyOnMiss = document.getElementById(`notifyOnMiss-${id}`)?.checked;
+                const notificationEmail = document.getElementById(`notificationEmail-${id}`)?.value;
+
+                // Skip if required fields are empty
+                if (!slaName || !teamName || !description || !taskName || !slaType || !startDate) {
+                    return;
+                }
+
+                const sla = {
+                    slaName,
+                    teamName,
+                    description,
+                    taskName,
+                    slaType,
+                    startDate,
+                    endDate: endDate || null,
+                    notifications: {
+                        onRisk: notifyOnRisk,
+                        onMiss: notifyOnMiss,
+                        email: notificationEmail || null
+                    }
+                };
+
+                // Add type-specific configuration
+                switch (slaType) {
+                    case 'quantity':
+                        const quantityAction = document.getElementById(`quantityAction-${id}`)?.value;
+                        const quantityUnit = document.getElementById(`quantityUnit-${id}`)?.value;
+                        const quantityRange = document.getElementById(`quantityRange-${id}`)?.checked;
+                        
+                        sla.configuration = {
+                            action: quantityAction,
+                            unit: quantityUnit,
+                            targetType: quantityRange ? 'range' : 'single'
+                        };
+
+                        if (quantityRange) {
+                            const minValue = document.querySelector(`#quantityTarget-${id} input[placeholder*="Minimum"]`)?.value;
+                            const maxValue = document.querySelector(`#quantityTarget-${id} input[placeholder*="Maximum"]`)?.value;
+                            sla.configuration.target = {
+                                min: minValue ? parseFloat(minValue) : null,
+                                max: maxValue ? parseFloat(maxValue) : null
+                            };
+                        } else {
+                            const targetValue = document.getElementById(`quantityTargetValue-${id}`)?.value;
+                            sla.configuration.target = targetValue ? parseFloat(targetValue) : null;
+                        }
+
+                        // Collect child SLAs
+                        const childSLAs = [];
+                        const childContainers = document.querySelectorAll(`#childSLAContainer-${id} > div`);
+                        childContainers.forEach(child => {
+                            const targetInput = child.querySelector('input[type="number"]');
+                            const unitInput = child.querySelector('input[type="text"]');
+                            if (targetInput?.value && unitInput?.value) {
+                                childSLAs.push({
+                                    targetValue: parseFloat(targetInput.value),
+                                    unitDescription: unitInput.value
+                                });
+                            }
+                        });
+                        sla.configuration.childSLAs = childSLAs;
+                        break;
+
+                    case 'percentage':
+                        const percentageRange = document.getElementById(`percentageRange-${id}`)?.checked;
+                        
+                        sla.configuration = {
+                            targetType: percentageRange ? 'range' : 'single'
+                        };
+
+                        if (percentageRange) {
+                            const minPercent = document.querySelector(`#percentageTarget-${id} input[placeholder*="Minimum"]`)?.value;
+                            const maxPercent = document.querySelector(`#percentageTarget-${id} input[placeholder*="Maximum"]`)?.value;
+                            sla.configuration.target = {
+                                min: minPercent ? parseFloat(minPercent) : null,
+                                max: maxPercent ? parseFloat(maxPercent) : null
+                            };
+                        } else {
+                            const targetPercent = document.getElementById(`percentageTargetValue-${id}`)?.value;
+                            sla.configuration.target = targetPercent ? parseFloat(targetPercent) : null;
+                        }
+                        break;
+
+                    case 'timeliness':
+                        const timelinessTarget = document.getElementById(`timelinessTarget-${id}`)?.value;
+                        const timelinessCadence = document.getElementById(`timelinessCadence-${id}`)?.value;
+                        
+                        sla.configuration = {
+                            targetValue: timelinessTarget ? parseFloat(timelinessTarget) : null,
+                            cadence: timelinessCadence
+                        };
+                        break;
+
+                    case 'availability':
+                        const startTime = document.getElementById(`availabilityStartTime-${id}`)?.value;
+                        const endTime = document.getElementById(`availabilityEndTime-${id}`)?.value;
+                        const dayCheckboxes = document.querySelectorAll(`input[name="availabilityDays-${id}"]:checked`);
+                        const selectedDays = Array.from(dayCheckboxes).map(cb => cb.value);
+                        
+                        sla.configuration = {
+                            startTime: startTime || null,
+                            endTime: endTime || null,
+                            daysOfWeek: selectedDays
+                        };
+                        break;
+
+                    case 'compliance':
+                        const complianceTarget = document.getElementById(`complianceTarget-${id}`)?.value;
+                        
+                        sla.configuration = {
+                            targetValue: complianceTarget === 'yes' ? true : complianceTarget === 'no' ? false : null
+                        };
+                        break;
+                }
+
+                slaData.push(sla);
+            });
+
+            return slaData;
+        }
+
+        function showSLAConfig(id, type) {
+            const slaConfigSection = document.getElementById(`slaConfig-${id}`);
+            const allConfigs = document.querySelectorAll(`#sla-${id} .sla-config-section`);
+            
+            // Check if elements exist before accessing them
+            if (!slaConfigSection) {
+                console.warn(`SLA config section not found for ID: ${id}`);
+                return;
+            }
             
             // Hide all config sections
             allConfigs.forEach(config => config.classList.add('hidden'));
             
             if (type) {
                 slaConfigSection.classList.remove('hidden');
-                const targetConfig = document.getElementById(`${type.replace('-', '')}Config`);
+                const targetConfig = document.getElementById(`${type}Config-${id}`);
                 if (targetConfig) {
                     targetConfig.classList.remove('hidden');
                 }
@@ -992,26 +2451,147 @@
             }
         }
 
-        // Checklist Management
-        function addChecklistItem() {
-            const checklistItems = document.getElementById('checklistItems');
-            const newItem = document.createElement('div');
-            newItem.className = 'flex gap-3';
-            newItem.innerHTML = `
-                <input type="text" placeholder="Enter checklist item" 
-                       class="flex-1 px-3 py-2 border border-color rounded-md checklist-item">
-                <button type="button" onclick="removeChecklistItem(this)" 
-                        class="px-3 py-2 hover:opacity-80" style="color: var(--color-status-error)">Remove</button>
+function toggleQuantityRange(id) {
+    const checkbox = document.getElementById(`quantityRange-${id}`);
+    const targetDiv = document.getElementById(`quantityTarget-${id}`);
+    
+    if (!checkbox || !targetDiv) return;
+    
+    const isRange = checkbox.checked;
+    
+    if (isRange) {
+        targetDiv.innerHTML = `
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Minimum Value</label>
+                <input type="number" placeholder="Minimum Value" class="w-full px-3 py-2 border border-color rounded-md">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Maximum Value</label>
+                <input type="number" placeholder="Maximum Value" class="w-full px-3 py-2 border border-color rounded-md">
+            </div>
+        `;
+        targetDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4';
+    } else {
+        targetDiv.innerHTML = `
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                <input type="number" id="quantityTargetValue-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+            </div>
+        `;
+        targetDiv.className = 'grid grid-cols-1 gap-4 mb-4';
+    }
+}
+
+function togglePercentageRange(id) {
+    const checkbox = document.getElementById(`percentageRange-${id}`);
+    const targetDiv = document.getElementById(`percentageTarget-${id}`);
+    
+    if (!checkbox || !targetDiv) return;
+    
+    const isRange = checkbox.checked;
+    
+    if (isRange) {
+        targetDiv.innerHTML = `
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Minimum Percentage</label>
+                <input type="number" placeholder="Minimum Percentage" min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Maximum Percentage</label>
+                <input type="number" placeholder="Maximum Percentage" min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+            </div>
+        `;
+        targetDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mt-4';
+    } else {
+        targetDiv.innerHTML = `
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Target Percentage</label>
+                <input type="number" id="percentageTargetValue-${id}" min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+            </div>
+        `;
+        targetDiv.className = 'grid grid-cols-1 gap-4 mt-4';
+    }
+}
+
+        function addChildSLA(parentId) {
+            const container = document.getElementById(`childSLAContainer-${parentId}`);
+            const childId = `${parentId}-${Date.now()}`;
+            const childHtml = `
+                <div id="childSLA-${childId}" class="bg-surface p-4 rounded-md border border-color">
+                    <div class="flex items-center justify-between mb-3">
+                        <h6 class="text-sm font-medium text-primary-color">Child SLA</h6>
+                        <button type="button" onclick="removeChildSLA('${childId}')" class="text-xs" style="color: var(--color-status-error)">Remove</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-primary-color mb-1">Target Value</label>
+                            <input type="number" class="w-full px-2 py-1 border border-color rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-primary-color mb-1">Unit Description</label>
+                            <input type="text" placeholder="e.g., documents per package" class="w-full px-2 py-1 border border-color rounded text-sm">
+                        </div>
+                    </div>
+                </div>
             `;
-            checklistItems.appendChild(newItem);
+            container.insertAdjacentHTML('beforeend', childHtml);
         }
 
-        function removeChecklistItem(button) {
-            button.parentElement.remove();
+        function removeChildSLA(childId) {
+            const childElement = document.getElementById(`childSLA-${childId}`);
+            if (childElement) {
+                childElement.remove();
+            }
+        }
+
+        function saveSLA(id) {
+            const slaCard = document.getElementById(`sla-${id}`);
+            const slaName = document.getElementById(`slaName-${id}`).value;
+            const slaType = document.getElementById(`slaType-${id}`).value;
+            
+            if (!slaName || !slaType) {
+                showNotification('Please fill in required fields', 'error');
+                return;
+            }
+
+            // Hide content, show summary
+            const content = slaCard.querySelector('.sla-content');
+            const summary = slaCard.querySelector('.sla-summary');
+            
+            content.classList.add('hidden');
+            summary.classList.remove('hidden');
+            slaCard.classList.add('collapsed');
+            
+            // Update summary
+            summary.querySelector('.sla-title').textContent = slaName;
+            summary.querySelector('.sla-type').textContent = slaType.charAt(0).toUpperCase() + slaType.slice(1);
+            
+            showNotification('SLA saved successfully!');
+        }
+
+        function editSLA(id) {
+            const slaCard = document.getElementById(`sla-${id}`);
+            const content = slaCard.querySelector('.sla-content');
+            const summary = slaCard.querySelector('.sla-summary');
+            
+            content.classList.remove('hidden');
+            summary.classList.add('hidden');
+            slaCard.classList.remove('collapsed');
+        }
+
+        function removeSLA(id) {
+            const slaCard = document.getElementById(`sla-${id}`);
+            if (slaCard) {
+                slaCard.remove();
+            }
         }
 
         // Modal Management
         function showUpdateModal() {
+            const sla = demoData.slas.find(s => s.id === currentSlaId);
+            if (sla) {
+                document.getElementById('currentValue').value = sla.currentValue;
+            }
             document.getElementById('updateModal').classList.remove('hidden');
         }
 
@@ -1019,16 +2599,67 @@
             document.getElementById('updateModal').classList.add('hidden');
         }
 
-        function saveUpdate() {
-            const responseTime = document.getElementById('currentResponseTime').value;
-            const notes = document.getElementById('updateNotes').value;
-            
-            showNotification('Progress updated successfully!');
-            hideUpdateModal();
-            
-            // Reset form
-            document.getElementById('updateNotes').value = '';
+function saveUpdate() {
+    const currentValue = document.getElementById('currentValue').value;
+    const notes = document.getElementById('updateNotes').value;
+    
+    if (!currentValue || isNaN(currentValue)) {
+        showNotification('Please enter a valid number', 'error');
+        return;
+    }
+    
+    // Update demo data
+    const sla = demoData.slas.find(s => s.id === currentSlaId);
+    if (sla) {
+        const oldValue = sla.currentValue;
+        sla.currentValue = parseFloat(currentValue);
+        
+        // Recalculate progress based on new value
+        const newProgress = calculateProgress(sla);
+        sla.progress = newProgress;
+        
+        // Update status based on new progress
+        if (sla.configuration.targetType === 'range') {
+            const min = sla.configuration.target.min || 0;
+            if (sla.currentValue >= min) {
+                sla.status = 'met';
+            } else if (sla.currentValue >= min * 0.8) {
+                sla.status = 'at-risk';
+            } else {
+                sla.status = 'missed';
+            }
+        } else {
+            if (newProgress >= 100) {
+                sla.status = 'met';
+            } else if (newProgress >= 80) {
+                sla.status = 'at-risk';
+            } else {
+                sla.status = 'missed';
+            }
         }
+        
+        // Add to activity log
+        const notesPart = notes ? ` - ${notes}` : '';
+        sla.activityLog.unshift({
+            type: "info",
+            message: `Progress updated - Current value: ${currentValue} (was ${oldValue})${notesPart}`,
+            timestamp: "Just now"
+        });
+        
+        // Re-render the detail page with updated data
+        renderSLADetail(currentSlaId);
+        
+        // Update dashboard and list if needed
+        updateDashboardStats();
+        updateDashboardRecentSLAs();
+    }
+    
+    showNotification('Progress updated successfully!');
+    hideUpdateModal();
+    
+    // Reset form
+    document.getElementById('updateNotes').value = '';
+}
 
         // Notification System
         function showNotification(message, type = 'success') {
@@ -1047,32 +2678,90 @@
 
         // Form Management
         document.addEventListener('DOMContentLoaded', function() {
-            // Set default date to today
-            const today = new Date().toISOString().split('T')[0];
-            const startDateInput = document.getElementById('startDate');
-            if (startDateInput) {
-                startDateInput.value = today;
-            }
+            // Initialize theme first
+            initializeTheme();
+            
+            // Initialize demo data on page load
+            updateDashboardStats();
+            updateDashboardRecentSLAs();
 
+            // Add initial SLA form
+            addNewSLA();
+                    
             // Handle form submission
             const createSlaForm = document.getElementById('createSlaForm');
             if (createSlaForm) {
+                // Modify the existing form submission handler
                 createSlaForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     
-                    const taskName = document.getElementById('taskName').value;
-                    const slaType = document.getElementById('slaType').value;
-                    const priority = document.getElementById('priority').value;
+                    // Collect all SLA data
+                    const slaData = collectSLAData();
                     
-                    if (!taskName || !slaType || !priority) {
-                        showNotification('Please fill in all required fields', 'error');
+                    if (slaData.length === 0) {
+                        showNotification('Please create and save at least one SLA', 'error');
                         return;
                     }
+
+                    if (isEditMode && editingSlaId) {
+                        // Update existing SLA
+                        const slaIndex = demoData.slas.findIndex(s => s.id === editingSlaId);
+                        if (slaIndex > -1) {
+                            // Keep the original ID and status/progress
+                            const originalSla = demoData.slas[slaIndex];
+                            const updatedSla = {
+                                ...slaData[0],
+                                id: editingSlaId,
+                                status: originalSla.status,
+                                progress: originalSla.progress,
+                                currentValue: originalSla.currentValue,
+                                metrics: originalSla.metrics,
+                                activityLog: [
+                                    {
+                                        type: "info",
+                                        message: "SLA updated",
+                                        timestamp: "Just now"
+                                    },
+                                    ...(originalSla.activityLog || [])
+                                ]
+                            };
+                            
+                            demoData.slas[slaIndex] = updatedSla;
+                            showNotification('SLA updated successfully!');
+                            
+                            // Reset edit mode
+                            isEditMode = false;
+                            editingSlaId = null;
+                            
+                            // Update header and button back to create mode
+                            const header = document.querySelector('#create h2');
+                            const submitButton = document.querySelector('#create button[type="submit"]');
+                            if (header) header.textContent = 'Create SLAs';
+                            if (submitButton) submitButton.textContent = 'Create All SLAs';
+                            
+                            setTimeout(() => {
+                                showSLADetail(editingSlaId);
+                            }, 1000);
+                            
+                            return;
+                        }
+                    }
+
+                    // Original create logic
+                    const payload = {
+                        timestamp: new Date().toISOString(),
+                        slaCount: slaData.length,
+                        slas: slaData
+                    };
+
+                    console.log('SLA Data to be sent to backend:', JSON.stringify(payload, null, 2));
+                    showJsonModal(payload);
                     
-                    showNotification('SLA created successfully!');
+                    // In the form submission handler, replace the redirect to 'list'
+                    showNotification('All SLAs processed successfully!');
                     setTimeout(() => {
-                        showSection('detail');
-                    }, 1000);
+                        showSection('list');
+                    }, 2000);
                 });
             }
 
@@ -1099,6 +2788,79 @@
                 });
             }
         });
+
+function cancelEdit() {
+    if (isEditMode) {
+        isEditMode = false;
+        editingSlaId = null;
+        
+        // Reset header and button
+        const header = document.querySelector('#create h2');
+        const submitButton = document.querySelector('#create button[type="submit"]');
+        if (header) header.textContent = 'Create SLAs';
+        if (submitButton) submitButton.textContent = 'Create All SLAs';
+        
+        // Go back to list instead of detail since detail nav is removed
+        showSection('list');
+    } else {
+        showSection('dashboard');
+    }
+}
+
+        // Show JSON Modal for demo purposes
+        function showJsonModal(payload) {
+            // Create and show modal with JSON data
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-surface rounded-lg p-6 w-full max-w-4xl mx-4 max-h-96 overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-primary-color">JSON Payload (Ready for Backend)</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-secondary-color hover:text-primary-color">✕</button>
+                    </div>
+                    <pre class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto">${JSON.stringify(payload, null, 2)}</pre>
+                    <div class="flex justify-end space-x-3 mt-4">
+                        <button onclick="copyToClipboard('${JSON.stringify(payload).replace(/"/g, '\\"')}')" class="px-4 py-2 rounded-md btn-secondary">Copy JSON</button>
+                        <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 rounded-md btn-primary">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Theme Management
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const themeToggle = document.getElementById('themeToggle');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                if (themeToggle) themeToggle.checked = true;
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                if (themeToggle) themeToggle.checked = false;
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Show notification
+            const themeText = newTheme === 'dark' ? 'Dark' : 'Light';
+            showNotification(`${themeText} mode activated`);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('JSON copied to clipboard!');
+            }).catch(() => {
+                showNotification('Failed to copy JSON', 'error');
+            });
+        }
 
         // Initialize progress bar animations
         document.addEventListener('DOMContentLoaded', function() {
