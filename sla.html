@@ -652,7 +652,7 @@
             <h2 class="text-2xl font-bold text-primary-color mb-4 sm:mb-0">All SLAs</h2>
             <div class="flex flex-col sm:flex-row gap-4">
                 <button onclick="showSection('create')" class="px-4 py-2 rounded-md btn-primary">+ Add SLA</button>
-                <select id="statusFilter" class="px-3 py-2 border border-color rounded-md">
+                <!-- <select id="statusFilter" class="px-3 py-2 border border-color rounded-md">
                     <option value="">All Statuses</option>
                     <option value="met">Met</option>
                     <option value="at-risk">At Risk</option>
@@ -665,7 +665,7 @@
                     <option value="high">High</option>
                     <option value="critical">Critical</option>
                 </select>
-                <input type="text" id="searchInput" placeholder="Search SLAs..." class="px-3 py-2 border border-color rounded-md">
+                <input type="text" id="searchInput" placeholder="Search SLAs..." class="px-3 py-2 border border-color rounded-md"> -->
             </div>
         </div>
 
@@ -2676,10 +2676,118 @@ function saveUpdate() {
             }, 3000);
         }
 
+// Backend configuration
+const BACKEND_CONFIG = {
+    BASE_URL: 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE',
+    GET_SLAS_ENDPOINT: 'YOUR_WEB_APP_URL?action=getAllSLAs'
+};
+
+/**
+ * Load SLAs from backend
+ */
+async function loadSLAsFromBackend() {
+    try {
+        showNotification('Loading SLAs from backend...', 'info');
+        
+        const response = await fetch(BACKEND_CONFIG.GET_SLAS_ENDPOINT, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Replace demo data with backend data
+            if (result.data && result.data.slas) {
+                Object.assign(demoData, result.data);
+                
+                // Update UI
+                updateDashboardStats();
+                updateDashboardRecentSLAs();
+                
+                showNotification(`Successfully loaded ${result.data.slaCount} SLAs from backend!`);
+                
+                console.log('Loaded SLAs:', result.data);
+                return true;
+            } else {
+                showNotification('No SLAs found in backend', 'warning');
+                return false;
+            }
+        } else {
+            showNotification(`Backend error: ${result.message}`, 'error');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('Error loading SLAs from backend:', error);
+        showNotification('Failed to load SLAs from backend. Using demo data.', 'error');
+        return false;
+    }
+}
+
+/**
+ * Refresh data from backend
+ */
+async function refreshDataFromBackend() {
+    const success = await loadSLAsFromBackend();
+    if (success) {
+        // Re-render current section
+        const currentSection = document.querySelector('.section.active')?.id;
+        if (currentSection) {
+            showSection(currentSection);
+        }
+    }
+}
+
+/**
+ * Add a refresh button to the interface
+ */
+function addRefreshButton() {
+    // Add to dashboard
+    const dashboardHeader = document.querySelector('#dashboard h2')?.parentElement;
+    if (dashboardHeader) {
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'px-4 py-2 rounded-md btn-secondary';
+        refreshBtn.innerHTML = '🔄 Refresh Data';
+        refreshBtn.onclick = refreshDataFromBackend;
+        dashboardHeader.appendChild(refreshBtn);
+    }
+    
+    // Add to list view
+    const listHeader = document.querySelector('#list .flex.justify-between');
+    if (listHeader) {
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'px-4 py-2 rounded-md btn-secondary';
+        refreshBtn.innerHTML = '🔄 Refresh';
+        refreshBtn.onclick = refreshDataFromBackend;
+        
+        const buttonGroup = listHeader.querySelector('.flex.gap-4');
+        buttonGroup.insertBefore(refreshBtn, buttonGroup.firstChild);
+    }
+}
+
+
         // Form Management
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // Initialize theme first
             initializeTheme();
+
+            // Try to load from backend, fall back to demo data
+            let backendLoaded = false; // Set to false initially
+            // backendLoaded = await loadSLAsFromBackend();
+
+            if (!backendLoaded) {
+                console.log('Using demo data as fallback');
+                // Initialize with demo data
+                updateDashboardStats();
+                updateDashboardRecentSLAs();
+            }
             
             // Initialize demo data on page load
             updateDashboardStats();
@@ -2691,6 +2799,39 @@ function saveUpdate() {
             // Handle form submission
             const createSlaForm = document.getElementById('createSlaForm');
             if (createSlaForm) {
+                // Update your form submission handler
+                // createSlaForm.addEventListener('submit', async function(e) {
+                //     e.preventDefault();
+                    
+                //     const slaData = collectSLAData();
+                    
+                //     if (slaData.length === 0) {
+                //         showNotification('Please create and save at least one SLA', 'error');
+                //         return;
+                //     }
+
+                //     const payload = {
+                //         timestamp: new Date().toISOString(),
+                //         slaCount: slaData.length,
+                //         slas: slaData
+                //     };
+
+                //     // Show JSON for demo (keep this)
+                //     console.log('SLA Data to be sent to backend:', JSON.stringify(payload, null, 2));
+                //     showJsonModal(payload);
+                    
+                //     // Actually submit to backend
+                //     const success = await submitToBackend(payload);
+                    
+                //     if (success) {
+                //         showNotification('All SLAs processed successfully!');
+                //         setTimeout(() => {
+                //             showSection('list');
+                //         }, 2000);
+                //     }
+                // });
+
+
                 // Modify the existing form submission handler
                 createSlaForm.addEventListener('submit', function(e) {
                     e.preventDefault();
@@ -2806,6 +2947,36 @@ function cancelEdit() {
         showSection('dashboard');
     }
 }
+
+// Add this function to handle backend submission
+async function submitToBackend(payload) {
+    const BACKEND_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+    
+    try {
+        const response = await fetch(BACKEND_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(`Successfully saved ${result.data.processedCount} SLAs to Google Sheets!`);
+            return true;
+        } else {
+            showNotification(`Error: ${result.message}`, 'error');
+            return false;
+        }
+    } catch (error) {
+        console.error('Backend submission error:', error);
+        showNotification('Failed to save to backend. Check console for details.', 'error');
+        return false;
+    }
+}
+
 
         // Show JSON Modal for demo purposes
         function showJsonModal(payload) {
