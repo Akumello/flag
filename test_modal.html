@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modal Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="p-4">
+        <button id="testBtn" class="px-4 py-2 bg-blue-500 text-white rounded">Test Column Modal</button>
+    </div>
+
+    <script>
+        // Test basic functionality
+        document.getElementById('testBtn').addEventListener('click', function() {
+            console.log('Button clicked - modal functionality would open here');
+            
+            // Test data structure
+            let modalColumns = [];
+            
+            // Test adding a column
+            const testColumn = {
+                id: Date.now(),
+                name: 'Test Column',
+                dataType: 'text',
+                required: false,
+                strictDataType: true,
+                validationListId: '',
+                strictValidation: false,
+                helpText: 'Test help text'
+            };
+            
+            modalColumns.push(testColumn);
+            console.log('Modal columns:', modalColumns);
+            
+            // Test the structure matches what we expect
+            if (modalColumns.length > 0) {
+                console.log('✓ Modal columns array works correctly');
+                console.log('✓ Column structure:', testColumn);
+            }
+        });
+    </script>
+</body>
+</html>

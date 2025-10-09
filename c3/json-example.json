@@ -1,0 +1,40 @@
+{
+  "dataCall": {
+    "id": "1728400000000",
+    "title": "Customer Data Enrichment",
+    "type": "enrichment",
+    "priority": "high",
+    "other core fields": "..."
+  },
+  "dueDate": {
+    "combined": "2024-10-15T17:00",
+    "dateOnly": "2024-10-15",
+    "timeOnly": "17:00",
+    "timezone": "America/New_York",
+    "utcTimestamp": "2024-10-15T21:00:00.000Z"
+  },
+  "typeSpecificData": {
+    "columnDefinitions": [
+      {
+        "name": "Customer Email",
+        "dataType": "email",
+        "calculation": {
+          "isCalculated": true,
+          "calculationType": "conditional",
+          "conditionalRules": []
+        }
+      }
+    ],
+    "uploadedFileInfo": {
+      "hasFile": true,
+      "fileName": "customers.csv",
+      "columnCount": 5,
+      "rowCount": 1000
+    }
+  },
+  "metadata": {
+    "sessionId": "session_1728400000000_abc123",
+    "browserInfo": {},
+    "clientTimestamp": "2024-10-08T15:30:00.000Z"
+  }
+}
