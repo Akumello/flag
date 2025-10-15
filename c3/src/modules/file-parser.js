@@ -35,14 +35,44 @@ function checkXLSXAvailability() {
 function generateJsonFieldName(displayName) {
     if (!displayName || typeof displayName !== 'string') return '';
     
-    return displayName
-        // Remove special characters except spaces, hyphens, underscores
-        .replace(/[^\w\s\-]/g, '')
-        // Split on spaces, hyphens, underscores, and camelCase boundaries
-        .split(/[\s\-_]+|(?=[A-Z])/)
-        // Filter out empty strings
+    // Remove special characters except spaces, hyphens, underscores
+    let cleaned = displayName.replace(/[^\w\s\-]/g, '');
+    
+    // Simple approach: split on spaces, hyphens, underscores
+    let words = cleaned.split(/[\s\-_]+/);
+    
+    // For each word, check if it contains camelCase and split it
+    let finalWords = [];
+    for (let word of words) {
+        if (word.length === 0) continue;
+        
+        // Simple camelCase detection: find transitions from lowercase to uppercase
+        let subWords = [];
+        let currentWord = '';
+        
+        for (let i = 0; i < word.length; i++) {
+            let char = word[i];
+            let prevChar = i > 0 ? word[i - 1] : '';
+            
+            // If we hit an uppercase letter and the previous was lowercase, start a new word
+            if (char.toUpperCase() === char && prevChar.toLowerCase() === prevChar && currentWord.length > 0) {
+                subWords.push(currentWord);
+                currentWord = char;
+            } else {
+                currentWord += char;
+            }
+        }
+        
+        if (currentWord.length > 0) {
+            subWords.push(currentWord);
+        }
+        
+        finalWords.push(...subWords);
+    }
+    
+    // Filter out empty strings and convert to camelCase
+    return finalWords
         .filter(word => word.length > 0)
-        // Convert to camelCase
         .map((word, index) => {
             // First word is lowercase, subsequent words are capitalized
             if (index === 0) {
@@ -246,7 +276,7 @@ const FileParser = {
         // Type detection patterns
         const patterns = {
             email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-            phone: /^[\+]?[1-9][\d]{0,15}$/,
+            phone: /^[\+]?[1-9][\d\-\.\(\)\s]{9,}$/,
             url: /^https?:\/\/.+/,
             date: /^\d{1,4}[-\/]\d{1,2}[-\/]\d{1,4}$|^\d{1,2}[-\/]\d{1,4}$|^\d{4}$/,
             number: /^-?\d*\.?\d+$/,

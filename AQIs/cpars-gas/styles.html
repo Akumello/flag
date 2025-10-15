@@ -1,0 +1,572 @@
+<style>
+/* GSA Brand Colors and Custom Tailwind Configuration */
+:root {
+  /* GSA Primary Colors */
+  --gsa-blue: #1f4e79;
+  --gsa-blue-light: #4a90a4;
+  --gsa-blue-dark: #162e51;
+  --gsa-orange: #fa7814;
+  --gsa-orange-light: #ff9547;
+  --gsa-orange-dark: #c85d0a;
+  --gsa-green: #00a91c;
+  --gsa-green-light: #33ba47;
+  --gsa-green-dark: #007d15;
+  
+  /* GSA Secondary Colors */
+  --gsa-red: #d54309;
+  --gsa-yellow: #ffbe2e;
+  --gsa-purple: #8168b3;
+  --gsa-teal: #00bde3;
+  
+  /* GSA Neutral Colors */
+  --gsa-gray-50: #f9fafb;
+  --gsa-gray-100: #f3f4f6;
+  --gsa-gray-200: #e5e7eb;
+  --gsa-gray-300: #d1d5db;
+  --gsa-gray-400: #9ca3af;
+  --gsa-gray-500: #6b7280;
+  --gsa-gray-600: #4b5563;
+  --gsa-gray-700: #374151;
+  --gsa-gray-800: #1f2937;
+  --gsa-gray-900: #111827;
+}
+
+/* Tailwind CSS Customizations */
+.bg-gsa-blue { background-color: var(--gsa-blue); }
+.bg-gsa-blue-light { background-color: var(--gsa-blue-light); }
+.bg-gsa-blue-dark { background-color: var(--gsa-blue-dark); }
+.bg-gsa-orange { background-color: var(--gsa-orange); }
+.bg-gsa-orange-light { background-color: var(--gsa-orange-light); }
+.bg-gsa-orange-dark { background-color: var(--gsa-orange-dark); }
+.bg-gsa-green { background-color: var(--gsa-green); }
+.bg-gsa-green-light { background-color: var(--gsa-green-light); }
+.bg-gsa-green-dark { background-color: var(--gsa-green-dark); }
+
+.text-gsa-blue { color: var(--gsa-blue); }
+.text-gsa-blue-light { color: var(--gsa-blue-light); }
+.text-gsa-orange { color: var(--gsa-orange); }
+.text-gsa-green { color: var(--gsa-green); }
+
+.border-gsa-blue { border-color: var(--gsa-blue); }
+.border-gsa-orange { border-color: var(--gsa-orange); }
+.border-gsa-green { border-color: var(--gsa-green); }
+
+.hover\:bg-gsa-blue:hover { background-color: var(--gsa-blue); }
+.hover\:bg-gsa-orange-dark:hover { background-color: var(--gsa-orange-dark); }
+.hover\:bg-gsa-green:hover { background-color: var(--gsa-green); }
+
+.focus\:ring-gsa-blue:focus { 
+  --tw-ring-color: var(--gsa-blue); 
+  box-shadow: 0 0 0 2px var(--gsa-blue);
+}
+
+/* Custom Component Styles */
+
+/* Modern Professional Data Tables */
+.cpars-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(31, 78, 121, 0.08);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cpars-table thead {
+  background: linear-gradient(135deg, var(--gsa-blue) 0%, var(--gsa-blue-dark) 100%);
+  position: relative;
+}
+
+.cpars-table thead::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gsa-orange) 0%, var(--gsa-green) 100%);
+}
+
+.cpars-table th {
+  padding: 20px 24px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  white-space: nowrap;
+  border: none;
+}
+
+/* Sortable header styles */
+.sortable-header {
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.sortable-header:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sortable-header:active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.sortable-header .fas.fa-sort {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.sortable-header:hover .fas.fa-sort {
+  opacity: 0.8;
+}
+
+.sortable-header .fas.fa-sort-up,
+.sortable-header .fas.fa-sort-down {
+  opacity: 1;
+}
+
+.cpars-table th:first-child {
+  border-radius: 12px 0 0 0;
+}
+
+.cpars-table th:last-child {
+  border-radius: 0 12px 0 0;
+}
+
+.cpars-table td {
+  padding: 18px 24px;
+  color: #374151;
+  font-weight: 500;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  position: relative;
+}
+
+.cpars-table tbody tr {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.cpars-table tbody tr:nth-child(even) {
+  background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.cpars-table tbody tr:nth-child(odd) {
+  background: white;
+}
+
+.cpars-table tbody tr:hover {
+  background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);
+  z-index: 1;
+}
+
+.cpars-table tbody tr:hover td {
+  border-color: var(--gsa-blue);
+}
+
+.cpars-table tbody tr:last-child td:first-child {
+  border-radius: 0 0 0 12px;
+}
+
+.cpars-table tbody tr:last-child td:last-child {
+  border-radius: 0 0 12px 0;
+}
+
+.cpars-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Enhanced Cell Content */
+.table-cell-primary {
+  font-weight: 600;
+  color: var(--gsa-blue);
+  font-size: 15px;
+}
+
+.table-cell-secondary {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.table-cell-highlight {
+  background: linear-gradient(135deg, var(--gsa-blue) 0%, var(--gsa-green) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Compact Copy Button */
+.copy-btn-modern {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 6px;
+}
+
+.copy-btn-modern:hover {
+  background: var(--gsa-blue);
+  color: white;
+  border-color: var(--gsa-blue);
+}
+
+.copy-btn-modern i {
+  margin-right: 3px;
+  font-size: 9px;
+}
+
+/* Action Buttons Container */
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Days Until Due Styling */
+.days-due-positive {
+  color: var(--gsa-green);
+  font-weight: 600;
+}
+
+.days-due-warning {
+  color: var(--gsa-orange);
+  font-weight: 600;
+}
+
+.days-due-overdue {
+  color: #dc2626;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+}
+
+/* Table Container */
+.table-container {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gsa-blue) #f1f5f9;
+}
+
+.table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, var(--gsa-blue) 0%, var(--gsa-green) 100%);
+  border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, var(--gsa-blue-dark) 0%, var(--gsa-green-dark) 100%);
+}
+
+/* Modern Filter Buttons */
+.filter-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0;
+}
+
+.filter-button.active {
+  background: var(--gsa-blue);
+  color: white;
+  border-color: var(--gsa-blue);
+  box-shadow: 0 2px 4px rgba(31, 78, 121, 0.2);
+}
+
+.filter-button.inactive {
+  background: white;
+  color: #6b7280;
+  border-color: #e5e7eb;
+}
+
+.filter-button:hover {
+  border-color: var(--gsa-blue);
+  color: var(--gsa-blue);
+}
+
+.filter-button.active:hover {
+  background: var(--gsa-blue-dark);
+  border-color: var(--gsa-blue-dark);
+  color: white;
+}
+
+/* Status Badges */
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.status-complete-timely {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-complete-untimely {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-incomplete-due {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.status-incomplete-almost-due {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.status-incomplete-in-progress {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-incomplete-overdue {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Copy Button Styles */
+.copy-btn {
+  @apply inline-flex items-center px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 rounded transition-colors duration-200 cursor-pointer;
+}
+
+.copy-btn:hover {
+  @apply bg-gsa-blue text-white;
+}
+
+/* Filter Checkboxes */
+.filter-checkbox {
+  @apply h-4 w-4 text-gsa-blue focus:ring-gsa-blue border-gray-300 rounded;
+}
+
+.filter-label {
+  @apply ml-2 text-sm text-gray-700 cursor-pointer;
+}
+
+/* Loading Animation */
+@keyframes pulse-gsa {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.loading-pulse {
+  animation: pulse-gsa 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Responsive Table Wrapper */
+.table-responsive {
+  @apply overflow-x-auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gsa-gray-300) var(--gsa-gray-100);
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded;
+}
+
+/* Filter Toggle Animation */
+.filter-toggle-enter {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+.filter-toggle-enter-active {
+  opacity: 1;
+  max-height: 500px;
+}
+
+/* Toast Notification */
+.toast-enter {
+  transform: translateX(100%);
+}
+
+.toast-show {
+  transform: translateX(0);
+}
+
+.toast-exit {
+  transform: translateX(100%);
+}
+
+/* Button Hover Effects */
+.btn-gsa {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 inline-flex items-center;
+}
+
+.btn-gsa-primary {
+  @apply bg-gsa-blue text-white hover:bg-gsa-blue-dark;
+}
+
+.btn-gsa-secondary {
+  @apply bg-gsa-orange text-white hover:bg-gsa-orange-dark;
+}
+
+.btn-gsa-success {
+  @apply bg-gsa-green text-white hover:bg-gsa-green-dark;
+}
+
+.btn-gsa-outline {
+  @apply border border-gsa-blue text-gsa-blue hover:bg-gsa-blue hover:text-white;
+}
+
+/* Focus States for Accessibility */
+.focus-visible:focus {
+  @apply outline-none ring-2 ring-gsa-blue ring-offset-2;
+}
+
+/* Card Shadow Enhancement */
+.card-shadow {
+  box-shadow: 0 4px 6px -1px rgba(31, 78, 121, 0.1), 0 2px 4px -1px rgba(31, 78, 121, 0.06);
+}
+
+.card-shadow:hover {
+  box-shadow: 0 10px 15px -3px rgba(31, 78, 121, 0.1), 0 4px 6px -2px rgba(31, 78, 121, 0.05);
+}
+
+/* Enhanced Empty State Styling */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 2px dashed #cbd5e1;
+  margin: 20px 0;
+}
+
+.empty-state i {
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+  .cpars-table th,
+  .cpars-table td {
+    @apply px-2 py-2 text-xs;
+  }
+  
+  .mobile-stack {
+    @apply block space-y-4;
+  }
+  
+  .mobile-stack > * {
+    @apply w-full;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .cpars-table {
+    @apply text-xs;
+  }
+  
+  body {
+    @apply bg-white;
+  }
+  
+  .bg-gsa-blue,
+  .bg-gsa-orange,
+  .bg-gsa-green {
+    @apply bg-white text-black border border-gray-400;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .cpars-table th {
+    @apply border-2 border-black;
+  }
+  
+  .cpars-table td {
+    @apply border border-gray-600;
+  }
+  
+  .status-badge {
+    @apply border border-gray-600;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>

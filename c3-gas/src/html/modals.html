@@ -1,0 +1,197 @@
+<!-- Column Modal -->
+<div id="columnModal" class="modal-overlay hidden">
+    <div class="modal-content w-full max-w-6xl p-6">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h3 class="text-xl font-semibold text-primary">Configure Columns</h3>
+                <p id="modalSubtitle" class="text-sm text-secondary mt-1">Configure data columns for your call</p>
+            </div>
+            <button id="closeModalBtn" onclick="closeColumnModal()" class="text-secondary hover:text-primary">
+                <i class="bi bi-x-lg text-xl"></i>
+            </button>
+        </div>
+
+        <div id="modalContent" class="space-y-6">
+            <!-- Modal columns will be rendered here -->
+        </div>
+
+        <div class="flex justify-between items-center mt-8 pt-6 border-t border-border">
+            <div class="flex space-x-3">
+                <button type="button" id="addAnotherColumnBtn" class="btn btn-secondary">
+                    <i class="bi bi-plus-circle mr-2"></i>Add Another Column
+                </button>
+                <button type="button" id="manageListsBtn" class="btn btn-secondary">
+                    <i class="bi bi-list-ul mr-2"></i>Manage Lists
+                </button>
+            </div>
+            
+            <div class="flex space-x-3">
+                <button type="button" id="cancelColumnBtn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="saveAllColumnsBtn" class="btn btn-primary">
+                    <i class="bi bi-check-circle mr-2"></i>Save All Columns
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- List Management Modal -->
+<div id="listManagementModal" class="modal-overlay hidden">
+    <div class="modal-content w-full max-w-4xl p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-semibold text-primary">Manage Validation Lists</h3>
+            <button id="closeListManagementBtn" class="text-secondary hover:text-primary">
+                <i class="bi bi-x-lg text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Create New List Section -->
+        <div class="mb-8 p-4 bg-surface-secondary rounded-lg">
+            <h4 class="text-lg font-medium text-primary mb-4">Create New List</h4>
+            <form id="createListForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="listName" class="block text-sm font-medium text-primary mb-2">List Name *</label>
+                        <input type="text" id="listName" required
+                               class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                               placeholder="Enter list name">
+                    </div>
+                    <div>
+                        <label for="listDataType" class="block text-sm font-medium text-primary mb-2">Data Type *</label>
+                        <select id="listDataType" required
+                                class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary">
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="listDescription" class="block text-sm font-medium text-primary mb-2">Description</label>
+                    <textarea id="listDescription" rows="2"
+                              class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                              placeholder="Optional description"></textarea>
+                </div>
+
+                <!-- List Items Input -->
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">List Items</label>
+                    <div class="space-y-2">
+                        <!-- Manual Entry -->
+                        <div id="manualEntrySection">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <input type="radio" id="manualEntry" name="entryMethod" value="manual" checked
+                                       class="focus:ring-primary">
+                                <label for="manualEntry" class="text-sm text-primary">Manual Entry</label>
+                            </div>
+                            <textarea id="listItems" rows="4"
+                                      class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                                      placeholder="Enter items, one per line"></textarea>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div id="fileEntrySection">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <input type="radio" id="fileEntry" name="entryMethod" value="file"
+                                       class="focus:ring-primary">
+                                <label for="fileEntry" class="text-sm text-primary">Upload from File</label>
+                            </div>
+                            <div id="fileUploadSection" class="hidden">
+                                <input type="file" id="listFileInput" accept=".csv,.txt" class="hidden">
+                                <button type="button" onclick="document.getElementById('listFileInput').click()"
+                                        class="btn btn-secondary btn-sm">
+                                    <i class="bi bi-upload mr-1"></i>Choose File
+                                </button>
+                                <div id="listFileName" class="mt-1 text-xs text-secondary"></div>
+                            </div>
+                        </div>
+
+                        <!-- Google Sheets Import -->
+                        <div id="sheetsEntrySection">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <input type="radio" id="sheetsEntry" name="entryMethod" value="sheets"
+                                       class="focus:ring-primary">
+                                <label for="sheetsEntry" class="text-sm text-primary">Import from Google Sheets</label>
+                            </div>
+                            <div id="sheetsImportSection" class="hidden space-y-2">
+                                <input type="url" id="sheetsUrlInput" 
+                                       class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                                       placeholder="https://docs.google.com/spreadsheets/d/...">
+                                <button type="button" id="importSheetsBtn" disabled
+                                        class="btn btn-secondary btn-sm">
+                                    <i class="bi bi-download mr-1"></i>Import from Sheets
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle mr-2"></i>Create List
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Existing Lists -->
+        <div>
+            <h4 class="text-lg font-medium text-primary mb-4">Existing Lists</h4>
+            <div id="existingLists" class="space-y-3">
+                <!-- Existing lists will be displayed here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Modal -->
+<div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-surface rounded-lg shadow-xl max-w-md w-full m-4">
+        <div class="px-6 py-4 border-b border-border">
+            <h3 class="text-lg font-medium text-primary">Notifications</h3>
+        </div>
+        <div id="notificationList" class="max-h-96 overflow-y-auto">
+            <!-- Notifications will be populated here -->
+            <div class="p-6 text-center text-secondary">
+                <i class="bi bi-bell text-4xl mb-2"></i>
+                <p>No notifications</p>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-border text-right">
+            <button id="closeNotifications" onclick="closeNotificationModal()" class="px-4 py-2 text-sm btn btn-secondary rounded" aria-label="Close notifications panel">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Data Call Response Modal -->
+<div id="responseModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-surface rounded-lg shadow-xl max-w-4xl w-full m-4 max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-border">
+            <h3 id="responseModalTitle" class="text-lg font-medium text-primary">Respond to Data Call</h3>
+        </div>
+        <div id="responseModalContent" class="p-6">
+            <!-- Response form will be populated here -->
+            <div class="text-center text-secondary">
+                <i class="bi bi-clipboard-data text-4xl mb-2"></i>
+                <p>Loading response form...</p>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-border flex justify-end space-x-4">
+            <button id="cancelResponse" onclick="closeResponseModal()" class="px-4 py-2 text-sm btn btn-secondary rounded" aria-label="Cancel and close response modal">Cancel</button>
+            <button id="saveResponse" onclick="saveDataCallResponse()" class="px-4 py-2 btn btn-primary rounded text-sm" aria-label="Save response and close modal">Save Response</button>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Message Toast -->
+<div id="messageToast" class="message-toast fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 hidden">
+    <div class="flex items-center space-x-3">
+        <i id="messageIcon" class="text-xl"></i>
+        <div>
+            <p id="messageTitle" class="font-medium"></p>
+            <p id="messageText" class="text-sm"></p>
+        </div>
+        <button onclick="hideMessage()" class="ml-4 text-secondary hover:text-primary">
+            <i class="bi bi-x text-xl"></i>
+        </button>
+    </div>
+</div>

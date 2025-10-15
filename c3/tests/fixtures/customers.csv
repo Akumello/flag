@@ -1,0 +1,11 @@
+Customer ID,First Name,Last Name,Email,Phone,Address,City,State,ZIP,Registration Date,Last Purchase,Total Spent,VIP Status
+CUST-001,John,Smith,john.smith@email.com,+1-555-123-4567,"123 Main St, Apt 4B","New York",NY,10001,2023-01-15,2023-12-20,$1250.75,true
+CUST-002,Maria,Garcia,maria.garcia@email.com,+1-555-987-6543,"456 Oak Ave","Los Angeles",CA,90210,2023-02-28,2023-11-30,$892.50,false
+CUST-003,David,Johnson,david.johnson@email.com,+1-555-555-5555,"789 Pine St","Chicago",IL,60601,2022-11-10,2023-12-15,$2180.25,true
+CUST-004,Sarah,Williams,sarah.williams@email.com,+1-555-111-2222,"321 Elm Dr","Houston",TX,77001,2023-03-05,2023-10-22,$675.00,false
+CUST-005,Michael,Brown,michael.brown@email.com,+1-555-333-4444,"654 Maple Ln","Phoenix",AZ,85001,2023-01-20,2023-12-10,$1580.30,true
+CUST-006,Jennifer,Davis,jennifer.davis@email.com,+1-555-777-8888,"987 Cedar Rd","Philadelphia",PA,19101,2022-12-08,2023-11-25,$945.80,false
+CUST-007,Robert,Miller,robert.miller@email.com,+1-555-999-0000,"147 Birch Way","San Antonio",TX,78201,2023-04-12,2023-12-05,$1125.60,true
+CUST-008,Lisa,Wilson,lisa.wilson@email.com,+1-555-222-3333,"258 Spruce St","San Diego",CA,92101,2022-10-30,2023-09-18,$523.75,false
+CUST-009,Christopher,Moore,christopher.moore@email.com,+1-555-444-5555,"369 Willow Ave","Dallas",TX,75201,2023-05-17,2023-12-01,$1890.45,true
+CUST-010,Amanda,Taylor,amanda.taylor@email.com,+1-555-666-7777,"741 Poplar Dr","San Jose",CA,95101,2023-02-14,2023-11-12,$735.20,false

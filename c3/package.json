@@ -1,0 +1,22 @@
+{
+  "name": "data-call-manager",
+  "version": "1.0.0",
+  "description": "SLA Data Call Management System with File Parser",
+  "type": "commonjs",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node -e \"require('http').createServer((req,res) => { const fs=require('fs'), path=require('path'); let file = req.url === '/' ? '/public/index.html' : req.url; let filePath = '.' + file; if(fs.existsSync(filePath)) { let ext = path.extname(file); let contentType = ext === '.css' ? 'text/css' : ext === '.js' ? 'text/javascript' : 'text/html'; res.writeHead(200, {'Content-Type': contentType}); res.end(fs.readFileSync(filePath)); } else { res.writeHead(404); res.end('Not Found'); } }).listen(3000, () => console.log('Server running at http://localhost:3000'))\"",
+    "test": "node tests/unit/file-parser.test.js",
+    "test:integration": "node tests/integration/real-data.test.js",
+    "test:all": "node tests/utils/test-runner.js",
+    "dev": "npm start"
+  },
+  "keywords": ["data-call", "file-parser", "csv", "excel", "sla-tracking"],
+  "author": "",
+  "license": "MIT",
+  "directories": {
+    "src": "src",
+    "test": "tests",
+    "doc": "docs"
+  }
+}

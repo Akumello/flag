@@ -1,0 +1,11 @@
+Name,Email,Phone,Age,Salary,Department,Start Date,Active
+John Doe,john.doe@company.com,555-123-4567,30,$65000,Engineering,2023-01-15,true
+Jane Smith,jane.smith@company.com,555-987-6543,28,$62000,Marketing,2023-02-01,true
+Bob Johnson,bob.johnson@company.com,555-555-5555,35,$75000,Engineering,2022-11-20,true
+Alice Brown,alice.brown@company.com,555-111-2222,32,$58000,Sales,2023-03-10,false
+Mike Wilson,mike.wilson@company.com,555-333-4444,29,$60000,Marketing,2023-01-30,true
+Sarah Davis,sarah.davis@company.com,555-777-8888,31,$70000,Engineering,2022-12-05,true
+Tom Miller,tom.miller@company.com,555-999-0000,27,$55000,Sales,2023-04-01,true
+Lisa Garcia,lisa.garcia@company.com,555-222-3333,33,$68000,Marketing,2022-10-15,false
+"Rodriguez, Carlos",carlos.rodriguez@company.com,555-444-5555,36,$72000,Engineering,2022-09-01,true
+"Smith-Jones, Emma",emma.smithjones@company.com,555-666-7777,26,$52000,Sales,2023-05-15,true

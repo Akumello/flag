@@ -1,0 +1,1223 @@
+<script>
+/**
+ * CPARS Performance Tracking - Client-side JavaScript
+ * Handles UI interactions, filtering, and data display
+ */
+
+// Global application state
+let appState = {
+  allData: [],
+  filteredData: [],
+  completeRecords: [],
+  incompleteRecords: [],
+  filterOptions: {
+    businessUnits: [],
+    completionStatuses: []
+  },
+  activeFilters: {
+    businessUnits: [],
+    completionStatuses: [],
+    contractSearch: '',
+    orderSearch: ''
+  },
+  sorting: {
+    complete: {
+      column: null,
+      direction: null // null, 'asc', 'desc'
+    },
+    incomplete: {
+      column: null,
+      direction: null
+    }
+  },
+  isFilterCollapsed: false
+};
+
+// Configuration
+const config = {
+  searchDebounceMs: 300,
+  toastDuration: 3000,
+  maxDisplayRecords: 1000
+};
+
+// Initialize application when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  initializeApp();
+});
+
+/**
+ * Initialize the application
+ */
+async function initializeApp() {
+  try {
+    showLoading('Initializing CPARS Performance Tracking...');
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Load initial data
+    await loadData();
+    
+    hideLoading();
+    showToast('Application loaded successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error initializing app:', error);
+    hideLoading();
+    showToast('Error loading application', 'error');
+  }
+}
+
+/**
+ * Set up all event listeners
+ */
+function setupEventListeners() {
+  // Filter toggle
+  document.getElementById('toggleFilters').addEventListener('click', toggleFilters);
+  
+  // Search inputs with debouncing
+  let searchTimeout;
+  const handleSearch = () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(applyFilters, config.searchDebounceMs);
+  };
+  
+  document.getElementById('contractSearch').addEventListener('input', handleSearch);
+  document.getElementById('orderSearch').addEventListener('input', handleSearch);
+  
+  // Clear filters
+  document.getElementById('clearFilters').addEventListener('click', clearAllFilters);
+  
+  // Refresh data
+  document.getElementById('refreshBtn').addEventListener('click', refreshData);
+  
+  // Export buttons
+  setupExportButtons();
+}
+
+/**
+ * Set up export button event listeners
+ */
+function setupExportButtons() {
+  // Complete records export
+  document.getElementById('copyCompleteBtn').addEventListener('click', () => copyToClipboard('complete'));
+  document.getElementById('exportCompleteBtn').addEventListener('click', () => exportToCSV('complete'));
+  document.getElementById('sheetsCompleteBtn').addEventListener('click', () => exportToGoogleSheets('complete'));
+  
+  // Incomplete records export
+  document.getElementById('copyIncompleteBtn').addEventListener('click', () => copyToClipboard('incomplete'));
+  document.getElementById('exportIncompleteBtn').addEventListener('click', () => exportToCSV('incomplete'));
+  document.getElementById('sheetsIncompleteBtn').addEventListener('click', () => exportToGoogleSheets('incomplete'));
+}
+
+/**
+ * Load data from server
+ */
+async function loadData() {
+  try {
+    showLoading('Loading CPARS data...');
+    
+    // For Google Apps Script environment
+    if (typeof google !== 'undefined' && google.script) {
+      const result = await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler((response) => {
+            // Deep clone the response to avoid JSPB issues
+            const clonedResponse = JSON.parse(JSON.stringify(response));
+            resolve(clonedResponse);
+          })
+          .withFailureHandler(reject)
+          .getCPARSData();
+      });
+      
+      if (result.success) {
+        // Ensure data is a plain array of plain objects
+        appState.allData = JSON.parse(JSON.stringify(result.data));
+        showToast(result.message, 'success');
+      } else {
+        throw new Error(result.error);
+      }
+    } else {
+      // For local development - use sample data from config
+      console.log('Local development mode - using sample data');
+      // Simulate sample data (in actual implementation, this would come from config.gs)
+      appState.allData = getSampleData();
+    }
+    
+    // Get filter options
+    appState.filterOptions = generateFilterOptions(appState.allData);
+    
+    // Set up filter UI
+    setupFilterUI();
+    
+    // Apply initial filters
+    applyFilters();
+    
+  } catch (error) {
+    console.error('Error loading data:', error);
+    showToast(`Error loading data: ${error.message}`, 'error');
+  }
+}
+
+/**
+ * Generate filter options from data
+ */
+function generateFilterOptions(data) {
+  const businessUnits = [...new Set(data.map(item => item.businessUnit).filter(Boolean))].sort();
+  const completionStatuses = [...new Set(data.map(item => item.completionStatus).filter(Boolean))].sort();
+  
+  return {
+    businessUnits,
+    completionStatuses
+  };
+}
+
+/**
+ * Set up filter UI components
+ */
+function setupFilterUI() {
+  // Business Unit filters
+  const businessUnitContainer = document.getElementById('businessUnitFilters');
+  businessUnitContainer.innerHTML = '';
+  
+  appState.filterOptions.businessUnits.forEach(unit => {
+    const buttonHtml = `
+      <button class="filter-button inactive business-unit-filter" data-value="${unit}">
+        ${unit}
+      </button>
+    `;
+    businessUnitContainer.insertAdjacentHTML('beforeend', buttonHtml);
+  });
+  
+  // Completion Status filters
+  const statusContainer = document.getElementById('completionStatusFilters');
+  statusContainer.innerHTML = '';
+  
+  appState.filterOptions.completionStatuses.forEach(status => {
+    const buttonHtml = `
+      <button class="filter-button inactive completion-status-filter" data-value="${status}">
+        ${status}
+      </button>
+    `;
+    statusContainer.insertAdjacentHTML('beforeend', buttonHtml);
+  });
+  
+  // Add event listeners to filter buttons
+  document.querySelectorAll('.business-unit-filter').forEach(button => {
+    button.addEventListener('click', toggleFilterButton);
+  });
+  
+  document.querySelectorAll('.completion-status-filter').forEach(button => {
+    button.addEventListener('click', toggleFilterButton);
+  });
+  
+  // Initialize with no filters selected (show all)
+  appState.activeFilters.businessUnits = [];
+  appState.activeFilters.completionStatuses = [];
+}
+
+/**
+ * Toggle filter button state
+ */
+function toggleFilterButton(event) {
+  const button = event.currentTarget;
+  
+  if (button.classList.contains('active')) {
+    button.classList.remove('active');
+    button.classList.add('inactive');
+  } else {
+    button.classList.remove('inactive');
+    button.classList.add('active');
+  }
+  
+  applyFilters();
+}
+
+/**
+ * Apply all active filters
+ */
+function applyFilters() {
+  // Get active filter values from button states
+  appState.activeFilters.businessUnits = Array.from(document.querySelectorAll('.business-unit-filter.active')).map(btn => btn.getAttribute('data-value'));
+  appState.activeFilters.completionStatuses = Array.from(document.querySelectorAll('.completion-status-filter.active')).map(btn => btn.getAttribute('data-value'));
+  appState.activeFilters.contractSearch = document.getElementById('contractSearch').value.toLowerCase().trim();
+  appState.activeFilters.orderSearch = document.getElementById('orderSearch').value.toLowerCase().trim();
+  
+  // Filter data
+  appState.filteredData = appState.allData.filter(record => {
+    // Business unit filter - if none selected, show all
+    if (appState.activeFilters.businessUnits.length > 0 && 
+        (!record.businessUnit || !appState.activeFilters.businessUnits.includes(record.businessUnit))) {
+      return false;
+    }
+    
+    // Completion status filter - if none selected, show all
+    if (appState.activeFilters.completionStatuses.length > 0 && 
+        (!record.completionStatus || !appState.activeFilters.completionStatuses.includes(record.completionStatus))) {
+      return false;
+    }
+    
+    // Contract search filter
+    if (appState.activeFilters.contractSearch && 
+        (!record.contractNumber || !record.contractNumber.toLowerCase().includes(appState.activeFilters.contractSearch))) {
+      return false;
+    }
+    
+    // Order search filter
+    if (appState.activeFilters.orderSearch && 
+        (!record.orderNumber || !record.orderNumber.toLowerCase().includes(appState.activeFilters.orderSearch))) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // Classify records
+  classifyRecords();
+  
+  // Update displays
+  updateRecordCounts();
+  updateTables();
+  updateSummaryStats();
+}
+
+/**
+ * Classify records into complete and incomplete
+ */
+function classifyRecords() {
+  const completeStatuses = ['Complete: Timely', 'Complete: Untimely'];
+  
+  appState.completeRecords = appState.filteredData.filter(record => 
+    completeStatuses.includes(record.completionStatus)
+  );
+  
+  appState.incompleteRecords = appState.filteredData.filter(record => 
+    !completeStatuses.includes(record.completionStatus)
+  );
+}
+
+/**
+ * Update record count displays
+ */
+function updateRecordCounts() {
+  document.getElementById('totalCount').textContent = appState.allData.length.toLocaleString();
+  document.getElementById('filteredCount').textContent = appState.filteredData.length.toLocaleString();
+  document.getElementById('totalFilterCount').textContent = appState.allData.length.toLocaleString();
+  document.getElementById('completeCount').textContent = appState.completeRecords.length;
+  document.getElementById('incompleteCount').textContent = appState.incompleteRecords.length;
+}
+
+/**
+ * Update data tables
+ */
+function updateTables() {
+  // Apply current sorting and update tables
+  applySortingAndUpdate('complete');
+  applySortingAndUpdate('incomplete');
+}
+
+/**
+ * Sort table data by column
+ */
+function sortTableData(tableType, column) {
+  const sortState = appState.sorting[tableType];
+  
+  // Cycle through sort states: null -> asc -> desc -> null
+  if (sortState.column !== column) {
+    // New column clicked
+    sortState.column = column;
+    sortState.direction = 'asc';
+  } else {
+    // Same column clicked, cycle through states
+    if (sortState.direction === null) {
+      sortState.direction = 'asc';
+    } else if (sortState.direction === 'asc') {
+      sortState.direction = 'desc';
+    } else {
+      sortState.direction = null;
+      sortState.column = null;
+    }
+  }
+  
+  // Apply sorting and refresh table
+  applySortingAndUpdate(tableType);
+}
+
+/**
+ * Apply current sorting to data and update table
+ */
+function applySortingAndUpdate(tableType) {
+  let data = tableType === 'complete' ? [...appState.completeRecords] : [...appState.incompleteRecords];
+  const sortState = appState.sorting[tableType];
+  
+  if (sortState.column && sortState.direction) {
+    data.sort((a, b) => {
+      let aVal = a[sortState.column];
+      let bVal = b[sortState.column];
+      
+      // Handle different data types
+      if (sortState.column === 'daysUntilDue') {
+        aVal = parseInt(aVal) || 0;
+        bVal = parseInt(bVal) || 0;
+      } else if (sortState.column === 'estimatedEvaluationDate') {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+      } else {
+        // String comparison (case insensitive)
+        aVal = String(aVal || '').toLowerCase();
+        bVal = String(bVal || '').toLowerCase();
+      }
+      
+      if (aVal < bVal) return sortState.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortState.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  
+  // Update the table with sorted data
+  updateTable(tableType, data);
+}
+
+/**
+ * Get sort indicator for header
+ */
+function getSortIndicator(tableType, column) {
+  const sortState = appState.sorting[tableType];
+  
+  if (sortState.column !== column || !sortState.direction) {
+    return '<i class="fas fa-sort ml-2 opacity-50"></i>';
+  }
+  
+  if (sortState.direction === 'asc') {
+    return '<i class="fas fa-sort-up ml-2 text-gsa-blue"></i>';
+  } else {
+    return '<i class="fas fa-sort-down ml-2 text-gsa-blue"></i>';
+  }
+}
+
+/**
+ * Update a specific table
+ */
+function updateTable(type, records) {
+  const container = document.getElementById(`${type}TableContainer`);
+  const loading = document.getElementById(`${type}Loading`);
+  
+  if (loading) loading.style.display = 'none';
+  
+  if (records.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-database text-6xl text-gray-300 mb-4"></i>
+        <div class="text-xl font-semibold text-gray-700 mb-2">No ${type} records found</div>
+        <div class="text-gray-500">Try adjusting your filters to see more results.</div>
+      </div>
+    `;
+    return;
+  }
+  
+  // Create modern table wrapper
+  const tableWrapper = document.createElement('div');
+  tableWrapper.className = 'table-container';
+  
+  const scrollWrapper = document.createElement('div');
+  scrollWrapper.className = 'table-wrapper';
+  
+  // Create table
+  const table = document.createElement('table');
+  table.className = 'cpars-table';
+  
+  // Create enhanced header
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  
+  const headers = [
+    { text: 'Contract #', icon: 'fas fa-file-contract', field: 'contractNumber' },
+    { text: 'Order #', icon: 'fas fa-list-alt', field: 'orderNumber' },
+    { text: 'Business Unit', icon: 'fas fa-building', field: 'businessUnit' },
+    { text: 'CO Name', icon: 'fas fa-user-tie', field: 'coName' },
+    { text: 'Status', icon: 'fas fa-chart-line', field: 'completionStatus' },
+    { text: 'Due Date', icon: 'fas fa-calendar-alt', field: 'estimatedEvaluationDate' },
+    { text: 'Days Left', icon: 'fas fa-clock', field: 'daysUntilDue' }
+  ];
+  
+  headers.forEach(header => {
+    const th = document.createElement('th');
+    th.className = 'sortable-header';
+    th.style.cursor = 'pointer';
+    th.onclick = () => sortTableData(type, header.field);
+    
+    th.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <i class="${header.icon} mr-2 opacity-80"></i>
+          ${header.text}
+        </div>
+        ${getSortIndicator(type, header.field)}
+      </div>
+    `;
+    headerRow.appendChild(th);
+  });
+  
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+  
+  // Create enhanced body
+  const tbody = document.createElement('tbody');
+  
+  records.forEach(record => {
+    const row = document.createElement('tr');
+    
+    // Contract Number Cell
+    const contractCell = document.createElement('td');
+    contractCell.innerHTML = `
+      <div class="flex items-center">
+        <span class="table-cell-primary">${record.contractNumber || 'N/A'}</span>
+        <button class="copy-btn-modern" onclick="copyToClipboard('${record.contractNumber || ''}', 'text')" title="Copy">
+          <i class="fas fa-copy"></i>
+        </button>
+      </div>
+    `;
+    row.appendChild(contractCell);
+    
+    // Order Number Cell
+    const orderCell = document.createElement('td');
+    orderCell.innerHTML = `
+      <div class="flex items-center">
+        <span class="table-cell-primary">${record.orderNumber || 'N/A'}</span>
+        <button class="copy-btn-modern" onclick="copyToClipboard('${record.orderNumber || ''}', 'text')" title="Copy">
+          <i class="fas fa-copy"></i>
+        </button>
+      </div>
+    `;
+    row.appendChild(orderCell);
+    
+    // Business Unit Cell
+    const unitCell = document.createElement('td');
+    const unitShort = record.businessUnit ? record.businessUnit.replace('FAS ', '').replace(' Category', '') : 'N/A';
+    unitCell.innerHTML = `<span class="table-cell-primary">${unitShort}</span>`;
+    row.appendChild(unitCell);
+    
+    // Contracting Officer Cell
+    const coCell = document.createElement('td');
+    coCell.innerHTML = `<span class="table-cell-primary">${record.coName || 'N/A'}</span>`;
+    row.appendChild(coCell);
+    
+    // Status Cell
+    const statusCell = document.createElement('td');
+    const statusInfo = getEnhancedStatusInfo(record.completionStatus);
+    statusCell.innerHTML = `
+      <div class="flex items-center">
+        <div class="w-3 h-3 rounded-full mr-3" style="background-color: ${statusInfo.color}"></div>
+        <span class="font-semibold text-sm" style="color: ${statusInfo.color}">${statusInfo.label}</span>
+      </div>
+    `;
+    row.appendChild(statusCell);
+    
+    // Due Date Cell
+    const dateCell = document.createElement('td');
+    let formattedDate = 'N/A';
+    if (record.estimatedEvaluationDate) {
+      try {
+        const date = new Date(record.estimatedEvaluationDate);
+        if (!isNaN(date.getTime())) {
+          formattedDate = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          });
+        }
+      } catch (e) {
+        formattedDate = 'Invalid Date';
+      }
+    }
+    dateCell.innerHTML = `<span class="table-cell-primary">${formattedDate}</span>`;
+    row.appendChild(dateCell);
+    
+    // Days Left Cell
+    const daysCell = document.createElement('td');
+    const daysInfo = getDaysUntilDueInfo(record.daysUntilDue || 0);
+    daysCell.innerHTML = `
+      <div class="flex items-center">
+        <div class="w-3 h-3 rounded-full mr-3" style="background-color: ${daysInfo.color}"></div>
+        <span class="font-semibold text-sm ${daysInfo.className}">${daysInfo.text}</span>
+      </div>
+    `;
+    row.appendChild(daysCell);
+    
+    tbody.appendChild(row);
+  });
+  
+  table.appendChild(tbody);
+  scrollWrapper.appendChild(table);
+  tableWrapper.appendChild(scrollWrapper);
+  
+  container.innerHTML = '';
+  container.appendChild(tableWrapper);
+}
+
+/**
+ * Get enhanced status information with colors and descriptions
+ */
+function getEnhancedStatusInfo(status) {
+  const statusMap = {
+    'Complete: Timely': {
+      label: 'Completed',
+      description: 'On Time',
+      color: '#059669'
+    },
+    'Complete: Untimely': {
+      label: 'Completed',
+      description: 'Late Delivery',
+      color: '#d97706'
+    },
+    'Incomplete: Due': {
+      label: 'In Progress',
+      description: 'Due Soon',
+      color: '#dc2626'
+    },
+    'Incomplete: Almost Due': {
+      label: 'In Progress',
+      description: 'Almost Due',
+      color: '#ea580c'
+    },
+    'Incomplete: In Progress': {
+      label: 'Active',
+      description: 'On Track',
+      color: '#2563eb'
+    },
+    'Incomplete: Overdue': {
+      label: 'Overdue',
+      description: 'Immediate Action',
+      color: '#dc2626'
+    }
+  };
+  
+  return statusMap[status] || {
+    label: 'Unknown',
+    description: 'Status Unknown',
+    color: '#6b7280'
+  };
+}
+
+/**
+ * Get enhanced days until due information
+ */
+function getDaysUntilDueInfo(days) {
+  if (days > 30) {
+    return {
+      text: `${days} days`,
+      urgency: 'Low Priority',
+      color: '#059669',
+      className: 'days-due-positive'
+    };
+  } else if (days > 7) {
+    return {
+      text: `${days} days`,
+      urgency: 'Medium Priority',
+      color: '#d97706',
+      className: 'days-due-warning'
+    };
+  } else if (days > 0) {
+    return {
+      text: `${days} days`,
+      urgency: 'High Priority',
+      color: '#ea580c',
+      className: 'days-due-warning'
+    };
+  } else if (days === 0) {
+    return {
+      text: 'Due Today',
+      urgency: 'Critical',
+      color: '#dc2626',
+      className: 'days-due-overdue'
+    };
+  } else {
+    return {
+      text: `${Math.abs(days)} days overdue`,
+      urgency: 'URGENT',
+      color: '#dc2626',
+      className: 'days-due-overdue'
+    };
+  }
+}
+
+/**
+ * View record details (placeholder for future enhancement)
+ */
+function viewRecordDetails(encodedRecord) {
+  const record = JSON.parse(decodeURIComponent(encodedRecord));
+  
+  // Create a detailed view modal or panel
+  const details = `
+Contract: ${record.contractNumber || 'N/A'}
+Order: ${record.orderNumber || 'N/A'}
+Business Unit: ${record.businessUnit || 'N/A'}
+Sector: ${record.sector || 'N/A'}
+Division: ${record.division || 'N/A'}
+CO: ${record.coName || 'N/A'}
+Period: ${record.periodOfPerformance || 'N/A'}
+Status: ${record.completionStatus || 'N/A'}
+Evaluation: ${record.evaluationStatus || 'N/A'}
+Due Date: ${record.estimatedEvaluationDate || 'N/A'}
+Days Until Due: ${record.daysUntilDue || 'N/A'}
+  `;
+  
+  alert(details); // Replace with modal in future
+}
+
+/**
+ * Get status badge HTML
+ */
+function getStatusBadge(status) {
+  let badgeClass = 'status-badge ';
+  
+  switch (status) {
+    case 'Complete: Timely':
+      badgeClass += 'status-complete-timely';
+      break;
+    case 'Complete: Untimely':
+      badgeClass += 'status-complete-untimely';
+      break;
+    case 'Incomplete: Due':
+      badgeClass += 'status-incomplete-due';
+      break;
+    case 'Incomplete: Almost Due':
+      badgeClass += 'status-incomplete-almost-due';
+      break;
+    case 'Incomplete: In Progress':
+      badgeClass += 'status-incomplete-in-progress';
+      break;
+    case 'Incomplete: Overdue':
+      badgeClass += 'status-incomplete-overdue';
+      break;
+    default:
+      badgeClass += 'bg-gray-100 text-gray-800';
+  }
+  
+  return `<span class="${badgeClass}">${status}</span>`;
+}
+
+/**
+ * Update summary statistics
+ */
+function updateSummaryStats() {
+  const timelyCount = appState.filteredData.filter(r => r.completionStatus === 'Complete: Timely').length;
+  const untimelyCount = appState.filteredData.filter(r => r.completionStatus === 'Complete: Untimely').length;
+  const dueCount = appState.filteredData.filter(r => r.completionStatus === 'Incomplete: Due' || r.completionStatus === 'Incomplete: Almost Due').length;
+  const overdueCount = appState.filteredData.filter(r => r.completionStatus === 'Incomplete: Overdue').length;
+  
+  document.getElementById('timelyCount').textContent = timelyCount;
+  document.getElementById('untimelyCount').textContent = untimelyCount;
+  document.getElementById('dueCount').textContent = dueCount;
+  document.getElementById('overdueCount').textContent = overdueCount;
+}
+
+/**
+ * Toggle filters panel
+ */
+function toggleFilters() {
+  const content = document.getElementById('filtersContent');
+  const icon = document.getElementById('filterToggleIcon');
+  
+  appState.isFilterCollapsed = !appState.isFilterCollapsed;
+  
+  if (appState.isFilterCollapsed) {
+    content.style.display = 'none';
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-right');
+  } else {
+    content.style.display = 'block';
+    icon.classList.remove('fa-chevron-right');
+    icon.classList.add('fa-chevron-down');
+  }
+}
+
+/**
+ * Clear all filters
+ */
+function clearAllFilters() {
+  // Clear search inputs
+  document.getElementById('contractSearch').value = '';
+  document.getElementById('orderSearch').value = '';
+  
+  // Deactivate all filter buttons
+  document.querySelectorAll('.filter-button').forEach(button => {
+    button.classList.remove('active');
+    button.classList.add('inactive');
+  });
+  
+  // Apply filters
+  applyFilters();
+  
+  showToast('All filters cleared', 'success');
+}
+
+/**
+ * Refresh data
+ */
+async function refreshData() {
+  try {
+    showToast('Refreshing data...', 'info');
+    await loadData();
+    showToast('Data refreshed successfully', 'success');
+  } catch (error) {
+    console.error('Error refreshing data:', error);
+    showToast('Error refreshing data', 'error');
+  }
+}
+
+/**
+ * Copy data to clipboard
+ */
+function copyToClipboard(type, textType = 'table') {
+  try {
+    let data, text;
+    
+    if (textType === 'text') {
+      // Copy simple text
+      text = type;
+    } else if (textType === 'record') {
+      // Copy record data
+      const record = JSON.parse(decodeURIComponent(type));
+      text = Object.entries(record).map(([key, value]) => `${key}: ${value}`).join('\n');
+    } else {
+      // Copy table data
+      data = type === 'complete' ? appState.completeRecords : appState.incompleteRecords;
+      
+      if (data.length === 0) {
+        showToast('No data to copy', 'warning');
+        return;
+      }
+      
+      // Create tab-delimited text
+      const headers = ['Contract Number', 'Order Number', 'Business Unit', 'CO Name', 'Completion Status', 'Estimated Date', 'Days Until Due'];
+      const rows = data.map(record => [
+        record.contractNumber,
+        record.orderNumber,
+        record.businessUnit,
+        record.coName,
+        record.completionStatus,
+        record.estimatedEvaluationDate,
+        record.daysUntilDue
+      ]);
+      
+      text = [headers, ...rows].map(row => row.join('\t')).join('\n');
+    }
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Copied to clipboard', 'success');
+    }).catch(err => {
+      console.error('Error copying to clipboard:', err);
+      showToast('Error copying to clipboard', 'error');
+    });
+    
+  } catch (error) {
+    console.error('Error in copyToClipboard:', error);
+    showToast('Error copying data', 'error');
+  }
+}
+
+/**
+ * Export data to CSV
+ */
+function exportToCSV(type) {
+  try {
+    const data = type === 'complete' ? appState.completeRecords : appState.incompleteRecords;
+    
+    if (data.length === 0) {
+      showToast('No data to export', 'warning');
+      return;
+    }
+    
+    // Create CSV content
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(record => headers.map(header => `"${record[header] || ''}"`).join(','))
+    ].join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cpars-${type}-records-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+    showToast(`${type} records exported to CSV`, 'success');
+    
+  } catch (error) {
+    console.error('Error exporting to CSV:', error);
+    showToast('Error exporting to CSV', 'error');
+  }
+}
+
+/**
+ * Export data to Google Sheets
+ */
+async function exportToGoogleSheets(type) {
+  try {
+    const data = type === 'complete' ? appState.completeRecords : appState.incompleteRecords;
+    
+    if (data.length === 0) {
+      showToast('No data to export', 'warning');
+      return;
+    }
+    
+    showLoading('Exporting to Google Sheets...');
+    
+    if (typeof google !== 'undefined' && google.script) {
+      const result = await new Promise((resolve, reject) => {
+        // Deep clone the data to avoid JSPB issues
+        const clonedData = JSON.parse(JSON.stringify(data));
+        
+        google.script.run
+          .withSuccessHandler((response) => {
+            // Deep clone the response to avoid JSPB issues
+            const clonedResponse = JSON.parse(JSON.stringify(response));
+            resolve(clonedResponse);
+          })
+          .withFailureHandler(reject)
+          .exportToGoogleSheets(clonedData, `CPARS ${type.charAt(0).toUpperCase() + type.slice(1)} Records`);
+      });
+      
+      if (result.success) {
+        hideLoading();
+        showToast('Exported to Google Sheets successfully', 'success');
+        
+        // Open the new sheet
+        window.open(result.url, '_blank');
+      } else {
+        throw new Error(result.error);
+      }
+    } else {
+      // Local development fallback
+      hideLoading();
+      showToast('Google Sheets export not available in local development', 'warning');
+    }
+    
+  } catch (error) {
+    console.error('Error exporting to Google Sheets:', error);
+    hideLoading();
+    showToast('Error exporting to Google Sheets', 'error');
+  }
+}
+
+/**
+ * Copy individual record data
+ */
+function copyRecordData(encodedRecord) {
+  copyToClipboard(encodedRecord, 'record');
+}
+
+/**
+ * Show loading overlay
+ */
+function showLoading(message = 'Loading...') {
+  const overlay = document.getElementById('loadingOverlay');
+  const messageEl = document.getElementById('loadingMessage');
+  messageEl.textContent = message;
+  overlay.classList.remove('hidden');
+}
+
+/**
+ * Hide loading overlay
+ */
+function hideLoading() {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.add('hidden');
+}
+
+/**
+ * Show toast notification
+ */
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  const messageEl = document.getElementById('toastMessage');
+  
+  // Set message and icon
+  messageEl.textContent = message;
+  
+  // Reset classes
+  toast.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+  
+  // Add type-specific styling
+  switch (type) {
+    case 'success':
+      toast.classList.add('bg-gsa-green', 'text-white');
+      icon.className = 'fas fa-check-circle mr-2';
+      break;
+    case 'error':
+      toast.classList.add('bg-red-500', 'text-white');
+      icon.className = 'fas fa-exclamation-circle mr-2';
+      break;
+    case 'warning':
+      toast.classList.add('bg-yellow-500', 'text-white');
+      icon.className = 'fas fa-exclamation-triangle mr-2';
+      break;
+    case 'info':
+      toast.classList.add('bg-blue-500', 'text-white');
+      icon.className = 'fas fa-info-circle mr-2';
+      break;
+  }
+  
+  // Show toast
+  toast.classList.remove('translate-x-full');
+  
+  // Hide after duration
+  setTimeout(() => {
+    toast.classList.add('translate-x-full');
+  }, config.toastDuration);
+}
+
+/**
+ * Get sample data for local development
+ */
+function getSampleData() {
+  return [
+    {
+      contractNumber: 'GS-35F-0119Y',
+      orderNumber: '47QMCA22D0001',
+      businessUnit: 'FAS IT Category',
+      sector: 'Information Technology',
+      division: 'Enterprise Infrastructure Solutions',
+      coName: 'Sarah Johnson',
+      periodOfPerformance: '10/1/2023 - 9/30/2024',
+      evaluationStatus: 'In Progress',
+      completionStatus: 'Incomplete: Due',
+      estimatedEvaluationDate: '11/15/2024',
+      daysUntilDue: 15
+    },
+    {
+      contractNumber: 'GS-35F-0122W',
+      orderNumber: '47QMCA22D0002',
+      businessUnit: 'FAS Professional Services',
+      sector: 'Professional Services',
+      division: 'Management Consulting',
+      coName: 'Michael Chen',
+      periodOfPerformance: '3/1/2023 - 2/28/2024',
+      evaluationStatus: 'Complete',
+      completionStatus: 'Complete: Timely',
+      estimatedEvaluationDate: '3/30/2024',
+      daysUntilDue: 0
+    },
+    {
+      contractNumber: 'GS-35F-0145T',
+      orderNumber: '47QMCA22D0003',
+      businessUnit: 'FAS IT Category',
+      sector: 'Information Technology',
+      division: 'Software Development',
+      coName: 'Emily Rodriguez',
+      periodOfPerformance: '7/1/2023 - 6/30/2024',
+      evaluationStatus: 'Pending Review',
+      completionStatus: 'Incomplete: Almost Due',
+      estimatedEvaluationDate: '11/10/2024',
+      daysUntilDue: 10
+    }
+  ];
+}
+
+/**
+ * Initialize a new Google Sheet with sample CPARS data
+ */
+async function initializeNewCPARSSheet() {
+  try {
+    if (!confirm('This will create a new Google Sheet with sample CPARS data. Continue?')) {
+      return;
+    }
+    
+    showLoading('Creating new CPARS data sheet...');
+    
+    if (typeof google !== 'undefined' && google.script) {
+      const result = await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler((response) => {
+            const clonedResponse = JSON.parse(JSON.stringify(response));
+            resolve(clonedResponse);
+          })
+          .withFailureHandler(reject)
+          .initializeCPARSSheet();
+      });
+      
+      hideLoading();
+      
+      if (result.success) {
+        // Show success message with instructions
+        const message = `
+          <div class="space-y-4">
+            <div class="text-green-600 font-semibold">${result.message}</div>
+            
+            <div class="bg-blue-50 p-4 rounded-lg">
+              <h4 class="font-semibold text-blue-800 mb-2">Next Steps:</h4>
+              <ol class="list-decimal list-inside space-y-1 text-sm text-blue-700">
+                ${result.instructions.nextSteps.map(step => `<li>${step}</li>`).join('')}
+              </ol>
+            </div>
+            
+            <div class="bg-gray-50 p-3 rounded-lg">
+              <h4 class="font-semibold text-gray-700 mb-1">Configuration Update:</h4>
+              <code class="text-xs bg-gray-100 p-1 rounded">${result.instructions.configUpdate}</code>
+            </div>
+            
+            <div class="flex space-x-2">
+              <a href="${result.spreadsheetUrl}" target="_blank" 
+                 class="inline-flex items-center px-3 py-2 bg-gsa-blue text-white text-sm rounded hover:bg-gsa-blue-dark">
+                <i class="fas fa-external-link-alt mr-2"></i>
+                Open Sheet
+              </a>
+              <button onclick="copyToClipboard('${result.spreadsheetId}', 'text')" 
+                      class="inline-flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                <i class="fas fa-copy mr-2"></i>
+                Copy Sheet ID
+              </button>
+            </div>
+          </div>
+        `;
+        
+        showCustomModal('Sheet Initialized Successfully', message);
+        
+      } else {
+        throw new Error(result.error);
+      }
+    } else {
+      hideLoading();
+      showToast('This function requires Google Apps Script environment', 'error');
+    }
+    
+  } catch (error) {
+    console.error('Error initializing CPARS sheet:', error);
+    hideLoading();
+    showToast(`Error creating sheet: ${error.message}`, 'error');
+  }
+}
+
+/**
+ * Show custom modal dialog
+ */
+function showCustomModal(title, content) {
+  // Create modal overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      document.body.removeChild(overlay);
+    }
+  };
+  
+  // Create modal content
+  const modal = document.createElement('div');
+  modal.className = 'bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-90vh overflow-y-auto';
+  
+  modal.innerHTML = `
+    <div class="flex items-center justify-between p-6 border-b">
+      <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
+      <button onclick="this.closest('.fixed').remove()" 
+              class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      ${content}
+    </div>
+    <div class="flex justify-end p-6 border-t">
+      <button onclick="this.closest('.fixed').remove()" 
+              class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+        Close
+      </button>
+    </div>
+  `;
+  
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
+/**
+ * Test Google Sheets connection
+ */
+async function testSheetsConnection() {
+  try {
+    showLoading('Testing Google Sheets connection...');
+    
+    if (typeof google !== 'undefined' && google.script) {
+      const result = await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler((response) => {
+            const clonedResponse = JSON.parse(JSON.stringify(response));
+            resolve(clonedResponse);
+          })
+          .withFailureHandler(reject)
+          .testSheetsConnection();
+      });
+      
+      hideLoading();
+      
+      if (result.success) {
+        const message = `
+          <div class="space-y-4">
+            <div class="text-green-600 font-semibold">${result.message}</div>
+            
+            <div class="bg-green-50 p-4 rounded-lg">
+              <h4 class="font-semibold text-green-800 mb-2">Connection Details:</h4>
+              <ul class="text-sm text-green-700 space-y-1">
+                <li><strong>Spreadsheet:</strong> ${result.spreadsheetName}</li>
+                <li><strong>ID:</strong> ${result.spreadsheetId}</li>
+                <li><strong>Range:</strong> ${result.dataRange}</li>
+                <li><strong>Total Rows:</strong> ${result.dataRowCount}</li>
+                <li><strong>Data Rows:</strong> ${result.actualDataRows || result.dataRowCount}</li>
+                <li><strong>Sheet Exists:</strong> ${result.sheetExists ? '✓ Yes' : '✗ No'}</li>
+                <li><strong>Range Valid:</strong> ${result.rangeValid ? '✓ Yes' : '✗ No'}</li>
+              </ul>
+            </div>
+            
+            <div class="flex space-x-2">
+              <a href="https://docs.google.com/spreadsheets/d/${result.spreadsheetId}" target="_blank" 
+                 class="inline-flex items-center px-3 py-2 bg-gsa-blue text-white text-sm rounded hover:bg-gsa-blue-dark">
+                <i class="fas fa-external-link-alt mr-2"></i>
+                Open Sheet
+              </a>
+            </div>
+          </div>
+        `;
+        
+        showCustomModal('Sheets Connection Test - Success', message);
+        
+      } else {
+        const message = `
+          <div class="space-y-4">
+            <div class="text-red-600 font-semibold">Connection Failed</div>
+            
+            <div class="bg-red-50 p-4 rounded-lg">
+              <h4 class="font-semibold text-red-800 mb-2">Error Details:</h4>
+              <p class="text-sm text-red-700 mb-2"><strong>Error:</strong> ${result.error}</p>
+              ${result.details ? `<p class="text-sm text-red-700"><strong>Details:</strong> ${result.details}</p>` : ''}
+            </div>
+            
+            <div class="bg-blue-50 p-4 rounded-lg">
+              <h4 class="font-semibold text-blue-800 mb-2">Troubleshooting Steps:</h4>
+              <ol class="list-decimal list-inside space-y-1 text-sm text-blue-700">
+                <li>Verify the spreadsheet ID in configuration</li>
+                <li>Ensure the spreadsheet is shared with the script</li>
+                <li>Check that the sheet name and range are correct</li>
+                <li>Try using "Initialize Sheet" to create a new data sheet</li>
+              </ol>
+            </div>
+          </div>
+        `;
+        
+        showCustomModal('Sheets Connection Test - Failed', message);
+      }
+    } else {
+      hideLoading();
+      showToast('This function requires Google Apps Script environment', 'error');
+    }
+    
+  } catch (error) {
+    console.error('Error testing sheets connection:', error);
+    hideLoading();
+    showToast(`Error testing connection: ${error.message}`, 'error');
+  }
+}
+</script>

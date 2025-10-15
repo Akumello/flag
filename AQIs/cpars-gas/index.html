@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPARS Performance Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Include custom styles -->
+    <?!= include('styles'); ?>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Top Controls -->
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-3xl font-bold text-gsa-blue">CPARS Performance Tracking</h1>
+            <div class="flex items-center space-x-4">
+                <button id="testConnectionBtn" class="bg-gsa-blue hover:bg-gsa-blue-dark text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                        onclick="testSheetsConnection()" title="Test Google Sheets connection and configuration">
+                    <i class="fas fa-link mr-2"></i>Test Connection
+                </button>
+                <button id="initSheetBtn" class="bg-gsa-green hover:bg-gsa-green-dark text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                        onclick="initializeNewCPARSSheet()" title="Create a new Google Sheet with sample CPARS data">
+                    <i class="fas fa-plus mr-2"></i>Initialize Sheet
+                </button>
+                <button id="refreshBtn" class="bg-gsa-orange hover:bg-gsa-orange-dark text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh Data
+                </button>
+                <div class="text-right">
+                    <div class="text-sm text-gray-600">Total Records</div>
+                    <div id="totalCount" class="text-xl font-bold text-gsa-blue">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="p-6 border-b border-gray-200">
+                <button id="toggleFilters" class="flex items-center justify-between w-full text-left">
+                    <h2 class="text-xl font-semibold text-gray-800">
+                        <i class="fas fa-filter mr-2 text-gsa-blue"></i>Advanced Filters
+                    </h2>
+                    <i id="filterToggleIcon" class="fas fa-chevron-down text-gsa-blue transition-transform duration-200"></i>
+                </button>
+            </div>
+            
+            <div id="filtersContent" class="p-6 space-y-6">
+                <!-- Modern Filter Buttons -->
+                <div class="space-y-6">
+                    <!-- Business Unit Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Business Unit</label>
+                        <div id="businessUnitFilters" class="flex flex-wrap gap-2">
+                            <!-- Dynamic filter buttons will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Completion Status Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Completion Status</label>
+                        <div id="completionStatusFilters" class="flex flex-wrap gap-2">
+                            <!-- Dynamic filter buttons will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                    <div class="text-sm text-gray-600">
+                        <span id="filteredCount">0</span> of <span id="totalFilterCount">0</span> records shown
+                    </div>
+                    <button id="clearFilters" class="px-4 py-2 text-gsa-blue border border-gsa-blue rounded-lg hover:bg-gsa-blue hover:text-white transition-colors duration-200">
+                        <i class="fas fa-times mr-2"></i>Clear All Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="bg-white rounded-lg shadow-md mb-8 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-search mr-2 text-gsa-blue"></i>Search Records
+            </h3>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label for="contractSearch" class="block text-sm font-medium text-gray-700 mb-2">
+                        Contract Number
+                    </label>
+                    <input type="text" id="contractSearch" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gsa-blue focus:border-transparent transition-all duration-200"
+                           placeholder="Enter contract number...">
+                </div>
+                <div>
+                    <label for="orderSearch" class="block text-sm font-medium text-gray-700 mb-2">
+                        Order Number
+                    </label>
+                    <input type="text" id="orderSearch" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gsa-blue focus:border-transparent transition-all duration-200"
+                           placeholder="Enter order number...">
+                </div>
+            </div>
+        </div>
+                        <div id="completionStatusFilters" class="flex flex-wrap gap-2">
+                            <!-- Dynamic filter buttons will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                    <div class="text-sm text-gray-600">
+                        <span id="filteredCount">0</span> of <span id="totalFilterCount">0</span> records shown
+                    </div>
+                    <button id="clearFilters" class="px-4 py-2 text-gsa-blue border border-gsa-blue rounded-lg hover:bg-gsa-blue hover:text-white transition-colors duration-200">
+                        <i class="fas fa-times mr-2"></i>Clear All Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Tables -->
+        <div class="space-y-8">
+            <!-- Complete Records Table -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="bg-gsa-blue text-white px-6 py-4 rounded-t-lg">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold">
+                            <i class="fas fa-check-circle mr-2"></i>Complete Records
+                        </h3>
+                        <div class="flex items-center space-x-3">
+                            <span id="completeCount" class="bg-white text-gsa-blue px-3 py-1 rounded-full text-sm font-bold">0</span>
+                            <div class="flex space-x-1">
+                                <button id="copyCompleteBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded transition-colors duration-200" title="Copy to clipboard">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button id="exportCompleteBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded transition-colors duration-200" title="Export to CSV">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button id="sheetsCompleteBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded transition-colors duration-200" title="Export to Google Sheets">
+                                    <i class="fas fa-table"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-0">
+                    <div id="completeTableContainer">
+                        <div id="completeLoading" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <div>Loading complete records...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Incomplete Records Table -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="bg-gsa-blue text-white px-6 py-4 rounded-t-lg">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold">
+                            <i class="fas fa-clock mr-2"></i>Incomplete Records
+                        </h3>
+                        <div class="flex items-center space-x-3">
+                            <span id="incompleteCount" class="bg-white text-gsa-blue px-3 py-1 rounded-full text-sm font-bold">0</span>
+                            <div class="flex space-x-1">
+                                <button id="copyIncompleteBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded transition-colors duration-200" title="Copy to clipboard">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button id="exportIncompleteBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded transition-colors duration-200" title="Export to CSV">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button id="sheetsIncompleteBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded transition-colors duration-200" title="Export to Google Sheets">
+                                    <i class="fas fa-table"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-0">
+                    <div id="incompleteTableContainer">
+                        <div id="incompleteLoading" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <div>Loading incomplete records...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Summary (Optional Analytics Section) -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-chart-bar mr-2 text-gsa-blue"></i>Performance Summary
+            </h3>
+            <div class="grid md:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-gsa-green bg-opacity-10 rounded-lg">
+                    <div class="text-2xl font-bold text-gsa-green" id="timelyCount">-</div>
+                    <div class="text-sm text-gray-600">Timely Complete</div>
+                </div>
+                <div class="text-center p-4 bg-yellow-500 bg-opacity-10 rounded-lg">
+                    <div class="text-2xl font-bold text-yellow-600" id="untimelyCount">-</div>
+                    <div class="text-sm text-gray-600">Untimely Complete</div>
+                </div>
+                <div class="text-center p-4 bg-gsa-orange bg-opacity-10 rounded-lg">
+                    <div class="text-2xl font-bold text-gsa-orange" id="dueCount">-</div>
+                    <div class="text-sm text-gray-600">Due Soon</div>
+                </div>
+                <div class="text-center p-4 bg-red-500 bg-opacity-10 rounded-lg">
+                    <div class="text-2xl font-bold text-red-600" id="overdueCount">-</div>
+                    <div class="text-sm text-gray-600">Overdue</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 bg-gsa-green text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+        <div class="flex items-center">
+            <i id="toastIcon" class="fas fa-check-circle mr-2"></i>
+            <span id="toastMessage">Success!</span>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-gsa-blue mb-4"></i>
+            <div class="text-lg font-semibold text-gray-800">Loading...</div>
+            <div id="loadingMessage" class="text-sm text-gray-600 mt-2">Please wait</div>
+        </div>
+    </div>
+
+    <!-- Include JavaScript -->
+    <?!= include('scripts'); ?>
+</body>
+</html>

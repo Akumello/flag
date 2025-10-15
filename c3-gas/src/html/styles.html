@@ -1,0 +1,293 @@
+<style>
+:root {
+    /* GSA Brand Colors */
+    --gsa-blue: #004F87;
+    --gsa-blue-alt: #1B7CAC;
+    --gsa-orange: #CF4817;
+    --gsa-green: #286D3B;
+    --gsa-red-dark: #522032;
+    --gsa-gray-light: #F2F2F2;
+    --gsa-gray: #BBBDBF;
+    --gsa-gray-dark: #424143;
+    --gsa-font: Calibri, sans-serif;
+
+    /* Semantic Light Theme Colors */
+    --primary: var(--gsa-blue);
+    --primary-hover: var(--gsa-blue-alt);
+    --primary-light: #E6F2FF;
+    --success: var(--gsa-green);
+    --success-light: #E8F5E8;
+    --warning: var(--gsa-orange);
+    --warning-light: #FFF2E6;
+    --danger: var(--gsa-red-dark);
+    --danger-light: #F5E6EA;
+    
+    --surface-primary: #FFFFFF;
+    --surface-secondary: var(--gsa-gray-light);
+    --surface-tertiary: #FAFAFA;
+    --background: var(--gsa-gray-light);
+    
+    --border-primary: var(--gsa-gray);
+    --border-secondary: #E5E5E5;
+    --border-focus: var(--primary);
+    
+    --text-primary: var(--gsa-gray-dark);
+    --text-secondary: #6B7280;
+    --text-tertiary: #9CA3AF;
+    --text-inverse: #FFFFFF;
+    
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] {
+    /* Dark Theme Colors */
+    --primary: var(--gsa-blue-alt);
+    --primary-hover: #2299DD;
+    --primary-light: #1A365D;
+    --success: #48BB78;
+    --success-light: #1A202C;
+    --warning: #ED8936;
+    --warning-light: #2D1B13;
+    --danger: #F56565;
+    --danger-light: #2D1B1F;
+    
+    --surface-primary: #1A1A1A;
+    --surface-secondary: #2D2D2D;
+    --surface-tertiary: #3A3A3A;
+    --background: #0F0F0F;
+    
+    --border-primary: #4A4A4A;
+    --border-secondary: #3A3A3A;
+    --border-focus: var(--primary);
+    
+    --text-primary: #F7FAFC;
+    --text-secondary: #CBD5E0;
+    --text-tertiary: #A0AEC0;
+    --text-inverse: var(--gsa-gray-dark);
+    
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+* {
+    font-family: var(--gsa-font);
+}
+
+body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.surface-primary { background-color: var(--surface-primary); }
+.surface-secondary { background-color: var(--surface-secondary); }
+.surface-tertiary { background-color: var(--surface-tertiary); }
+
+.border-primary { border-color: var(--border-primary); }
+.border-secondary { border-color: var(--border-secondary); }
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-inverse { color: var(--text-inverse); }
+
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--text-inverse);
+    border: 1px solid var(--primary);
+}
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+.btn-secondary:hover {
+    background-color: var(--surface-secondary);
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: var(--text-inverse);
+}
+.btn-warning {
+    background-color: var(--warning);
+    color: var(--text-inverse);
+}
+.btn-danger {
+    background-color: var(--danger);
+    color: var(--text-inverse);
+}
+
+/* Tab Styling */
+.tab-button {
+    transition: all 0.2s ease-in-out;
+}
+
+.tab-button.active {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    background-color: var(--surface-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.card-lg {
+    box-shadow: var(--shadow-lg);
+}
+
+.input-field {
+    background-color: var(--surface-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+}
+.input-field:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.1);
+}
+
+.nav-primary {
+    background-color: var(--primary);
+    color: var(--text-inverse);
+}
+
+.tab-active {
+    border-bottom-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
+
+.status-active { background-color: var(--warning-light); color: var(--warning); }
+.status-completed { background-color: var(--success-light); color: var(--success); }
+.status-overdue { background-color: var(--danger-light); color: var(--danger); }
+
+.priority-urgent { background-color: var(--danger-light); color: var(--danger); }
+.priority-high { background-color: var(--warning-light); color: var(--warning); }
+.priority-medium { background-color: var(--primary-light); color: var(--primary); }
+.priority-low { background-color: var(--surface-secondary); color: var(--text-secondary); }
+
+.notification-dot { 
+    background-color: var(--danger);
+    animation: pulse 2s infinite; 
+}
+
+.progress-bar {
+    background-color: var(--surface-secondary);
+    border-radius: 9999px;
+    height: 8px;
+}
+.progress-fill {
+    background-color: var(--primary);
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+}
+
+.theme-toggle {
+    background: none;
+    border: none;
+    color: var(--text-inverse);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
+}
+.theme-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.fade-in { animation: fadeIn 0.3s ease-in; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse { 
+    0%, 100% { opacity: 1; } 
+    50% { opacity: 0.5; } 
+}
+
+/* Dropdown and Modal Z-Index fixes */
+.dropdown-options {
+    z-index: 1000 !important;
+    background-color: var(--surface-primary) !important;
+    border: 1px solid var(--border-primary) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.modal-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    z-index: 2000 !important;
+    padding: 1rem !important;
+}
+
+.modal-overlay:not(.hidden) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.modal-content {
+    background-color: var(--surface-primary) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: var(--shadow-lg) !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+}
+
+.message-toast {
+    background-color: var(--surface-primary) !important;
+    border: 1px solid var(--border-primary) !important;
+    z-index: 3000 !important;
+}
+
+.message-toast.success {
+    background-color: var(--success-light) !important;
+    border-color: var(--success) !important;
+    color: var(--success) !important;
+}
+
+.message-toast.error {
+    background-color: var(--danger-light) !important;
+    border-color: var(--danger) !important;
+    color: var(--danger) !important;
+}
+
+/* Override Tailwind classes with custom properties */
+.bg-surface { background-color: var(--surface-primary) !important; }
+.bg-surface-secondary { background-color: var(--surface-secondary) !important; }
+.bg-surface-tertiary { background-color: var(--surface-tertiary) !important; }
+.border-border { border-color: var(--border-primary) !important; }
+.text-primary { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-tertiary { color: var(--text-tertiary) !important; }
+
+.bg-white { background-color: var(--surface-primary) !important; }
+.bg-gray-50 { background-color: var(--surface-tertiary) !important; }
+.bg-gray-100 { background-color: var(--surface-secondary) !important; }
+.bg-blue-50 { background-color: var(--primary-light) !important; }
+.text-gray-900 { color: var(--text-primary) !important; }
+.text-gray-700 { color: var(--text-primary) !important; }
+.text-gray-600 { color: var(--text-secondary) !important; }
+.text-gray-500 { color: var(--text-tertiary) !important; }
+.border-gray-100 { border-color: var(--border-secondary) !important; }
+.border-gray-200 { border-color: var(--border-secondary) !important; }
+.border-gray-300 { border-color: var(--border-primary) !important; }
+.border-blue-200 { border-color: var(--primary) !important; }
+</style>

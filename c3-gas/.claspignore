@@ -1,0 +1,57 @@
+# Clasp ignore patterns
+
+# Node modules and dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Tests
+tests/
+*.test.js
+*.spec.js
+
+# Documentation  
+docs/
+README.md
+
+# Local development
+local/
+.env
+.env.*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# Git files
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Other config files
+tsconfig.json
+webpack.config.js
+babel.config.js

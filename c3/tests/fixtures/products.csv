@@ -1,0 +1,11 @@
+Product Name,SKU,Price,Category,In Stock,Rating,Description,Website URL
+"Wireless Headphones, Premium",WH-001,$199.99,Electronics,true,4.5%,"High-quality wireless headphones with noise cancellation",https://store.example.com/headphones
+Gaming Mouse,GM-002,$79.99,Electronics,false,4.2%,Precision gaming mouse with RGB lighting,https://store.example.com/mouse
+Office Chair,OC-003,$299.99,Furniture,true,4.8%,"Ergonomic office chair with lumbar support, adjustable height",https://store.example.com/chair
+Coffee Maker,CM-004,$89.99,Appliances,true,4.0%,12-cup programmable coffee maker,https://store.example.com/coffee
+Standing Desk,SD-005,$399.99,Furniture,false,4.6%,Height-adjustable standing desk,https://store.example.com/desk
+Bluetooth Speaker,BS-006,$49.99,Electronics,true,4.3%,Portable Bluetooth speaker with 10-hour battery,https://store.example.com/speaker
+"Notebook Set, Premium",NB-007,$24.99,Office Supplies,true,4.1%,"Set of 3 premium notebooks, lined pages",https://store.example.com/notebooks
+Desk Lamp,DL-008,$59.99,Furniture,true,4.4%,LED desk lamp with adjustable brightness,https://store.example.com/lamp
+Wireless Keyboard,WK-009,$129.99,Electronics,false,4.7%,Mechanical wireless keyboard with backlight,https://store.example.com/keyboard
+Monitor Stand,MS-010,$39.99,Accessories,true,4.2%,Adjustable monitor stand with storage,https://store.example.com/stand

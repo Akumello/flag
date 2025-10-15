@@ -1,0 +1,1754 @@
+<script>
+/**
+ * Google Apps Script Client-Side JavaScript
+ * This script handles the frontend logic and communicates with the GAS backend
+ */
+
+// ==================== CLIENT-SIDE VALIDATION UTILITIES ====================
+/**
+ * Data Validation Utilities Module
+ * 
+ * Provides comprehensive validation functions for various data types,
+ * file validation, Google Sheets URL validation, and list compatibility checking.
+ */
+
+const ValidationUtils = {
+    /**
+     * Validates a value against a specific data type
+     * @param {string} value - The value to validate
+     * @param {string} dataType - The expected data type
+     * @returns {Object} - {isValid: boolean, error?: string, validatedValue?: any}
+     */
+    validateDataType(value, dataType) {
+        if (!value || value.trim() === '') {
+            return { isValid: false, error: 'Empty value' };
+        }
+        
+        const trimmedValue = value.trim();
+        
+        switch (dataType) {
+            case 'number':
+                const num = parseFloat(trimmedValue);
+                if (isNaN(num)) {
+                    return { isValid: false, error: `"${trimmedValue}" is not a valid number` };
+                }
+                return { isValid: true, validatedValue: num };
+                
+            case 'currency':
+                // Remove currency symbols and validate as number
+                const cleanedCurrency = trimmedValue.replace(/[$,\s]/g, '');
+                const currencyNum = parseFloat(cleanedCurrency);
+                if (isNaN(currencyNum)) {
+                    return { isValid: false, error: `"${trimmedValue}" is not a valid currency amount` };
+                }
+                return { isValid: true, validatedValue: currencyNum };
+                
+            case 'percentage':
+                // Remove % symbol and validate as number
+                const cleanedPercent = trimmedValue.replace(/%/g, '');
+                const percentNum = parseFloat(cleanedPercent);
+                if (isNaN(percentNum)) {
+                    return { isValid: false, error: `"${trimmedValue}" is not a valid percentage` };
+                }
+                return { isValid: true, validatedValue: percentNum };
+                
+            case 'email':
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(trimmedValue)) {
+                    return { isValid: false, error: `"${trimmedValue}" is not a valid email address` };
+                }
+                return { isValid: true, validatedValue: trimmedValue };
+                
+            case 'date':
+                const dateObj = new Date(trimmedValue);
+                if (isNaN(dateObj.getTime())) {
+                    return { isValid: false, error: `"${trimmedValue}" is not a valid date` };
+                }
+                return { isValid: true, validatedValue: trimmedValue };
+                
+            case 'phone':
+                // Basic phone validation - digits and common separators
+                const phoneRegex = /^[\d\s\-\(\)\+\.]+$/;
+                if (!phoneRegex.test(trimmedValue) || trimmedValue.replace(/\D/g, '').length < 10) {
+                    return { isValid: false, error: `"${trimmedValue}" is not a valid phone number` };
+                }
+                return { isValid: true, validatedValue: trimmedValue };
+                
+            case 'url':
+                try {
+                    new URL(trimmedValue);
+                    return { isValid: true, validatedValue: trimmedValue };
+                } catch {
+                    return { isValid: false, error: `"${trimmedValue}" is not a valid URL` };
+                }
+                
+            case 'boolean':
+                const booleanValue = trimmedValue.toLowerCase();
+                const validBooleans = ['true', 'false', 'yes', 'no', '1', '0', 'y', 'n'];
+                if (!validBooleans.includes(booleanValue)) {
+                    return { isValid: false, error: `"${trimmedValue}" is not a valid yes/no value (use: yes/no, true/false, 1/0, y/n)` };
+                }
+                return { isValid: true, validatedValue: ['true', 'yes', '1', 'y'].includes(booleanValue) };
+                
+            case 'text':
+            default:
+                return { isValid: true, validatedValue: trimmedValue };
+        }
+    },
+
+    /**
+     * Validates CSV data against a specific data type
+     * @param {string} csvData - The CSV data to validate
+     * @param {string} dataType - The expected data type
+     * @returns {Promise} - Resolves with validation results or rejects with error
+     */
+    validateCSVData(csvData, dataType) {
+        return new Promise((resolve, reject) => {
+            try {
+                // Parse CSV data
+                const lines = csvData.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+                
+                if (lines.length === 0) {
+                    reject(new Error('No data found in the CSV file'));
+                    return;
+                }
+                
+                let errors = [];
+                let validatedData = [];
+                
+                lines.forEach((line, index) => {
+                    const values = line.split(',').map(val => val.trim().replace(/^"|"$/g, ''));
+                    
+                    values.forEach((value, valueIndex) => {
+                        const validation = this.validateDataType(value, dataType);
+                        
+                        if (!validation.isValid) {
+                            errors.push(`Row ${index + 1}, Column ${valueIndex + 1}: ${validation.error}`);
+                        } else {
+                            validatedData.push(validation.validatedValue);
+                        }
+                    });
+                });
+                
+                if (errors.length > 0) {
+                    // Show only first 5 errors to avoid overwhelming the user
+                    const errorMessage = `File validation failed:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n... and ${errors.length - 5} more errors` : ''}`;
+                    reject(new Error(errorMessage));
+                } else {
+                    resolve({
+                        isValid: true,
+                        validatedData: validatedData,
+                        totalItems: validatedData.length
+                    });
+                }
+            } catch (error) {
+                reject(new Error('Error parsing CSV data: ' + error.message));
+            }
+        });
+    },
+
+    /**
+     * Validates a CSV or Excel file against a specific data type
+     * @param {File} file - The file to validate
+     * @param {string} dataType - The expected data type
+     * @returns {Promise} - Resolves with validation results or rejects with error
+     */
+    validateCSVFile(file, dataType) {
+        return new Promise((resolve, reject) => {
+            if (!file) {
+                reject(new Error('No file provided'));
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                const csvData = e.target.result;
+                this.validateCSVData(csvData, dataType)
+                    .then(resolve)
+                    .catch(reject);
+            };
+            
+            reader.onerror = () => {
+                reject(new Error('Error reading file'));
+            };
+            
+            reader.readAsText(file);
+        });
+    },
+
+    /**
+     * Validates Google Sheets URL format
+     * @param {string} url - The URL to validate
+     * @returns {boolean} - True if URL appears to be a valid Google Sheets URL
+     */
+    validateSheetsUrl(url) {
+        if (!url || url.trim() === '') return false;
+        
+        const sheetsUrlPattern = /^https:\/\/docs\.google\.com\/spreadsheets\/d\/[a-zA-Z0-9-_]+/;
+        return sheetsUrlPattern.test(url.trim());
+    },
+
+    /**
+     * Shows data type compatibility error in the UI
+     * @param {HTMLElement} container - The container element to show error in
+     * @param {string} listDataType - The list's data type
+     * @param {string} columnDataType - The column's expected data type
+     */
+    showDataTypeError(container, listDataType, columnDataType) {
+        this.clearDataTypeError(container);
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'data-type-error mt-2 p-2 bg-red-100 text-red-700 text-sm rounded border border-red-300';
+        errorDiv.innerHTML = `
+            <i class="bi bi-exclamation-triangle-fill mr-1"></i>
+            <strong>Data Type Mismatch:</strong> This list contains <strong>${listDataType}</strong> data, 
+            but the column expects <strong>${columnDataType}</strong> data. Please select a compatible list 
+            or change the column's data type.
+        `;
+        
+        container.appendChild(errorDiv);
+    },
+
+    /**
+     * Clears data type error message from the UI
+     * @param {HTMLElement} container - The container element to clear error from
+     */
+    clearDataTypeError(container) {
+        const existingError = container.querySelector('.data-type-error');
+        if (existingError) {
+            existingError.remove();
+        }
+    }
+};
+
+// ==================== CLIENT-SIDE FILE PARSER UTILITIES ====================
+/**
+ * File Parser Utilities for handling various file formats
+ */
+const FileParser = {
+    /**
+     * Parse CSV file content
+     * @param {string} content - CSV file content
+     * @returns {Array} - Array of parsed rows
+     */
+    parseCSV(content) {
+        const lines = content.split('\n').filter(line => line.trim());
+        return lines.map(line => {
+            // Simple CSV parsing - handles basic cases
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            values.push(current.trim());
+            
+            return values;
+        });
+    },
+
+    /**
+     * Parse tabular data (tab or space separated)
+     * @param {string} content - Tabular data content
+     * @returns {Array} - Array of parsed rows
+     */
+    parseTabular(content) {
+        const lines = content.split('\n').filter(line => line.trim());
+        return lines.map(line => {
+            // Split by tabs first, then multiple spaces
+            return line.split(/\t+/).length > 1 
+                ? line.split(/\t+/) 
+                : line.split(/\s{2,}/);
+        });
+    }
+};
+
+// ==================== GLOBAL VALIDATION FUNCTIONS ====================
+// Backward compatibility functions
+function validateDataType(value, dataType) {
+    return ValidationUtils.validateDataType(value, dataType);
+}
+
+function validateCSVFile(file, dataType) {
+    return ValidationUtils.validateCSVFile(file, dataType);
+}
+
+function validateCSVData(csvData, dataType) {
+    return ValidationUtils.validateCSVData(csvData, dataType);
+}
+
+function showDataTypeError(container, listDataType, columnDataType) {
+    return ValidationUtils.showDataTypeError(container, listDataType, columnDataType);
+}
+
+function clearDataTypeError(container) {
+    return ValidationUtils.clearDataTypeError(container);
+}
+
+// ==================== APPLICATION STATE AND CONFIGURATION ====================
+
+// Configuration object (loaded from server)
+let CONFIG = null;
+
+// Application state
+let columnDefinitions = [];
+let modalColumns = [];
+let selectedColumnIndex = 0;
+
+// Initialize the application when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Load configuration from server
+    google.script.run
+        .withSuccessHandler(function(config) {
+            CONFIG = config;
+            initializeApp();
+        })
+        .withFailureHandler(function(error) {
+            console.error('Failed to load configuration:', error);
+            showErrorMessage('Failed to load application configuration');
+        })
+        .getConfig();
+});
+
+/**
+ * Initialize the application
+ */
+function initializeApp() {
+    // Initialize UI components
+    initializeUI();
+    
+    // Set up event handlers
+    setupEventHandlers();
+    
+    // Load initial data
+    loadInitialData();
+    
+    // Initialize theme
+    initializeTheme();
+}
+
+/**
+ * Initialize UI components
+ */
+function initializeUI() {
+    // Inject tabs
+    injectTabs();
+    
+    // Inject dashboard stats
+    injectDashboardStats();
+    
+    // Inject select options
+    injectSelectOptions('callType', CONFIG.callTypes);
+    injectSelectOptions('priority', CONFIG.priorities);
+    injectSelectOptions('frequency', CONFIG.frequencies);
+    injectSelectOptions('statusFilter', CONFIG.statusFilters);
+    
+    // Populate data type options
+    const dataTypeSelect = document.getElementById('columnDataType');
+    if (dataTypeSelect && CONFIG.dataTypes) {
+        dataTypeSelect.innerHTML = CONFIG.dataTypes
+            .map(type => `<option value="${type.value}">${type.label}</option>`)
+            .join('');
+    }
+    
+    // Initialize column definitions display
+    displayColumnDefinitions();
+}
+
+/**
+ * Setup event handlers
+ */
+function setupEventHandlers() {
+    // Form submission
+    document.getElementById('createCallForm').addEventListener('submit', handleCreateCall);
+    
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    
+    // File input
+    document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+    
+    // Date/time inputs
+    setupDateTimeHandlers();
+    
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+    
+    // Modal event handlers
+    setupModalHandlers();
+}
+
+/**
+ * Load initial data from server
+ */
+function loadInitialData() {
+    // Load dashboard statistics
+    loadDashboardStats();
+    
+    // Load recent activity
+    loadRecentActivity();
+    
+    // Load validation lists
+    loadAllLists();
+}
+
+/**
+ * Theme management
+ */
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const themeIcon = document.getElementById('themeIcon');
+    themeIcon.className = theme === 'light' ? 'bi bi-moon text-xl' : 'bi bi-sun text-xl';
+}
+
+/**
+ * UI Injection Functions
+ */
+function injectTabs() {
+    const tabNavigation = document.getElementById('tabNavigation');
+    tabNavigation.innerHTML = CONFIG.tabs.map(tab => `
+        <button class="tab-btn py-4 px-1 border-b-2 ${tab.active ? 'tab-active' : 'border-transparent text-secondary hover:text-primary'} transition" data-tab="${tab.id}">
+            <i class="bi ${tab.icon} mr-2"></i>${tab.label}
+        </button>
+    `).join('');
+}
+
+function injectDashboardStats() {
+    const dashboardStats = document.getElementById('dashboardStats');
+    dashboardStats.innerHTML = CONFIG.dashboardStats.map(stat => `
+        <div class="card p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-secondary">${stat.label}</p>
+                    <p id="${stat.id}" class="text-3xl font-bold" style="color: var(--${stat.color})">${stat.value}</p>
+                </div>
+                <i class="bi ${stat.icon} text-3xl" style="color: var(--${stat.color})"></i>
+            </div>
+        </div>
+    `).join('');
+}
+
+function injectSelectOptions(selectId, options) {
+    const select = document.getElementById(selectId);
+    if (!select) return false;
+    
+    select.innerHTML = options.map(option => `
+        <option value="${option.value}" 
+                ${option.selected ? 'selected' : ''} 
+                ${option.disabled ? 'disabled' : ''}>
+            ${option.label}
+        </option>
+    `).join('');
+    
+    return true;
+}
+
+/**
+ * Tab management
+ */
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('text-secondary');
+    });
+    const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+    activeTab.classList.add('tab-active');
+    activeTab.classList.remove('text-secondary');
+
+    // Show/hide content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById(tabName).classList.remove('hidden');
+
+    // Refresh data based on tab
+    if (tabName === 'dashboard') {
+        loadDashboardStats();
+        loadRecentActivity();
+    } else if (tabName === 'manage') {
+        loadManagedCalls();
+    } else if (tabName === 'complete') {
+        loadAssignedCalls();
+    }
+}
+
+/**
+ * Data loading functions
+ */
+function loadDashboardStats() {
+    google.script.run
+        .withSuccessHandler(function(stats) {
+            updateDashboardStats(stats);
+        })
+        .withFailureHandler(function(error) {
+            console.error('Error loading dashboard stats:', error);
+        })
+        .getDashboardStatistics();
+}
+
+function updateDashboardStats(stats) {
+    for (const [key, value] of Object.entries(stats)) {
+        const element = document.getElementById(key);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+}
+
+function loadRecentActivity() {
+    google.script.run
+        .withSuccessHandler(function(activities) {
+            displayRecentActivity(activities);
+        })
+        .withFailureHandler(function(error) {
+            console.error('Error loading recent activity:', error);
+        })
+        .getRecentActivity();
+}
+
+function displayRecentActivity(activities) {
+    const container = document.getElementById('recentActivity');
+    
+    if (activities.length === 0) {
+        container.innerHTML = '<p class="text-secondary">No recent activity</p>';
+        return;
+    }
+    
+    container.innerHTML = activities.map(activity => `
+        <div class="flex items-center space-x-3 py-2 border-b border-border last:border-b-0">
+            <div class="flex-shrink-0">
+                <i class="bi ${getActivityIcon(activity.type)} text-primary"></i>
+            </div>
+            <div class="flex-grow min-w-0">
+                <p class="text-sm font-medium text-primary">${activity.title}</p>
+                <p class="text-xs text-secondary">${activity.description}</p>
+            </div>
+            <div class="flex-shrink-0">
+                <span class="text-xs text-tertiary">${formatTimestamp(activity.timestamp)}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        call_created: 'bi-plus-circle',
+        response_submitted: 'bi-check-circle',
+        list_created: 'bi-list-ul'
+    };
+    return icons[type] || 'bi-info-circle';
+}
+
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMins < 60) {
+        return `${diffMins}m ago`;
+    } else if (diffHours < 24) {
+        return `${diffHours}h ago`;
+    } else {
+        return `${diffDays}d ago`;
+    }
+}
+
+/**
+ * Form handling
+ */
+function handleCreateCall(e) {
+    e.preventDefault();
+    
+    // Update combined datetime
+    updateCombinedDateTime();
+    
+    // Validate form
+    const formData = new FormData(e.target);
+    const callData = Object.fromEntries(formData.entries());
+    
+    // Add column definitions if enrichment type
+    if (callData.type === 'enrichment') {
+        callData.columnDefinitions = columnDefinitions;
+    }
+    
+    // Submit to server
+    google.script.run
+        .withSuccessHandler(function(result) {
+            if (result.success) {
+                showSuccessMessage('Data call created successfully!');
+                resetCreateForm();
+                switchTab('manage');
+                loadManagedCalls();
+            } else {
+                showErrorMessage('Failed to create data call');
+            }
+        })
+        .withFailureHandler(function(error) {
+            showErrorMessage('Error creating data call: ' + error.message);
+        })
+        .createDataCall(callData);
+}
+
+// ==================== CALL TYPE DROPDOWN FUNCTIONS ====================
+
+function toggleCallTypeDropdown() {
+    const options = document.getElementById('callTypeOptions');
+    const button = document.getElementById('callTypeButton');
+    const chevron = document.getElementById('callTypeChevron');
+    
+    const isHidden = options.classList.contains('hidden');
+    
+    if (isHidden) {
+        options.classList.remove('hidden');
+        button.setAttribute('aria-expanded', 'true');
+        chevron.classList.add('rotate-180');
+    } else {
+        options.classList.add('hidden');
+        button.setAttribute('aria-expanded', 'false');
+        chevron.classList.remove('rotate-180');
+    }
+}
+
+function selectCallType(value) {
+    const selectedDisplay = document.getElementById('callTypeSelected');
+    const hiddenInput = document.getElementById('callType');
+    const options = document.getElementById('callTypeOptions');
+    const button = document.getElementById('callTypeButton');
+    const chevron = document.getElementById('callTypeChevron');
+    
+    // Update the display and hidden input
+    hiddenInput.value = value;
+    
+    // Update selected display based on value
+    if (value === 'enrichment') {
+        selectedDisplay.innerHTML = `
+            <div class="font-medium text-primary">Data Enrichment</div>
+            <div class="text-sm text-secondary mt-1">Add missing information to existing records</div>
+        `;
+    } else if (value === 'collection') {
+        selectedDisplay.innerHTML = `
+            <div class="font-medium text-primary">Data Collection</div>
+            <div class="text-sm text-secondary mt-1">Gather new datasets from scratch</div>
+        `;
+    }
+    
+    // Close dropdown
+    options.classList.add('hidden');
+    button.setAttribute('aria-expanded', 'false');
+    chevron.classList.remove('rotate-180');
+    
+    // Show relevant sections
+    const enrichmentSection = document.getElementById('enrichmentSection');
+    const collectionSection = document.getElementById('collectionSection');
+    const columnAnalysisSection = document.getElementById('columnAnalysisSection');
+    
+    // Hide all sections first
+    enrichmentSection.classList.add('hidden');
+    collectionSection.classList.add('hidden');
+    columnAnalysisSection.classList.add('hidden');
+    
+    // Show relevant sections
+    if (value === 'enrichment') {
+        enrichmentSection.classList.remove('hidden');
+        columnAnalysisSection.classList.remove('hidden');
+    } else if (value === 'collection') {
+        collectionSection.classList.remove('hidden');
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('callTypeDropdown');
+    const options = document.getElementById('callTypeOptions');
+    
+    if (dropdown && options && !dropdown.contains(event.target)) {
+        options.classList.add('hidden');
+        const button = document.getElementById('callTypeButton');
+        const chevron = document.getElementById('callTypeChevron');
+        if (button) button.setAttribute('aria-expanded', 'false');
+        if (chevron) chevron.classList.remove('rotate-180');
+    }
+});
+
+function resetCreateForm() {
+    document.getElementById('createCallForm').reset();
+    columnDefinitions = [];
+    displayColumnDefinitions();
+    
+    // Hide type-specific sections
+    document.getElementById('enrichmentSection').classList.add('hidden');
+    document.getElementById('collectionSection').classList.add('hidden');
+}
+
+/**
+ * Date/time handling
+ */
+function setupDateTimeHandlers() {
+    const dueDateOnly = document.getElementById('dueDateOnly');
+    const dueTimeOnly = document.getElementById('dueTimeOnly');
+    const isDateOnly = document.getElementById('isDateOnly');
+    
+    if (dueDateOnly) dueDateOnly.addEventListener('change', updateCombinedDateTime);
+    if (dueTimeOnly) dueTimeOnly.addEventListener('change', updateCombinedDateTime);
+    if (isDateOnly) {
+        isDateOnly.addEventListener('change', function() {
+            dueTimeOnly.disabled = this.checked;
+            if (this.checked) {
+                dueTimeOnly.value = '';
+            }
+            updateCombinedDateTime();
+        });
+    }
+}
+
+function updateCombinedDateTime() {
+    const dueDateOnly = document.getElementById('dueDateOnly').value;
+    const dueTimeOnly = document.getElementById('dueTimeOnly').value;
+    const isDateOnly = document.getElementById('isDateOnly').checked;
+    const combinedField = document.getElementById('dueDate');
+    
+    if (dueDateOnly) {
+        if (isDateOnly || !dueTimeOnly) {
+            combinedField.value = dueDateOnly + 'T23:59';
+        } else {
+            combinedField.value = dueDateOnly + 'T' + dueTimeOnly;
+        }
+    }
+}
+
+/**
+ * File handling
+ */
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const fileName = document.getElementById('fileName');
+    fileName.textContent = file.name;
+    fileName.classList.remove('text-secondary');
+    fileName.classList.add('text-primary');
+    
+    // Parse the file
+    parseFile(file);
+}
+
+function parseFile(file) {
+    // Use the FileParser to handle the file
+    if (typeof FileParser !== 'undefined') {
+        FileParser.parse(file)
+            .then(result => {
+                columnDefinitions = result.columns || [];
+                displayColumnDefinitions();
+                showSuccessMessage(`File parsed successfully! Found ${columnDefinitions.length} columns.`);
+            })
+            .catch(error => {
+                showErrorMessage('Error parsing file: ' + error.message);
+            });
+    } else {
+        showErrorMessage('File parser not available');
+    }
+}
+
+/**
+ * Column management
+ */
+function displayColumnDefinitions() {
+    const container = document.getElementById('columnDefinitionsList');
+    const area = document.getElementById('columnDefinitionsArea');
+    
+    if (columnDefinitions.length === 0) {
+        area.classList.add('hidden');
+        return;
+    }
+    
+    area.classList.remove('hidden');
+    
+    container.innerHTML = columnDefinitions.map((col, index) => `
+        <div class="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
+            <div class="flex-grow">
+                <div class="flex items-center space-x-3">
+                    <span class="font-medium text-primary">${col.name}</span>
+                    <span class="datatype-badge">${col.dataType}</span>
+                    ${col.required ? '<span class="text-xs text-danger">Required</span>' : ''}
+                    ${col.purpose === 'calculated' ? '<span class="text-xs text-info">Calculated</span>' : ''}
+                </div>
+                ${col.helpText ? `<p class="text-xs text-secondary mt-1">${col.helpText}</p>` : ''}
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="editColumn(${index})" class="text-secondary hover:text-primary" 
+                        title="Edit column">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button onclick="removeColumn(${index})" class="text-secondary hover:text-danger" 
+                        title="Remove column">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ==================== COLUMN CONFIGURATION TAB FUNCTIONS ====================
+
+function switchUploadTab(tabName) {
+    // Hide all tab contents
+    document.getElementById('fileUploadContent').classList.add('hidden');
+    document.getElementById('pasteDataContent').classList.add('hidden');
+    document.getElementById('sheetsUrlContent').classList.add('hidden');
+    
+    // Remove active class from all tabs
+    document.getElementById('fileUploadTab').classList.remove('active', 'border-primary', 'text-primary');
+    document.getElementById('fileUploadTab').classList.add('border-transparent', 'text-secondary');
+    document.getElementById('pasteDataTab').classList.remove('active', 'border-primary', 'text-primary');
+    document.getElementById('pasteDataTab').classList.add('border-transparent', 'text-secondary');
+    document.getElementById('sheetsUrlTab').classList.remove('active', 'border-primary', 'text-primary');
+    document.getElementById('sheetsUrlTab').classList.add('border-transparent', 'text-secondary');
+    
+    // Show selected tab content and activate tab
+    if (tabName === 'fileUpload') {
+        document.getElementById('fileUploadContent').classList.remove('hidden');
+        document.getElementById('fileUploadTab').classList.add('active', 'border-primary', 'text-primary');
+        document.getElementById('fileUploadTab').classList.remove('border-transparent', 'text-secondary');
+    } else if (tabName === 'pasteData') {
+        document.getElementById('pasteDataContent').classList.remove('hidden');
+        document.getElementById('pasteDataTab').classList.add('active', 'border-primary', 'text-primary');
+        document.getElementById('pasteDataTab').classList.remove('border-transparent', 'text-secondary');
+    } else if (tabName === 'sheetsUrl') {
+        document.getElementById('sheetsUrlContent').classList.remove('hidden');
+        document.getElementById('sheetsUrlTab').classList.add('active', 'border-primary', 'text-primary');
+        document.getElementById('sheetsUrlTab').classList.remove('border-transparent', 'text-secondary');
+    }
+}
+
+function handleDrop(event, type) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        if (type === 'column') {
+            handleFileUpload({ files: [file] });
+        }
+    }
+    
+    // Reset drag styling
+    event.target.classList.remove('border-primary', 'bg-blue-50');
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+function handleDragEnter(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.target.classList.add('border-primary', 'bg-blue-50');
+}
+
+function handleDragLeave(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.target.classList.remove('border-primary', 'bg-blue-50');
+}
+
+function handleFileUpload(input) {
+    const file = input.files ? input.files[0] : input;
+    if (!file) return;
+    
+    // Show upload status
+    const statusDiv = document.getElementById('uploadStatus');
+    const fileNameSpan = document.getElementById('uploadedFileName');
+    
+    if (statusDiv && fileNameSpan) {
+        fileNameSpan.textContent = file.name;
+        statusDiv.classList.remove('hidden');
+    }
+    
+    // Process the file (you can add actual file processing here)
+    console.log('Processing file:', file.name);
+    showSuccessMessage(`File "${file.name}" uploaded successfully!`);
+}
+
+function validatePastedData() {
+    const input = document.getElementById('pasteDataInput');
+    const processBtn = document.getElementById('processPasteBtn');
+    
+    if (input && processBtn) {
+        const hasData = input.value.trim().length > 0;
+        processBtn.disabled = !hasData;
+    }
+}
+
+function processPastedData() {
+    const input = document.getElementById('pasteDataInput');
+    const preview = document.getElementById('pasteDataPreview');
+    const table = document.getElementById('pasteDataTable');
+    
+    if (!input || !input.value.trim()) return;
+    
+    const data = input.value.trim();
+    const rows = data.split('\n').map(row => row.split('\t'));
+    
+    if (rows.length === 0) return;
+    
+    // Create simple table preview
+    let tableHTML = '<table class="w-full border-collapse border border-gray-300">';
+    rows.forEach((row, index) => {
+        tableHTML += '<tr>';
+        row.forEach(cell => {
+            const tag = index === 0 ? 'th' : 'td';
+            tableHTML += `<${tag} class="border border-gray-300 px-2 py-1 text-left">${cell}</${tag}>`;
+        });
+        tableHTML += '</tr>';
+    });
+    tableHTML += '</table>';
+    
+    if (table) table.innerHTML = tableHTML;
+    if (preview) preview.classList.remove('hidden');
+    
+    showSuccessMessage(`Processed ${rows.length} rows of data!`);
+}
+
+function validateSheetsUrl() {
+    const input = document.getElementById('sheetsUrlInput');
+    const importBtn = document.getElementById('importSheetsBtn');
+    
+    if (input && importBtn) {
+        const url = input.value.trim();
+        const isValidUrl = url.includes('docs.google.com/spreadsheets') && url.includes('/d/');
+        importBtn.disabled = !isValidUrl;
+    }
+}
+
+function importFromSheetsUrl() {
+    const input = document.getElementById('sheetsUrlInput');
+    if (!input || !input.value.trim()) return;
+    
+    const url = input.value.trim();
+    console.log('Importing from URL:', url);
+    showSuccessMessage('Google Sheets import functionality coming soon!');
+}
+
+function clearUploadedFile() {
+    const statusDiv = document.getElementById('uploadStatus');
+    const fileInput = document.getElementById('columnFileUpload');
+    
+    if (statusDiv) statusDiv.classList.add('hidden');
+    if (fileInput) fileInput.value = '';
+}
+
+function openColumnModal() {
+    showColumnModal();
+}
+
+function showColumnModal() {
+    modalColumns = [...columnDefinitions];
+    const modal = document.getElementById('columnModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    renderModalColumns();
+}
+
+function closeColumnModal() {
+    const modal = document.getElementById('columnModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function addModalColumn() {
+    modalColumns.push({
+        name: '',
+        dataType: 'text',
+        required: false,
+        purpose: 'input',
+        calculationType: '',
+        conditionalRules: [],
+        formula: '',
+        lookupSource: '',
+        lookupTable: '',
+        staticValue: '',
+        validationListId: '',
+        strictValidation: true,
+        helpText: ''
+    });
+    renderModalColumns();
+}
+
+function renderModalColumns() {
+    const container = document.getElementById('modalContent');
+    
+    if (modalColumns.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="bi bi-table text-4xl text-secondary mb-4"></i>
+                <h4 class="text-lg font-medium text-primary mb-2">No Columns Defined</h4>
+                <p class="text-secondary mb-4">Add columns to define the data structure for your call</p>
+                <button type="button" onclick="addModalColumn()" class="btn btn-primary">
+                    <i class="bi bi-plus-circle mr-2"></i>Add First Column
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = modalColumns.map((column, index) => `
+        <div class="border border-border rounded-lg p-4 bg-surface">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">Column Name *</label>
+                    <input type="text" value="${column.name}" 
+                           onchange="updateModalColumn(${index}, 'name', this.value)"
+                           class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                           placeholder="Enter column name">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">Data Type *</label>
+                    <select onchange="updateModalColumn(${index}, 'dataType', this.value)"
+                            class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary">
+                        ${CONFIG.dataTypes.map(type => 
+                            `<option value="${type.value}" ${column.dataType === type.value ? 'selected' : ''}>${type.label}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4 mt-4">
+                <label class="flex items-center">
+                    <input type="checkbox" ${column.required ? 'checked' : ''} 
+                           onchange="updateModalColumn(${index}, 'required', this.checked)" class="mr-2">
+                    <span class="text-sm text-primary">Required</span>
+                </label>
+                
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-primary">Purpose:</span>
+                    <label class="flex items-center">
+                        <input type="radio" name="purpose_${index}" value="input" 
+                               ${column.purpose === 'input' ? 'checked' : ''}
+                               onchange="updateModalColumn(${index}, 'purpose', this.value)" class="mr-1">
+                        <span class="text-sm text-primary">Input</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="purpose_${index}" value="calculated" 
+                               ${column.purpose === 'calculated' ? 'checked' : ''}
+                               onchange="updateModalColumn(${index}, 'purpose', this.value); toggleCalculatedDataControls(${index})" class="mr-1">
+                        <span class="text-sm text-primary">Calculated</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Calculated Data Section -->
+            <div id="calculatedDataSection_${index}" class="mt-4 p-3 bg-surface-secondary rounded-lg ${column.purpose === 'calculated' ? '' : 'hidden'}">
+                <h5 class="text-sm font-medium text-primary mb-3">Calculation Configuration</h5>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-primary mb-2">Calculation Type</label>
+                        <select onchange="updateModalColumn(${index}, 'calculationType', this.value); toggleCalculationConfig(${index})"
+                                class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary">
+                            <option value="">Select calculation type...</option>
+                            <option value="conditional" ${column.calculationType === 'conditional' ? 'selected' : ''}>Conditional Logic</option>
+                            <option value="formula" ${column.calculationType === 'formula' ? 'selected' : ''}>Mathematical Formula</option>
+                            <option value="lookup" ${column.calculationType === 'lookup' ? 'selected' : ''}>Lookup Table</option>
+                            <option value="static" ${column.calculationType === 'static' ? 'selected' : ''}>Static Value</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Conditional Logic Configuration -->
+                    <div id="conditionalConfig_${index}" class="space-y-3 ${column.calculationType === 'conditional' ? '' : 'hidden'}">
+                        <div>
+                            <label class="block text-sm font-medium text-primary mb-2">Conditional Rules</label>
+                            <div id="conditionalRules_${index}" class="space-y-2">
+                                ${renderConditionalRules(column.conditionalRules || [], index)}
+                            </div>
+                            <button type="button" onclick="addConditionalRule(${index})" 
+                                    class="btn btn-secondary btn-sm mt-2">
+                                <i class="bi bi-plus-circle mr-1"></i>Add Rule
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Configuration -->
+                    <div id="formulaConfig_${index}" class="space-y-3 ${column.calculationType === 'formula' ? '' : 'hidden'}">
+                        <div>
+                            <label class="block text-sm font-medium text-primary mb-2">Formula</label>
+                            <input type="text" value="${column.formula || ''}" 
+                                   onchange="updateModalColumn(${index}, 'formula', this.value)"
+                                   class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                                   placeholder="Enter formula (e.g., {Column1} + {Column2})">
+                            <p class="text-xs text-secondary mt-1">Use {ColumnName} syntax to reference other columns</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Lookup Configuration -->
+                    <div id="lookupConfig_${index}" class="space-y-3 ${column.calculationType === 'lookup' ? '' : 'hidden'}">
+                        <div>
+                            <label class="block text-sm font-medium text-primary mb-2">Source Column</label>
+                            <select onchange="updateModalColumn(${index}, 'lookupSource', this.value)"
+                                    class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary">
+                                <option value="">Select source column...</option>
+                                ${getOtherColumnsOptions(index, column.lookupSource)}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-primary mb-2">Lookup Table (CSV format)</label>
+                            <textarea onchange="updateModalColumn(${index}, 'lookupTable', this.value)" rows="4"
+                                      class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                                      placeholder="Enter lookup data (Key,Value format)">${column.lookupTable || ''}</textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Static Value Configuration -->
+                    <div id="staticConfig_${index}" class="space-y-3 ${column.calculationType === 'static' ? '' : 'hidden'}">
+                        <div>
+                            <label class="block text-sm font-medium text-primary mb-2">Static Value</label>
+                            <input type="text" value="${column.staticValue || ''}" 
+                                   onchange="updateModalColumn(${index}, 'staticValue', this.value)"
+                                   class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                                   placeholder="Enter static value">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+                <button onclick="removeModalColumn(${index})" class="text-secondary hover:text-danger" 
+                        title="Remove column">
+                    <i class="bi bi-trash"></i> Remove Column
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Calculated data functions
+ */
+function toggleCalculatedDataControls(index) {
+    const section = document.getElementById(`calculatedDataSection_${index}`);
+    const column = modalColumns[index];
+    
+    if (column.purpose === 'calculated') {
+        section.classList.remove('hidden');
+    } else {
+        section.classList.add('hidden');
+        // Clear calculated data configuration
+        modalColumns[index].calculationType = '';
+        modalColumns[index].conditionalRules = [];
+        modalColumns[index].formula = '';
+        modalColumns[index].lookupSource = '';
+        modalColumns[index].lookupTable = '';
+        modalColumns[index].staticValue = '';
+    }
+}
+
+function toggleCalculationConfig(index) {
+    const column = modalColumns[index];
+    const calculationType = column.calculationType;
+    
+    // Hide all config sections first
+    ['conditional', 'formula', 'lookup', 'static'].forEach(type => {
+        const element = document.getElementById(`${type}Config_${index}`);
+        if (element) element.classList.add('hidden');
+    });
+    
+    // Show the selected config section
+    if (calculationType) {
+        const element = document.getElementById(`${calculationType}Config_${index}`);
+        if (element) element.classList.remove('hidden');
+    }
+}
+
+function renderConditionalRules(rules, columnIndex) {
+    if (!rules || rules.length === 0) {
+        return `
+            <div class="text-xs text-gray-500 italic p-2 border border-dashed border-gray-300 rounded">
+                No rules defined yet. Click "Add Rule" to create conditional logic.
+            </div>
+        `;
+    }
+    
+    return rules.map((rule, ruleIndex) => `
+        <div class="border border-border rounded-lg p-3 bg-surface">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-secondary">Rule ${ruleIndex + 1}</span>
+                <button type="button" onclick="removeConditionalRule(${columnIndex}, ${ruleIndex})" 
+                        class="text-danger hover:text-red-700 text-xs">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-12 gap-2 items-center text-sm">
+                <div class="col-span-3">
+                    <select onchange="updateConditionalRule(${columnIndex}, ${ruleIndex}, 'sourceColumn', this.value)" 
+                            class="w-full px-2 py-1 border border-border rounded text-xs">
+                        <option value="">Column...</option>
+                        ${getOtherColumnsOptions(columnIndex, rule.sourceColumn)}
+                    </select>
+                </div>
+                
+                <div class="col-span-2">
+                    <select onchange="updateConditionalRule(${columnIndex}, ${ruleIndex}, 'operator', this.value)" 
+                            class="w-full px-2 py-1 border border-border rounded text-xs">
+                        <option value="">Op...</option>
+                        <option value=">" ${rule.operator === '>' ? 'selected' : ''}>&gt;</option>
+                        <option value="<" ${rule.operator === '<' ? 'selected' : ''}>&lt;</option>
+                        <option value="=" ${rule.operator === '=' ? 'selected' : ''}>=</option>
+                        <option value="!=" ${rule.operator === '!=' ? 'selected' : ''}>≠</option>
+                        <option value=">=" ${rule.operator === '>=' ? 'selected' : ''}>≥</option>
+                        <option value="<=" ${rule.operator === '<=' ? 'selected' : ''}>≤</option>
+                        <option value="contains" ${rule.operator === 'contains' ? 'selected' : ''}>contains</option>
+                        <option value="starts" ${rule.operator === 'starts' ? 'selected' : ''}>starts with</option>
+                    </select>
+                </div>
+                
+                <div class="col-span-3">
+                    <input type="text" onchange="updateConditionalRule(${columnIndex}, ${ruleIndex}, 'value', this.value)" 
+                           value="${rule.value || ''}" placeholder="Value..." 
+                           class="w-full px-2 py-1 border border-border rounded text-xs" />
+                </div>
+                
+                <div class="col-span-1 text-center text-xs text-secondary">then</div>
+                
+                <div class="col-span-3">
+                    <input type="text" onchange="updateConditionalRule(${columnIndex}, ${ruleIndex}, 'result', this.value)" 
+                           value="${rule.result || ''}" placeholder="Result..." 
+                           class="w-full px-2 py-1 border border-border rounded text-xs" />
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getOtherColumnsOptions(excludeIndex, selectedValue = '') {
+    return modalColumns
+        .map((col, index) => {
+            if (index === excludeIndex || !col.name) return '';
+            return `<option value="${col.name}" ${selectedValue === col.name ? 'selected' : ''}>${col.name}</option>`;
+        })
+        .filter(option => option !== '')
+        .join('');
+}
+
+function addConditionalRule(columnIndex) {
+    if (!modalColumns[columnIndex].conditionalRules) {
+        modalColumns[columnIndex].conditionalRules = [];
+    }
+    
+    modalColumns[columnIndex].conditionalRules.push({
+        sourceColumn: '',
+        operator: '',
+        value: '',
+        result: ''
+    });
+    
+    // Re-render the conditional rules section
+    const rulesContainer = document.getElementById(`conditionalRules_${columnIndex}`);
+    if (rulesContainer) {
+        rulesContainer.innerHTML = renderConditionalRules(modalColumns[columnIndex].conditionalRules, columnIndex);
+    }
+}
+
+function removeConditionalRule(columnIndex, ruleIndex) {
+    modalColumns[columnIndex].conditionalRules.splice(ruleIndex, 1);
+    
+    // Re-render the conditional rules section
+    const rulesContainer = document.getElementById(`conditionalRules_${columnIndex}`);
+    if (rulesContainer) {
+        rulesContainer.innerHTML = renderConditionalRules(modalColumns[columnIndex].conditionalRules, columnIndex);
+    }
+}
+
+function updateConditionalRule(columnIndex, ruleIndex, field, value) {
+    if (!modalColumns[columnIndex].conditionalRules[ruleIndex]) {
+        modalColumns[columnIndex].conditionalRules[ruleIndex] = {};
+    }
+    modalColumns[columnIndex].conditionalRules[ruleIndex][field] = value;
+}
+
+function updateModalColumn(index, field, value) {
+    modalColumns[index][field] = value;
+}
+
+function removeModalColumn(index) {
+    modalColumns.splice(index, 1);
+    renderModalColumns();
+}
+
+function saveAllColumns() {
+    columnDefinitions = [...modalColumns];
+    displayColumnDefinitions();
+    closeColumnModal();
+    showSuccessMessage('Columns saved successfully!');
+}
+
+/**
+ * Message handling
+ */
+function showSuccessMessage(message) {
+    showMessage('success', 'Success', message);
+}
+
+function showErrorMessage(message) {
+    showMessage('error', 'Error', message);
+}
+
+function showMessage(type, title, message) {
+    const toast = document.getElementById('messageToast');
+    const icon = document.getElementById('messageIcon');
+    const titleEl = document.getElementById('messageTitle');
+    const textEl = document.getElementById('messageText');
+    
+    // Set content
+    titleEl.textContent = title;
+    textEl.textContent = message;
+    
+    // Set styling based on type
+    toast.className = 'fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50';
+    if (type === 'success') {
+        toast.classList.add('bg-green-100', 'border', 'border-green-400', 'text-green-700');
+        icon.className = 'bi bi-check-circle text-xl text-green-600';
+    } else {
+        toast.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-700');
+        icon.className = 'bi bi-exclamation-triangle text-xl text-red-600';
+    }
+    
+    toast.classList.remove('hidden');
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        hideMessage();
+    }, 5000);
+}
+
+function hideMessage() {
+    document.getElementById('messageToast').classList.add('hidden');
+}
+
+// ==================== NOTIFICATION MODAL FUNCTIONS ====================
+
+function openNotificationModal() {
+    const modal = document.getElementById('notificationModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        loadNotifications();
+    }
+}
+
+function closeNotificationModal() {
+    const modal = document.getElementById('notificationModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function loadNotifications() {
+    const notificationList = document.getElementById('notificationList');
+    if (!notificationList) return;
+    
+    // Placeholder for loading notifications
+    // In a real implementation, this would fetch from the backend
+    const sampleNotifications = [
+        {
+            id: 1,
+            title: 'New Data Call Created',
+            message: 'Data call "Employee Information Update" has been created.',
+            timestamp: new Date(),
+            read: false,
+            type: 'info'
+        },
+        {
+            id: 2,
+            title: 'Data Call Due Soon',
+            message: 'Data call "Department Survey" is due in 2 days.',
+            timestamp: new Date(Date.now() - 86400000), // 1 day ago
+            read: false,
+            type: 'warning'
+        }
+    ];
+    
+    if (sampleNotifications.length === 0) {
+        notificationList.innerHTML = `
+            <div class="p-6 text-center text-secondary">
+                <i class="bi bi-bell text-4xl mb-2"></i>
+                <p>No notifications</p>
+            </div>
+        `;
+        return;
+    }
+    
+    notificationList.innerHTML = sampleNotifications.map(notification => `
+        <div class="p-4 border-b border-border hover:bg-surface-secondary transition-colors ${!notification.read ? 'bg-blue-50' : ''}">
+            <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0">
+                    <i class="bi ${getNotificationIcon(notification.type)} text-lg ${getNotificationColor(notification.type)}"></i>
+                </div>
+                <div class="flex-grow">
+                    <h4 class="text-sm font-medium text-primary">${notification.title}</h4>
+                    <p class="text-sm text-secondary mt-1">${notification.message}</p>
+                    <p class="text-xs text-secondary mt-2">${formatTimestamp(notification.timestamp)}</p>
+                </div>
+                ${!notification.read ? '<div class="flex-shrink-0"><div class="w-2 h-2 bg-primary rounded-full"></div></div>' : ''}
+            </div>
+        </div>
+    `).join('');
+    
+    // Update notification badge
+    updateNotificationBadge(sampleNotifications.filter(n => !n.read).length);
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        info: 'bi-info-circle',
+        warning: 'bi-exclamation-triangle',
+        success: 'bi-check-circle',
+        error: 'bi-x-circle'
+    };
+    return icons[type] || icons.info;
+}
+
+function getNotificationColor(type) {
+    const colors = {
+        info: 'text-blue-600',
+        warning: 'text-yellow-600',
+        success: 'text-green-600',
+        error: 'text-red-600'
+    };
+    return colors[type] || colors.info;
+}
+
+function formatTimestamp(timestamp) {
+    const now = new Date();
+    const diff = now - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return 'Just now';
+}
+
+function updateNotificationBadge(unreadCount) {
+    const badge = document.getElementById('notificationDot');
+    if (badge) {
+        if (unreadCount > 0) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+}
+
+// ==================== RESPONSE MODAL FUNCTIONS ====================
+
+function openResponseModal(callId, callTitle) {
+    const modal = document.getElementById('responseModal');
+    const title = document.getElementById('responseModalTitle');
+    const content = document.getElementById('responseModalContent');
+    
+    if (modal && title && content) {
+        title.textContent = `Respond to: ${callTitle}`;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        loadResponseForm(callId);
+    }
+}
+
+function closeResponseModal() {
+    const modal = document.getElementById('responseModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function loadResponseForm(callId) {
+    const content = document.getElementById('responseModalContent');
+    if (!content) return;
+    
+    // Placeholder response form
+    content.innerHTML = `
+        <div class="space-y-6">
+            <div>
+                <label for="responseFile" class="block text-sm font-medium text-primary mb-2">Upload Response File</label>
+                <div class="border-2 border-dashed border-border rounded-lg p-6 text-center bg-surface-secondary">
+                    <i class="bi bi-cloud-upload text-4xl text-secondary mb-4"></i>
+                    <h4 class="text-lg font-medium text-primary mb-2">Upload Your Response</h4>
+                    <p class="text-secondary mb-4">Upload a CSV or Excel file with the requested data</p>
+                    <input type="file" id="responseFile" accept=".csv,.xlsx,.xls" class="hidden">
+                    <button type="button" onclick="document.getElementById('responseFile').click()" 
+                            class="btn btn-secondary">Choose File</button>
+                    <div id="responseFileName" class="mt-2 text-sm text-secondary"></div>
+                </div>
+            </div>
+            
+            <div>
+                <label for="responseNotes" class="block text-sm font-medium text-primary mb-2">Notes (Optional)</label>
+                <textarea id="responseNotes" rows="4"
+                          class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface text-primary"
+                          placeholder="Add any notes about your response..."></textarea>
+            </div>
+        </div>
+    `;
+    
+    // Set up file input handler
+    const fileInput = document.getElementById('responseFile');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const fileName = document.getElementById('responseFileName');
+            if (fileName && e.target.files.length > 0) {
+                fileName.textContent = e.target.files[0].name;
+            }
+        });
+    }
+}
+
+function saveDataCallResponse() {
+    const fileInput = document.getElementById('responseFile');
+    const notes = document.getElementById('responseNotes');
+    
+    if (!fileInput || !fileInput.files.length) {
+        showErrorMessage('Please select a file to upload.');
+        return;
+    }
+    
+    // Placeholder for saving response
+    const responseData = {
+        file: fileInput.files[0],
+        notes: notes ? notes.value : ''
+    };
+    
+    console.log('Saving response:', responseData);
+    showSuccessMessage('Response saved successfully!');
+    closeResponseModal();
+}
+
+/**
+ * Modal setup
+ */
+function setupModalHandlers() {
+    // Close modals when clicking outside
+    document.addEventListener('click', function(e) {
+        // Handle modal-overlay class modals
+        if (e.target.classList.contains('modal-overlay')) {
+            e.target.classList.add('hidden');
+            e.target.classList.remove('flex');
+        }
+        
+        // Handle fixed inset modals
+        if (e.target.classList.contains('fixed') && e.target.classList.contains('inset-0') && 
+            e.target.classList.contains('bg-black') && e.target.classList.contains('bg-opacity-50')) {
+            e.target.classList.add('hidden');
+        }
+    });
+    
+    // Handle escape key to close modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            // Close any visible modals
+            const modals = document.querySelectorAll('.modal-overlay:not(.hidden), .fixed.inset-0.bg-black.bg-opacity-50:not(.hidden)');
+            modals.forEach(modal => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            });
+        }
+    });
+}
+
+/**
+ * List management placeholder functions
+ */
+function loadAllLists() {
+    // Placeholder for list management
+    console.log('Loading validation lists...');
+}
+
+function loadManagedCalls() {
+    // Placeholder for managed calls
+    console.log('Loading managed calls...');
+}
+
+function loadAssignedCalls() {
+    const assignedCallsList = document.getElementById('assignedCallsList');
+    if (!assignedCallsList) return;
+    
+    // Sample assigned calls
+    const sampleAssignedCalls = [
+        {
+            id: 1,
+            title: 'Employee Information Update',
+            description: 'Please update employee contact information for your department.',
+            dueDate: '2024-12-31',
+            priority: 'high',
+            status: 'pending'
+        },
+        {
+            id: 2,
+            title: 'Department Resource Inventory',
+            description: 'Provide inventory of all department resources and equipment.',
+            dueDate: '2024-12-15',
+            priority: 'medium',
+            status: 'pending'
+        }
+    ];
+    
+    if (sampleAssignedCalls.length === 0) {
+        assignedCallsList.innerHTML = `
+            <div class="text-center py-12">
+                <i class="bi bi-clipboard-check text-4xl text-secondary mb-4"></i>
+                <h4 class="text-lg font-medium text-primary mb-2">No Assigned Calls</h4>
+                <p class="text-secondary">You don't have any data calls assigned to you.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    assignedCallsList.innerHTML = sampleAssignedCalls.map(call => `
+        <div class="card p-6">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <h4 class="text-lg font-semibold text-primary mb-2">${call.title}</h4>
+                    <p class="text-secondary mb-4">${call.description}</p>
+                    
+                    <div class="flex items-center space-x-4 text-sm">
+                        <div class="flex items-center">
+                            <i class="bi bi-calendar mr-1 text-secondary"></i>
+                            <span class="text-secondary">Due: ${new Date(call.dueDate).toLocaleDateString()}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="bi bi-flag mr-1 text-secondary"></i>
+                            <span class="px-2 py-1 text-xs rounded-full ${getPriorityClass(call.priority)}">${call.priority.toUpperCase()}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="bi bi-circle mr-1 text-secondary"></i>
+                            <span class="px-2 py-1 text-xs rounded-full ${getStatusClass(call.status)}">${call.status.toUpperCase()}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2 ml-4">
+                    <button onclick="openResponseModal(${call.id}, '${call.title}')" 
+                            class="btn btn-primary">
+                        <i class="bi bi-upload mr-2"></i>Respond
+                    </button>
+                    <button onclick="viewCallDetails(${call.id})" 
+                            class="btn btn-secondary">
+                        <i class="bi bi-eye mr-2"></i>View Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getPriorityClass(priority) {
+    const classes = {
+        high: 'bg-red-100 text-red-800',
+        medium: 'bg-yellow-100 text-yellow-800',
+        low: 'bg-green-100 text-green-800'
+    };
+    return classes[priority] || classes.medium;
+}
+
+function getStatusClass(status) {
+    const classes = {
+        pending: 'bg-yellow-100 text-yellow-800',
+        completed: 'bg-green-100 text-green-800',
+        overdue: 'bg-red-100 text-red-800'
+    };
+    return classes[status] || classes.pending;
+}
+
+function viewCallDetails(callId) {
+    console.log('Viewing details for call:', callId);
+    showSuccessMessage('Call details functionality coming soon!');
+}
+
+// Make functions globally available
+window.toggleCallTypeDropdown = toggleCallTypeDropdown;
+window.selectCallType = selectCallType;
+window.switchUploadTab = switchUploadTab;
+window.handleDrop = handleDrop;
+window.handleDragOver = handleDragOver;
+window.handleDragEnter = handleDragEnter;
+window.handleDragLeave = handleDragLeave;
+window.handleFileUpload = handleFileUpload;
+window.validatePastedData = validatePastedData;
+window.processPastedData = processPastedData;
+window.validateSheetsUrl = validateSheetsUrl;
+window.importFromSheetsUrl = importFromSheetsUrl;
+window.clearUploadedFile = clearUploadedFile;
+window.openColumnModal = openColumnModal;
+window.showColumnModal = showColumnModal;
+window.closeColumnModal = closeColumnModal;
+window.addModalColumn = addModalColumn;
+window.updateModalColumn = updateModalColumn;
+window.removeModalColumn = removeModalColumn;
+window.saveAllColumns = saveAllColumns;
+window.toggleCalculatedDataControls = toggleCalculatedDataControls;
+window.toggleCalculationConfig = toggleCalculationConfig;
+window.addConditionalRule = addConditionalRule;
+window.removeConditionalRule = removeConditionalRule;
+window.updateConditionalRule = updateConditionalRule;
+window.switchTab = switchTab;
+window.showSuccessMessage = showSuccessMessage;
+window.showErrorMessage = showErrorMessage;
+window.hideMessage = hideMessage;
+window.openNotificationModal = openNotificationModal;
+window.closeNotificationModal = closeNotificationModal;
+window.openResponseModal = openResponseModal;
+window.closeResponseModal = closeResponseModal;
+window.saveDataCallResponse = saveDataCallResponse;
+window.loadAssignedCalls = loadAssignedCalls;
+window.viewCallDetails = viewCallDetails;
+
+// Initialize notification button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationBtn = document.getElementById('notificationBtn');
+    if (notificationBtn) {
+        notificationBtn.addEventListener('click', openNotificationModal);
+    }
+    
+    // Load initial notifications on page load
+    setTimeout(loadNotifications, 1000);
+    
+    // Load assigned calls if on complete tab
+    setTimeout(loadAssignedCalls, 1000);
+});
+</script>
