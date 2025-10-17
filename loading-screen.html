@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROLLOUT - Relocation Operations & Logistics for Legacy Organizational Update Tracking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #cbd5e0 100%);
+            font-family: 'Arial', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #2d3748;
+        }
+
+        .loading-container {
+            text-align: center;
+            position: relative;
+        }
+
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+            color: #2d3748;
+            line-height: 1.3;
+            max-width: 800px;
+        }
+
+        .rollout-letter {
+            background: linear-gradient(45deg, #3182ce, #2b77cb, #1e40af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(49, 130, 206, 0.3);
+            animation: letterGlow 2s ease-in-out infinite alternate;
+            font-weight: 900;
+        }
+
+        @keyframes letterGlow {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.2); }
+        }
+
+        .transformer-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem auto;
+        }
+
+        .gif-container {
+            width: 400px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .gif-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, transparent 30%, rgba(240, 244, 248, 0.3) 60%, rgba(240, 244, 248, 0.8) 80%, rgba(240, 244, 248, 1) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .loading-gif {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .loading-text {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            font-weight: 600;
+            color: #2d3748;
+            text-align: center;
+            width: 100%;
+            display: inline-block;
+            min-height: 1.5em;
+        }
+
+        .loading-dots {
+            display: inline-block;
+            width: 30px;
+            text-align: left;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(45, 55, 72, 0.2);
+            border-radius: 2px;
+            margin: 2rem auto;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3182ce, #2b77cb, #1e40af);
+            border-radius: 2px;
+            animation: progressLoad 5s linear forwards;
+        }
+
+        @keyframes progressLoad {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <div class="app-title">
+            <span class="rollout-letter">R</span>elocation 
+            <span class="rollout-letter">O</span>perations & 
+            <span class="rollout-letter">L</span>ogistics for 
+            <span class="rollout-letter">L</span>egacy 
+            <span class="rollout-letter">O</span>rganizational 
+            <span class="rollout-letter">U</span>pdate 
+            <span class="rollout-letter">T</span>racking
+        </div>
+        
+        <div class="transformer-container">
+            <div class="gif-container">
+                <!-- <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWU4ZjAxb3Y4MHhycHIzamZxZ3g2N3V0MTQ2Y2JsN283eTZwdWlqMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/yWebs9avOO2C9bD6vX/giphy.gif" 
+                     alt="Loading animation" 
+                     class="loading-gif"> -->
+                <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExZTI0NzMwbmw2MHAxZjhya3VtaTE3ZHE2dG9jZzlzZWVpbW1pdDgxYyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/G4cuWPLuj3KrC/giphy.gif" 
+                     alt="Loading animation" 
+                     class="loading-gif">
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+
+        <div class="loading-text" id="loadingText">
+            Autobots, rolling out<span class="loading-dots"></span>
+        </div>
+    </div>
+
+    <script>
+        const loadingTexts = [
+            "Matrix of Leadership activating",
+            "Energon cube scanning",
+            "Cybertron protocols engaged",
+            "Primes awakening",
+            "Vector Sigma loading",
+            "Autobot database syncing",
+            "Ancient wisdom decoding"
+        ];
+
+        let currentIndex = 0;
+        const loadingTextElement = document.getElementById('loadingText');
+
+        function rotateLoadingText() {
+            // Pick a random index that's different from the current one
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * loadingTexts.length);
+            } while (newIndex === currentIndex && loadingTexts.length > 1);
+            
+            currentIndex = newIndex;
+            loadingTextElement.innerHTML = loadingTexts[currentIndex] + '<span class="loading-dots"></span>';
+        }
+
+        // Change text every 2 seconds
+        setInterval(rotateLoadingText, 2000);
+
+        // Simulate loading completion after 5 seconds (matching progress bar)
+        setTimeout(() => {
+            document.body.style.transition = 'opacity 1s ease-out';
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                // Here you would redirect to your main application
+                console.log('Loading complete! Redirect to main app.');
+                // window.location.href = 'main-app.html';
+            }, 1000);
+        }, 5000);
+    </script>
+</body>
+</html>
