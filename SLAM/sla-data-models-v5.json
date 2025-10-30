@@ -1,0 +1,806 @@
+{
+  "metadata": {
+    "title": "SLA Command Center Data Models - Current Implementation",
+    "version": "5.0.0",
+    "lastUpdated": "2024-10-30",
+    "description": "Current data model as implemented in Command Center application with type-specific custom fields",
+    "implementation": {
+      "platform": "Google Apps Script + Google Sheets",
+      "sheets": [
+        "SLA_MASTER",
+        "SLA_ACTIVITY_LOG",
+        "LOOKUP_TEAMS"
+      ],
+      "security": {
+        "accessControl": "Google Workspace domain-based sharing",
+        "authentication": "Session.getActiveUser().getEmail()",
+        "audit": "All updates logged with timestamp and user"
+      }
+    },
+    "changelog": {
+      "5.0.0": [
+        "Updated to match current Command Center implementation (October 2024)",
+        "Removed unused sheets (SLA_RELATIONSHIPS, SLA_ATTACHMENTS, LOOKUP_STATUSES, AUDIT_LOG, USER_PERMISSIONS)",
+        "Removed Collaborating Teams field (consolidated into Team ID)",
+        "Removed Frequency Type field (consolidated into Frequency)",
+        "Updated timeliness type to use date picker instead of cadence/milliseconds",
+        "Added type-specific custom field schemas",
+        "Updated status default to 'met'",
+        "Simplified parent-child to parent_id field only (currently hidden)",
+        "Updated column mappings to actual A-AC layout",
+        "Added current team list (11 teams)",
+        "Progress calculation moved to JavaScript (not formulas)",
+        "Update Progress feature now syncs with backend",
+        "Inline editing with type-aware fields",
+        "Reduced SLA types to 5 core types (removed composite, multi-metric, recurring)"
+      ],
+      "4.0.0": [
+        "Normalized data structure for spreadsheet storage",
+        "Added sheet-specific schemas with row/column definitions",
+        "Implemented audit trail for all operations",
+        "Added data validation rules for Sheets",
+        "Optimized for Google Apps Script CRUD operations"
+      ]
+    }
+  },
+
+  "sheets": {
+    "SLA_MASTER": {
+      "description": "Primary SLA records - one row per SLA",
+      "primaryKey": "SLA ID",
+      "indexes": ["SLA ID", "Status", "Team ID", "Parent ID"],
+      "columns": {
+        "SLA ID": {
+          "column": "A",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "pattern": "^SLA-[0-9]+$",
+          "example": "SLA-1761828567078",
+          "description": "Auto-generated unique ID using timestamp"
+        },
+        "Parent ID": {
+          "column": "B",
+          "type": "string",
+          "nullable": true,
+          "foreignKey": "SLA_MASTER.SLA ID",
+          "description": "Reference to parent SLA if child (currently hidden in UI)",
+          "hidden": true
+        },
+        "SLA Name": {
+          "column": "C",
+          "type": "string",
+          "required": true,
+          "maxLength": 100,
+          "validation": "NOT_BLANK"
+        },
+        "SLA Type": {
+          "column": "D",
+          "type": "string",
+          "required": true,
+          "values": ["quantity", "percentage", "timeliness", "availability", "compliance"],
+          "description": "Core SLA types (composite, multi-metric, recurring removed)"
+        },
+        "Description": {
+          "column": "E",
+          "type": "text",
+          "maxLength": 500
+        },
+        "Team ID": {
+          "column": "F",
+          "type": "string",
+          "required": true,
+          "pattern": "^TEAM-[0-9]{3}$",
+          "foreignKey": "LOOKUP_TEAMS.Team ID"
+        },
+        "Start Date": {
+          "column": "H",
+          "type": "date",
+          "required": true,
+          "format": "YYYY-MM-DD",
+          "validation": "DATE_IS_VALID",
+          "note": "Column G (Collaborating Teams) was removed"
+        },
+        "End Date": {
+          "column": "I",
+          "type": "date",
+          "nullable": true,
+          "format": "YYYY-MM-DD",
+          "validation": "DATE_AFTER_START"
+        },
+        "Status": {
+          "column": "J",
+          "type": "string",
+          "required": true,
+          "values": ["met", "at-risk", "ontrack", "exceeded", "missed", "pending", "not-started"],
+          "defaultValue": "met",
+          "description": "Current status of the SLA"
+        },
+        "Progress": {
+          "column": "K",
+          "type": "number",
+          "min": 0,
+          "calculated": true,
+          "description": "Calculated in JavaScript via calculateProgress() function"
+        },
+        "Progress Percentage": {
+          "column": "L",
+          "type": "number",
+          "min": 0,
+          "max": 100,
+          "calculated": true,
+          "description": "Calculated in JavaScript based on SLA type and range settings"
+        },
+        "Current Value": {
+          "column": "M",
+          "type": "number",
+          "required": true,
+          "description": "For timeliness: completion datetime; for compliance: 0 or 1; for others: numeric value"
+        },
+        "Target Value": {
+          "column": "N",
+          "type": "number",
+          "required": true,
+          "description": "Single target value or midpoint of range; for timeliness: target date string"
+        },
+        "Target Range Min": {
+          "column": "O",
+          "type": "number",
+          "nullable": true,
+          "description": "Minimum target for range-based quantity/percentage SLAs"
+        },
+        "Target Range Max": {
+          "column": "P",
+          "type": "number",
+          "nullable": true,
+          "description": "Maximum target for range-based quantity/percentage SLAs"
+        },
+        "Use Range": {
+          "column": "Q",
+          "type": "boolean",
+          "defaultValue": false,
+          "description": "If true, uses Target Range Min and Max instead of Target Value"
+        },
+        "Frequency": {
+          "column": "R",
+          "type": "string",
+          "required": true,
+          "values": ["once", "daily", "weekly", "biweekly", "monthly", "quarterly", "annually"],
+          "note": "Frequency Type column (S) was removed"
+        },
+        "Notification Emails": {
+          "column": "T",
+          "type": "string",
+          "format": "semicolon-separated-emails",
+          "pattern": "^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})(;[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})*$",
+          "example": "user1@domain.com;user2@domain.com"
+        },
+        "External Tracker URL": {
+          "column": "U",
+          "type": "string",
+          "format": "URL",
+          "description": "Primary external tracking system link"
+        },
+        "Tags": {
+          "column": "V",
+          "type": "string",
+          "format": "comma-separated",
+          "example": "priority-high,compliance,Q4"
+        },
+        "Custom Fields": {
+          "column": "W",
+          "type": "json",
+          "description": "Type-specific configuration stored as JSON (see customFieldsPerType)",
+          "example": "{\"targetDate\":\"2025-03-31\",\"status\":\"in-progress\"}"
+        },
+        "Is Active": {
+          "column": "X",
+          "type": "boolean",
+          "defaultValue": true,
+          "description": "Soft delete flag - false means deleted"
+        },
+        "Created At": {
+          "column": "Y",
+          "type": "datetime",
+          "required": true,
+          "autoGenerated": true,
+          "description": "Set once at creation, never changes"
+        },
+        "Created By": {
+          "column": "Z",
+          "type": "string",
+          "format": "email",
+          "setBy": "Session.getActiveUser().getEmail() at creation"
+        },
+        "Updated At": {
+          "column": "AA",
+          "type": "datetime",
+          "required": true,
+          "autoGenerated": true,
+          "description": "Updated on every modification"
+        },
+        "Updated By": {
+          "column": "AB",
+          "type": "string",
+          "format": "email",
+          "setBy": "Session.getActiveUser().getEmail() on update"
+        },
+        "Row Version": {
+          "column": "AC",
+          "type": "integer",
+          "defaultValue": 1,
+          "description": "Optimistic locking version number - incremented on each update"
+        }
+      },
+      "protectedRanges": ["A:A", "Y:AC"],
+      "namedRanges": {
+        "SLA_MASTER_DATA": "A2:AC",
+        "SLA_MASTER_HEADERS": "A1:AC1"
+      }
+    },
+
+    "SLA_ACTIVITY_LOG": {
+      "description": "Activity log for SLA events (simplified implementation)",
+      "primaryKey": "Log ID",
+      "note": "Currently not fully utilized - logs may be generated but not actively displayed",
+      "columns": {
+        "Log ID": {
+          "column": "A",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "pattern": "^LOG-[0-9]+$"
+        },
+        "SLA ID": {
+          "column": "B",
+          "type": "string",
+          "required": true,
+          "foreignKey": "SLA_MASTER.SLA ID"
+        },
+        "Timestamp": {
+          "column": "C",
+          "type": "datetime",
+          "required": true
+        },
+        "User": {
+          "column": "D",
+          "type": "string",
+          "format": "email"
+        },
+        "Action": {
+          "column": "E",
+          "type": "string",
+          "values": ["created", "updated", "deleted", "status_changed", "progress_updated"]
+        },
+        "Details": {
+          "column": "F",
+          "type": "text",
+          "description": "JSON or text description of the change"
+        }
+      }
+    },
+
+    "LOOKUP_TEAMS": {
+      "description": "Team reference data - 11 teams currently configured",
+      "primaryKey": "Team ID",
+      "columns": {
+        "Team ID": {
+          "column": "A",
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "pattern": "^TEAM-[0-9]{3}$",
+          "example": "TEAM-001"
+        },
+        "Team Name": {
+          "column": "B",
+          "type": "string",
+          "required": true,
+          "maxLength": 100
+        },
+        "Department": {
+          "column": "C",
+          "type": "string",
+          "description": "Currently stores task assignments"
+        },
+        "Manager Email": {
+          "column": "D",
+          "type": "string",
+          "format": "email"
+        },
+        "Is Active": {
+          "column": "E",
+          "type": "boolean",
+          "defaultValue": true
+        }
+      },
+      "currentTeams": [
+        {"id": "TEAM-001", "name": "Program Management Team", "task": "Task 1"},
+        {"id": "TEAM-002", "name": "APM Team", "task": "Task 2"},
+        {"id": "TEAM-003", "name": "PPM Team", "task": "Task 3"},
+        {"id": "TEAM-004", "name": "Technical Evaluation Team", "task": "Task 4"},
+        {"id": "TEAM-005", "name": "Training Support Team", "task": "Task 5"},
+        {"id": "TEAM-006", "name": "Business Intelligence Team", "task": "Task 6"},
+        {"id": "TEAM-007", "name": "Operational Support Team", "task": "Task 7"},
+        {"id": "TEAM-008", "name": "Quality Support Team", "task": "Task 8"},
+        {"id": "TEAM-009", "name": "Communication Team", "task": "Task 9"},
+        {"id": "TEAM-010", "name": "TW/Template Team", "task": "Task 2"},
+        {"id": "TEAM-011", "name": "Cost Team", "task": "Task 2"}
+      ]
+    }
+  },
+
+  "customFieldsPerType": {
+    "description": "Type-specific custom field schemas stored in Custom Fields column (W)",
+    "quantity": {
+      "description": "Quantity SLAs with optional units and actions",
+      "fields": {
+        "action": {
+          "type": "string",
+          "required": false,
+          "description": "Action or process being measured",
+          "example": "processing documents"
+        },
+        "unit": {
+          "type": "string",
+          "required": false,
+          "description": "Unit of measurement",
+          "example": "tickets, requests, documents, items"
+        }
+      },
+      "progressCalculation": "currentValue / targetValue * 100 (or range-based if useRange=true)"
+    },
+    "percentage": {
+      "description": "Percentage-based SLAs (0-100)",
+      "fields": {},
+      "progressCalculation": "currentValue / targetValue * 100 (or range-based if useRange=true)"
+    },
+    "timeliness": {
+      "description": "Date-based timeliness SLAs (updated from cadence-based)",
+      "fields": {
+        "targetDate": {
+          "type": "date",
+          "format": "YYYY-MM-DD",
+          "required": true,
+          "description": "Target completion date"
+        },
+        "targetValue": {
+          "type": "date",
+          "format": "YYYY-MM-DD",
+          "description": "Duplicate of targetDate for backward compatibility (stores in main targetValue column too)"
+        },
+        "status": {
+          "type": "string",
+          "values": ["not-started", "in-progress", "completed"],
+          "description": "Completion status (separate from main Status field)"
+        },
+        "lastCompletion": {
+          "type": "datetime",
+          "required": false,
+          "description": "Last time this was completed (for recurring tasks)"
+        },
+        "lastUpdateNotes": {
+          "type": "string",
+          "required": false,
+          "description": "Notes from last progress update"
+        },
+        "lastUpdateTime": {
+          "type": "datetime",
+          "required": false,
+          "description": "Timestamp of last progress update"
+        }
+      },
+      "progressCalculation": "Based on days remaining: ((targetDate - today) / (targetDate - startDate)) * 100",
+      "deprecated": {
+        "cadence": "Removed in v5.0 - use Frequency column instead",
+        "targetDay": "Removed in v5.0 - use targetDate instead"
+      }
+    },
+    "availability": {
+      "description": "Uptime/availability SLAs with service hours",
+      "fields": {
+        "startTime": {
+          "type": "time",
+          "format": "HH:mm",
+          "required": false,
+          "description": "Service start time",
+          "example": "09:00"
+        },
+        "endTime": {
+          "type": "time",
+          "format": "HH:mm",
+          "required": false,
+          "description": "Service end time",
+          "example": "17:00"
+        },
+        "daysOfWeek": {
+          "type": "array",
+          "items": "string",
+          "required": false,
+          "description": "Days when service is available",
+          "example": ["Mon", "Tue", "Wed", "Thu", "Fri"]
+        },
+        "lastDowntime": {
+          "type": "number",
+          "required": false,
+          "description": "Last recorded downtime in minutes"
+        },
+        "lastDowntimeDate": {
+          "type": "datetime",
+          "required": false,
+          "description": "When last downtime occurred"
+        }
+      },
+      "progressCalculation": "currentValue / targetValue * 100"
+    },
+    "compliance": {
+      "description": "Yes/No compliance SLAs",
+      "fields": {
+        "requirement": {
+          "type": "string",
+          "required": false,
+          "description": "Description of compliance requirement",
+          "example": "Must complete annual security training"
+        },
+        "lastReview": {
+          "type": "date",
+          "required": false,
+          "description": "Last compliance review date"
+        }
+      },
+      "progressCalculation": "Binary: 100% if compliant (currentValue=1), 0% if not (currentValue=0)"
+    }
+  },
+
+  "googleAppsScript": {
+    "services": {
+      "CrudService": {
+        "description": "Core CRUD operations for SLA management",
+        "file": "backend/CrudService.js",
+        "functions": [
+          "createSLA(slaData) - Create new SLA",
+          "readSLA(slaId) - Read single SLA",
+          "updateSLA(slaId, updates) - Update SLA with optimistic locking",
+          "deleteSLA(slaId) - Soft delete SLA",
+          "getAllSLAs(filters) - Get all active SLAs",
+          "batchCreateSLAs(slaDataArray) - Batch create",
+          "batchUpdateSLAs(updates) - Batch update"
+        ]
+      },
+      "Utils": {
+        "description": "Utility functions and validation",
+        "file": "backend/Utils.js",
+        "functions": [
+          "validateSLAData(slaData) - Validate SLA data with type-specific rules",
+          "calculateProgress(sla) - Calculate progress based on SLA type",
+          "transformToBackendSchema(sla) - Transform frontend data to backend format",
+          "transformFromBackendSchema(sla) - Transform backend data to frontend format",
+          "formatDate(date) - Format date for display",
+          "parseDate(dateString) - Parse date string"
+        ]
+      },
+      "SetupService": {
+        "description": "Initial setup and data seeding",
+        "file": "backend/SetupService.js",
+        "functions": [
+          "setupSheets() - Create sheet structure",
+          "addSampleData() - Populate lookup tables",
+          "setupDataValidation() - Configure validation rules",
+          "resetDatabase() - Clear all data (development only)"
+        ]
+      },
+      "LookupService": {
+        "description": "Lookup data management",
+        "file": "backend/LookupService.js",
+        "functions": [
+          "getTeams() - Get all teams",
+          "getTeamById(teamId) - Get single team",
+          "addTeam(teamData) - Add new team",
+          "updateTeam(teamId, updates) - Update team"
+        ]
+      },
+      "DataInjectionService": {
+        "description": "Data loading for frontend",
+        "file": "backend/DataInjectionService.js",
+        "functions": [
+          "generateDataInjectionScript() - Generate script to load data into frontend",
+          "loadUserData() - Load current user info",
+          "loadTeamData() - Load team lookup data",
+          "loadAllData() - Load all required data"
+        ]
+      },
+      "WebApp": {
+        "description": "Web application entry point",
+        "file": "backend/WebApp.js",
+        "functions": [
+          "doGet(e) - Serve HTML pages",
+          "doPost(e) - Handle API requests (if needed)"
+        ]
+      }
+    },
+
+    "configuration": {
+      "spreadsheetId": "Retrieved via SpreadsheetApp.getActiveSpreadsheet()",
+      "cacheExpiration": 300,
+      "maxRetries": 3,
+      "batchSize": 500,
+      "sheets": {
+        "SLA_MASTER": "Main SLA data",
+        "LOOKUP_TEAMS": "Team reference data",
+        "SLA_ACTIVITY_LOG": "Activity logging (not actively used)"
+      },
+      "security": {
+        "accessControl": "Google Workspace domain-based sharing",
+        "authentication": "Session.getActiveUser().getEmail()",
+        "permissions": "Managed via Google Sheets sharing settings"
+      },
+      "performance": {
+        "useCaching": true,
+        "cacheDuration": 300,
+        "enableBatchOperations": true,
+        "maxBatchSize": 500
+      }
+    },
+
+    "dataValidation": {
+      "rules": {
+        "SLA_TYPE": "quantity|percentage|timeliness|availability|compliance",
+        "STATUS": "met|at-risk|ontrack|exceeded|missed|pending|not-started",
+        "FREQUENCY": "once|daily|weekly|biweekly|monthly|quarterly|annually",
+        "BOOLEAN": "TRUE|FALSE",
+        "DATE": "YYYY-MM-DD",
+        "EMAIL": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        "EMAIL_LIST": "^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})(;[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})*$",
+        "TEAM_ID": "^TEAM-[0-9]{3}$"
+      },
+      "progressCalculation": {
+        "description": "Progress calculated in JavaScript via calculateProgress() function in Utils.js",
+        "implementation": "backend/Utils.js",
+        "logic": {
+          "quantity": "currentValue / targetValue * 100 (or range-based if useRange=true)",
+          "percentage": "currentValue / targetValue * 100 (or range-based if useRange=true)",
+          "timeliness": "Based on days remaining vs total days to target",
+          "availability": "currentValue / targetValue * 100",
+          "compliance": "Binary: 0% or 100% based on currentValue (0=non-compliant, 1=compliant)"
+        }
+      }
+    },
+
+    "errorHandling": {
+      "strategies": {
+        "validation": {
+          "onError": "Return detailed error message with field names",
+          "rollback": true,
+          "notify": "Show notification in UI"
+        },
+        "database": {
+          "onError": "Log to console and show user-friendly error",
+          "maxRetries": 3,
+          "fallback": "Update local data only (with warning)"
+        },
+        "api": {
+          "onError": "Show error notification in UI",
+          "timeout": 30000,
+          "fallback": "Use cached data if available"
+        }
+      }
+    }
+  },
+
+  "frontend": {
+    "description": "Frontend implementation using HTML Service",
+    "mainFiles": [
+      "sla.html - Main SLA tracker interface",
+      "command-center.html - Command center interface (similar to sla.html)"
+    ],
+    "scriptModules": [
+      "scripts/dashboard.html - Dashboard statistics and recent SLAs",
+      "scripts/form-builder.html - SLA creation and editing forms with type-specific fields",
+      "scripts/inline-editor.html - In-place editing with email/tag chips",
+      "scripts/sla-detail-renderer.html - Detail view with type-specific metrics",
+      "scripts/backend-integration.html - API communication via google.script.run",
+      "scripts/utils.html - Frontend utility functions",
+      "scripts/team-config.html - Team configuration data"
+    ],
+    "styleModules": [
+      "styles/components.html - Component styles (buttons, cards, chips, etc.)",
+      "styles/tabs.html - Tab navigation styles",
+      "styles/theme-variables.html - Design tokens and CSS variables"
+    ],
+    "dataModules": [
+      "data/app-data.html - Data structure definitions",
+      "data/slas.html - Sample SLA data",
+      "data/user.html - User data structure",
+      "data/metadata.html - App metadata"
+    ],
+
+    "features": {
+      "createSLA": {
+        "description": "Type-specific form with dynamic fields based on SLA type",
+        "implementation": "scripts/form-builder.html",
+        "commonFields": ["slaName", "description", "teamId", "startDate", "endDate", "frequency", "notificationEmails", "tags"],
+        "typeSpecificFields": {
+          "quantity": ["currentValue", "targetValue", "useRange", "targetRangeMin", "targetRangeMax", "unit", "action"],
+          "percentage": ["currentValue", "targetValue", "useRange", "targetRangeMin", "targetRangeMax"],
+          "timeliness": ["targetDate"],
+          "availability": ["currentValue", "targetValue", "startTime", "endTime", "daysOfWeek"],
+          "compliance": ["complianceStatus (Yes/No)", "requirement"]
+        },
+        "validation": "Real-time validation with type-specific rules",
+        "defaultStatus": "met"
+      },
+      "editSLA": {
+        "description": "Inline editing with type-aware input fields",
+        "implementation": "scripts/inline-editor.html",
+        "features": [
+          "Email chips with comma/semicolon separation",
+          "Tag chips with comma separation and backspace deletion",
+          "Type-specific value inputs (date picker for timeliness, dropdowns for compliance, etc.)",
+          "Backend sync via updateSLAInBackend()",
+          "Optimistic locking with row version"
+        ]
+      },
+      "viewSLA": {
+        "description": "Detail view with type-specific rendering",
+        "implementation": "scripts/sla-detail-renderer.html",
+        "sections": {
+          "overview": "Basic SLA info with type-specific labels (e.g., 'Target Date' for timeliness)",
+          "progressTracking": "Type-specific metrics (e.g., days remaining for timeliness, current/target for quantity)",
+          "metrics": "Visual progress indicators with color coding",
+          "sidebar": "Quick stats and actions"
+        },
+        "typeSpecificRendering": {
+          "quantity": "Shows values with units (e.g., '50 tickets')",
+          "percentage": "Shows percentages (e.g., '95%')",
+          "timeliness": "Shows dates and days remaining/overdue",
+          "availability": "Shows uptime percentage and service hours",
+          "compliance": "Shows Yes/No status"
+        }
+      },
+      "updateProgress": {
+        "description": "Type-specific progress update modals with backend persistence",
+        "implementation": "sla.html and command-center.html (saveUpdate function)",
+        "modals": {
+          "quantity": "Update numeric value and add notes",
+          "percentage": "Update percentage (0-100) and add notes",
+          "timeliness": "Select completion date/time and add notes",
+          "availability": "Update uptime percentage, record downtime, add notes",
+          "compliance": "Update compliant/non-compliant status and add notes"
+        },
+        "backendSync": true,
+        "optimisticLocking": true,
+        "autoCalculateProgress": true,
+        "autoUpdateStatus": true
+      }
+    }
+  },
+
+  "bestPractices": {
+    "dataNormalization": [
+      "Use separate sheets for different entity types (SLA_MASTER, LOOKUP_TEAMS)",
+      "Store type-specific data in Custom Fields JSON column",
+      "Use named ranges for better maintainability",
+      "Keep lookup data in separate LOOKUP_TEAMS sheet"
+    ],
+    "dataIntegrity": [
+      "Use Row Version for optimistic locking on updates",
+      "Soft delete via Is Active flag (never hard delete)",
+      "Maintain audit trail in Updated At/By columns",
+      "Validate data in both frontend (immediate feedback) and backend (enforcement)"
+    ],
+    "performance": [
+      "Calculate progress in JavaScript, not Google Sheets formulas",
+      "Use batch operations (getValues/setValues) for multiple updates",
+      "Implement caching for team lookups",
+      "Minimize Apps Script execution time",
+      "Use getValues() for batch reads instead of getValue() in loops"
+    ],
+    "maintenance": [
+      "Version control via Git with clasp (clasp push/pull)",
+      "Keep frontend and backend schemas in sync",
+      "Document type-specific custom field schemas",
+      "Regular cleanup of soft-deleted records (Is Active = false)",
+      "Backup spreadsheet regularly"
+    ],
+    "userExperience": [
+      "Type-specific forms and validation for better UX",
+      "Inline editing for quick updates without page navigation",
+      "Real-time progress updates with backend sync",
+      "Clear error messages with specific field names",
+      "Loading indicators for async operations",
+      "Immediate UI updates with background persistence"
+    ]
+  },
+
+  "implementation": {
+    "setupInstructions": {
+      "step1": "Create a new Google Spreadsheet",
+      "step2": "Initialize clasp project: cd to project directory, run 'clasp create --type sheets'",
+      "step3": "Push code to Apps Script: 'clasp push'",
+      "step4": "Open Apps Script editor and run SetupService.setupSheets()",
+      "step5": "Run SetupService.addSampleData() to populate lookup tables",
+      "step6": "Deploy as web app or open sla.html/command-center.html",
+      "step7": "Configure Google Sheets sharing permissions as needed"
+    },
+
+    "codeStructure": {
+      "backend": [
+        "backend/WebApp.js - Main entry point (doGet/doPost)",
+        "backend/CrudService.js - CRUD operations on SLA_MASTER sheet",
+        "backend/Utils.js - Validation, progress calculation, data transformation",
+        "backend/SetupService.js - Initial setup, sheet creation, sample data",
+        "backend/LookupService.js - Team lookup data management",
+        "backend/DataInjectionService.js - Load data for frontend injection",
+        "backend/DiagnosticService.js - Debugging and testing utilities",
+        "backend/TestSuite.js - Test functions for development"
+      ],
+      "frontend": [
+        "sla.html - Main SLA tracker UI",
+        "command-center.html - Alternative command center UI",
+        "scripts/dashboard.html - Dashboard stats and recent SLAs",
+        "scripts/form-builder.html - Dynamic SLA creation/edit forms",
+        "scripts/inline-editor.html - Inline editing with chips",
+        "scripts/sla-detail-renderer.html - Type-specific detail views",
+        "scripts/backend-integration.html - API client functions",
+        "scripts/utils.html - Frontend helper functions",
+        "scripts/team-config.html - Team configuration",
+        "styles/ - CSS modules (components, tabs, theme-variables)"
+      ],
+      "data": [
+        "data/app-data.html - Data structure definitions",
+        "data/slas.html - Sample SLA data for development",
+        "data/user.html - User data structure",
+        "data/metadata.html - App metadata"
+      ]
+    },
+
+    "deployment": {
+      "environment": "Google Workspace / Google Apps Script",
+      "authentication": "Session.getActiveUser().getEmail()",
+      "api": "google.script.run for backend calls from frontend",
+      "frontend": "HTML Service with embedded JavaScript",
+      "versionControl": "clasp (Google Apps Script CLI)",
+      "commands": {
+        "push": "clasp push - Deploy code to Apps Script",
+        "pull": "clasp pull - Download code from Apps Script",
+        "open": "clasp open - Open project in Apps Script editor"
+      }
+    },
+
+    "currentState": {
+      "version": "5.0.0",
+      "lastUpdate": "2024-10-30",
+      "activeFeatures": [
+        "5 core SLA types (quantity, percentage, timeliness, availability, compliance)",
+        "Type-specific SLA creation forms with dynamic fields",
+        "Inline editing with backend synchronization",
+        "Progress update modals with backend persistence",
+        "Date-based timeliness SLAs (replaced cadence system)",
+        "Range-based targets for quantity and percentage types",
+        "Type-aware detail views with appropriate metrics",
+        "Email chips (semicolon-separated)",
+        "Tag chips (comma-separated with backspace deletion)",
+        "11 active teams in LOOKUP_TEAMS",
+        "Optimistic locking with row versioning",
+        "Soft delete with Is Active flag",
+        "Progress calculation in JavaScript"
+      ],
+      "removedFeatures": [
+        "Collaborating Teams field (consolidated into Team ID)",
+        "Frequency Type field (consolidated into Frequency)",
+        "Cadence-based timeliness (replaced with date picker)",
+        "Composite, Multi-metric, and Recurring SLA types",
+        "SLA_RELATIONSHIPS sheet (simplified to parent_id field)",
+        "USER_PERMISSIONS sheet (using Google Sheets sharing)",
+        "SLA_ATTACHMENTS sheet (not implemented)",
+        "LOOKUP_STATUSES sheet (statuses are hardcoded)",
+        "Separate AUDIT_LOG sheet (minimal activity logging)"
+      ],
+      "hiddenFeatures": [
+        "Parent SLA field (hidden in create form but exists in database)",
+        "Child SLAs section (hidden in create form)",
+        "Status dropdown in create form (hidden, defaults to 'met')"
+      ]
+    }
+  }
+}

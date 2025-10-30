@@ -1,20 +1,15 @@
 {
   "metadata": {
-    "title": "SLA Application Data Models - Google Sheets Optimized",
-    "version": "4.0.0",
-    "lastUpdated": "2024-10-19",
-    "description": "Normalized data model optimized for Google Sheets CRUD operations with security and audit trails",
+    "title": "SLA Command Center Data Models - Current Implementation",
+    "version": "5.0.0",
+    "lastUpdated": "2024-10-30",
+    "description": "Current data model as implemented in Command Center application with type-specific custom fields",
     "implementation": {
       "platform": "Google Apps Script + Google Sheets",
       "sheets": [
         "SLA_MASTER",
-        "SLA_RELATIONSHIPS",
         "SLA_ACTIVITY_LOG",
-        "SLA_ATTACHMENTS",
-        "LOOKUP_TEAMS",
-        "LOOKUP_STATUSES",
-        "AUDIT_LOG",
-        "USER_PERMISSIONS"
+        "LOOKUP_TEAMS"
       ],
       "security": {
         "encryption": "Sensitive fields use Google KMS",
@@ -23,6 +18,18 @@
       }
     },
     "changelog": {
+      "5.0.0": [
+        "Updated to match current Command Center implementation",
+        "Removed unused sheets (SLA_RELATIONSHIPS, SLA_ATTACHMENTS, LOOKUP_STATUSES, AUDIT_LOG, USER_PERMISSIONS)",
+        "Removed Collaborating Teams field (consolidated into Team ID)",
+        "Updated timeliness type to use date picker instead of cadence",
+        "Added type-specific custom field schemas",
+        "Updated status default to 'met'",
+        "Simplified parent-child to parent_id field only",
+        "Updated column mappings to actual A-AC layout",
+        "Added current team list (11 teams)",
+        "Progress calculation moved to JavaScript (not formulas)"
+      ],
       "4.0.0": [
         "Normalized data structure for spreadsheet storage",
         "Added sheet-specific schemas with row/column definitions",
@@ -575,36 +582,35 @@
   "bestPractices": {
     "dataNormalization": [
       "Use separate sheets for different entity types",
-      "Implement foreign key relationships",
-      "Avoid storing JSON in cells when possible (except custom_fields)",
-      "Use named ranges for better maintainability"
+      "Store type-specific data in Custom Fields JSON column",
+      "Use named ranges for better maintainability",
+      "Keep lookup data in separate LOOKUP_TEAMS sheet"
     ],
-    "security": [
-      "Implement row-level security via permissions sheet",
-      "Use service account for automated operations",
-      "Encrypt sensitive data before storage",
-      "Regular security audits via activity logs",
-      "Domain-restricted sharing"
+    "dataIntegrity": [
+      "Use Row Version for optimistic locking",
+      "Soft delete via Is Active flag",
+      "Maintain audit trail in Updated At/By columns",
+      "Validate data in both frontend and backend"
     ],
     "performance": [
+      "Calculate progress in JavaScript, not sheet formulas",
       "Use batch operations for multiple updates",
-      "Implement caching for frequently accessed data",
-      "Index key columns for faster lookups",
-      "Limit formula complexity in sheets",
-      "Use Apps Script for complex calculations"
+      "Implement caching for team lookups",
+      "Minimize Apps Script execution time",
+      "Use getValues() for batch reads"
     ],
     "maintenance": [
-      "Version control via Git for Apps Script code",
-      "Automated daily backups",
-      "Data validation at both sheet and script level",
-      "Regular cleanup of soft-deleted records",
-      "Monitor sheet size and performance metrics"
+      "Version control via Git (clasp push/pull)",
+      "Keep frontend and backend schemas in sync",
+      "Document type-specific custom field schemas",
+      "Regular cleanup of soft-deleted records"
     ],
-    "scalability": [
-      "Partition data by date/status when exceeding 50k rows",
-      "Use BigQuery for analytics on large datasets",
-      "Implement pagination for all read operations",
-      "Archive old data to separate sheets/storage"
+    "userExperience": [
+      "Type-specific forms and validation",
+      "Inline editing for quick updates",
+      "Real-time progress updates via backend sync",
+      "Clear error messages with field names",
+      "Loading indicators for async operations"
     ]
   },
 
