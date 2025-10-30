@@ -1,0 +1,290 @@
+<style>
+  body {
+    font-family: var(--font-family);
+  }
+  
+  .section { 
+    display: none; 
+  }
+  
+  .section.active { 
+    display: block; 
+  }
+  
+  .progress-bar {
+    transition: width 0.3s ease;
+  }
+  
+  /* Navigation buttons in header */
+  .nav-btn {
+    transition: opacity 0.2s ease;
+  }
+  
+  .nav-btn:hover {
+    opacity: 1 !important;
+  }
+  
+  /* Refresh button animation */
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .sla-card {
+    border: 2px solid var(--color-border);
+    transition: all 0.3s ease;
+  }
+  
+  .sla-card.collapsed {
+    border-color: var(--color-status-success);
+  }
+  
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+  }
+  
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-gray-medium);
+    transition: .4s;
+    border-radius: 24px;
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  
+  input:checked + .slider {
+    background-color: var(--color-primary);
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(24px);
+  }
+  
+  /* Custom Tailwind overrides */
+  .bg-background {
+    background-color: var(--color-background);
+  }
+  
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+  
+  .text-primary-color {
+    color: var(--color-text-primary);
+  }
+  
+  .text-secondary-color {
+    color: var(--color-text-secondary);
+  }
+  
+  .text-muted {
+    color: var(--color-text-muted);
+  }
+  
+  .border-color {
+    border-color: var(--color-border);
+  }
+  
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--color-primary-hover);
+  }
+  
+  .btn-secondary {
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--color-gray-light);
+  }
+  
+  .btn-danger {
+    background-color: var(--color-status-error);
+    color: white;
+  }
+  
+  .btn-danger:hover {
+    background-color: #6B2A42;
+  }
+  
+  .btn-success {
+    background-color: var(--color-status-success);
+    color: white;
+  }
+  
+  .btn-success:hover {
+    background-color: #1F5630;
+  }
+  
+  .link-primary {
+    color: var(--color-primary);
+  }
+  
+  .link-primary:hover {
+    color: var(--color-primary-hover);
+  }
+  
+  .badge-success {
+    background-color: var(--color-status-success-bg);
+    color: var(--color-status-success);
+  }
+  
+  .badge-warning {
+    background-color: var(--color-status-warning-bg);
+    color: var(--color-status-warning);
+  }
+  
+  .badge-error {
+    background-color: var(--color-status-error-bg);
+    color: var(--color-status-error);
+  }
+  
+  .badge-ontrack {
+    background-color: var(--color-status-ontrack-bg);
+    color: var(--color-status-ontrack);
+  }
+  
+  .badge-info {
+    background-color: var(--color-status-info-bg);
+    color: var(--color-status-info);
+  }
+  
+  .badge-priority-critical {
+    background-color: var(--color-priority-critical-bg);
+    color: var(--color-priority-critical);
+  }
+  
+  .badge-priority-high {
+    background-color: var(--color-priority-high-bg);
+    color: var(--color-priority-high);
+  }
+  
+  .badge-priority-medium {
+    background-color: var(--color-priority-medium-bg);
+    color: var(--color-priority-medium);
+  }
+  
+  .badge-priority-low {
+    background-color: var(--color-priority-low-bg);
+    color: var(--color-priority-low);
+  }
+  
+  .progress-success {
+    background-color: var(--color-status-success);
+  }
+  
+  .progress-warning {
+    background-color: var(--color-status-warning);
+  }
+  
+  .progress-error {
+    background-color: var(--color-status-error);
+  }
+  
+  .progress-ontrack {
+    background-color: var(--color-status-ontrack);
+  }
+  
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+  
+  .stat-card-blue {
+    background-color: var(--color-status-info-bg);
+  }
+  
+  .stat-card-green {
+    background-color: var(--color-status-success-bg);
+  }
+  
+  .stat-card-orange {
+    background-color: var(--color-status-warning-bg);
+  }
+  
+  .stat-card-red {
+    background-color: var(--color-status-error-bg);
+  }
+  
+  .stat-card-ontrack {
+    background-color: var(--color-status-ontrack-bg);
+  }
+  
+  /* Tag and Email Chips */
+  #edit-tags-chips-container {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  #edit-tags-chips-container:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+  }
+  
+  .tag-chip {
+    animation: chipFadeIn 0.2s ease;
+  }
+  
+  .email-chip {
+    animation: chipFadeIn 0.2s ease;
+  }
+  
+  @keyframes chipFadeIn {
+    from { 
+      opacity: 0; 
+      transform: scale(0.8); 
+    }
+    to { 
+      opacity: 1; 
+      transform: scale(1); 
+    }
+  }
+  
+  .tag-chip button:hover,
+  .email-chip button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+  }
+</style>

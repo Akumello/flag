@@ -1,0 +1,1332 @@
+<script>
+/**
+ * SLA Form Builder
+ * Generates dynamic SLA creation/editing forms with comprehensive field support
+ */
+
+/**
+ * Generates a complete form with all fields for SLA creation/editing.
+ * @param {string|number} id - Unique identifier for the form
+ * @returns {string} HTML string containing the complete form structure
+ */
+function createSLAForm(id) {
+    return `
+        <div id="sla-container-${id}" class="sla-form-container">
+            <div id="sla-${id}" class="sla-card" style="background: var(--color-surface); border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+                
+                <!-- Basic Information Section -->
+                <div class="p-6 text-white" style="background: var(--color-primary);">
+                    <h3 class="text-xl font-semibold mb-2 flex items-center gap-2">
+                        <i class="bi bi-file-earmark-text"></i>
+                        Basic Information
+                    </h3>
+                    <p class="m-0 opacity-90 text-sm">Define the core details of your SLA</p>
+                </div>
+
+                <div style="padding: 32px;">
+                    <div class="grid grid-cols-1 gap-6 mb-8">
+                        <div>
+                            <label for="slaName-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                <i class="bi bi-tag mr-2"></i>SLA Name *
+                            </label>
+                            <input type="text" id="slaName-${id}" name="slaName" required
+                                   class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                   placeholder="Enter a descriptive name for this SLA"
+                                   style="font-size: 15px;">
+                        </div>
+
+                        <div>
+                            <label for="description-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                <i class="bi bi-card-text mr-2"></i>Description *
+                            </label>
+                            <textarea id="description-${id}" name="description" rows="3" required
+                                      class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                      placeholder="Describe the SLA requirements, objectives, and success criteria..."
+                                      style="font-size: 15px; resize: vertical;"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Team and Hierarchy Section -->
+                    <div style="background: var(--color-gray-light, #f9fafb); padding: 24px; border-radius: 12px; margin-bottom: 32px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0 0 20px 0; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-people"></i>
+                            Team & Organization
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label for="taskName-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                    <i class="bi bi-list-task mr-2"></i>Task *
+                                </label>
+                                <select id="taskName-${id}" name="taskName" required
+                                        class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                        onchange="filterTeamsByTask(${id}, this.value)"
+                                        style="font-size: 15px;">
+                                    <option value="">Select Task</option>
+                                </select>
+                                <input type="hidden" id="taskId-${id}" name="taskId">
+                            </div>
+                            
+                            <div>
+                                <label for="teamName-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                    <i class="bi bi-building mr-2"></i>Team Name *
+                                </label>
+                                <select id="teamName-${id}" name="teamName" required
+                                        class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                        onchange="updateTeamId(${id}, this.value)"
+                                        style="font-size: 15px;">
+                                    <option value="">Select Team</option>
+                                    <option value="Program Management Team">Program Management Team</option>
+                                    <option value="APM Team">APM Team</option>
+                                    <option value="PPM Team">PPM Team</option>
+                                    <option value="Technical Evaluation Team">Technical Evaluation Team</option>
+                                    <option value="Training Support Team">Training Support Team</option>
+                                    <option value="Business Intelligence Team">Business Intelligence Team</option>
+                                    <option value="Operational Support Team">Operational Support Team</option>
+                                    <option value="Quality Support Team">Quality Support Team</option>
+                                    <option value="Communication Team">Communication Team</option>
+                                    <option value="TW/Template Team">TW/Template Team</option>
+                                    <option value="Cost Team">Cost Team</option>
+                                </select>
+                                <input type="hidden" id="teamId-${id}" name="teamId">
+                            </div>
+                            
+                            <div style="display: none;">
+                                <label for="parentId-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                    <i class="bi bi-diagram-3 mr-2"></i>Parent SLA
+                                </label>
+                                <select id="parentId-${id}" name="parentId"
+                                        class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                        style="font-size: 15px;">
+                                    <option value="">None (Root SLA)</option>
+                                </select>
+                                <p class="text-xs text-muted mt-2">Optional: Link to a parent SLA for hierarchical tracking</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Section -->
+                    <div style="background: var(--color-gray-light, #f9fafb); padding: 24px; border-radius: 12px; margin-bottom: 32px; margin-top: 24px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0 0 20px 0; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-sliders"></i>
+                            SLA Configuration
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label for="slaType-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                    SLA Type *
+                                </label>
+                                <select id="slaType-${id}" name="slaType" required
+                                        class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                        onchange="showSLAConfig(${id}, this.value)"
+                                        style="font-size: 15px;">
+                                    <option value="">Select SLA Type</option>
+                                    <option value="quantity">Quantity</option>
+                                    <option value="percentage">Percentage</option>
+                                    <option value="timeliness">Timeliness</option>
+                                    <option value="availability">Availability</option>
+                                    <option value="compliance">Compliance</option>
+                                </select>
+                            </div>
+                            
+                            <div style="display: none;">
+                                <label for="status-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                    Status *
+                                </label>
+                                <select id="status-${id}" name="status" required
+                                        class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                        style="font-size: 15px;">
+                                    <option value="Draft">Draft</option>
+                                    <option value="Active">Active</option>
+                                    <option value="On Hold">On Hold</option>
+                                    <option value="At Risk">At Risk</option>
+                                    <option value="Missed">Missed</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                    <option value="met" selected>Met</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="frequency-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                    Frequency *
+                                </label>
+                                <select id="frequency-${id}" name="frequency" required
+                                        class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                        style="font-size: 15px;">
+                                    <option value="Daily">Daily</option>
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="Bi-Weekly">Bi-Weekly</option>
+                                    <option value="Monthly" selected>Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Annually">Annually</option>
+                                    <option value="One-Time">One-Time</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic SLA Configuration -->
+                <div id="slaConfig-${id}" class="hidden mb-6">
+                    <!-- Quantity -->
+                    <div id="quantityConfig-${id}" class="sla-config-section hidden">
+                        <h4 class="text-md font-medium text-primary-color mb-3">Quantity Configuration</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">Action</label>
+                                <input type="text" id="quantityAction-${id}" placeholder="e.g., reviewing, supporting"
+                                       class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">Unit</label>
+                                <input type="text" id="quantityUnit-${id}" placeholder="e.g., requests, documents"
+                                       class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">Target Type</label>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-sm">Single</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="quantityRange-${id}" onchange="toggleQuantityRange(${id})">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="text-sm">Range</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="quantityTarget-${id}" class="grid grid-cols-1 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                                <input type="number" id="quantityTargetValue-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                        </div>
+                        <div id="childSLAs-${id}" class="mt-4" style="display: none;">
+                            <div class="flex items-center justify-between mb-3">
+                                <h5 class="text-sm font-medium text-primary-color">Child SLAs</h5>
+                                <button type="button" onclick="addChildSLA(${id})" class="px-3 py-1 text-sm rounded-md border" style="color: var(--color-primary); border-color: var(--color-primary)">Add Child SLA</button>
+                            </div>
+                            <div id="childSLAContainer-${id}" class="space-y-3">
+                                <!-- Child SLAs will be added here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Percentage -->
+                    <div id="percentageConfig-${id}" class="sla-config-section hidden">
+                        <h4 class="text-md font-medium text-primary-color mb-3">Percentage Configuration</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">Target Type</label>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-sm">Single</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="percentageRange-${id}" onchange="togglePercentageRange(${id})">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="text-sm">Range</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="percentageTarget-${id}" class="grid grid-cols-1 gap-4 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">Target Percentage</label>
+                                <input type="number" id="percentageTargetValue-${id}" min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeliness -->
+                    <div id="timelinessConfig-${id}" class="sla-config-section hidden">
+                        <h4 class="text-md font-medium text-primary-color mb-3">Timeliness Configuration</h4>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">Target Completion Date</label>
+                                <input type="date" id="timelinessTarget-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                                <p class="text-xs text-muted mt-1">The date by which this SLA should be completed</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Availability -->
+                    <div id="availabilityConfig-${id}" class="sla-config-section hidden">
+                        <h4 class="text-md font-medium text-primary-color mb-3">Availability Configuration</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">Start Time</label>
+                                <input type="time" id="availabilityStartTime-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-primary-color mb-2">End Time</label>
+                                <input type="time" id="availabilityEndTime-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-primary-color mb-2">Days of Week</label>
+                            <div class="grid grid-cols-7 gap-2">
+                                <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="monday" class="mr-1"> Mon</label>
+                                <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="tuesday" class="mr-1"> Tue</label>
+                                <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="wednesday" class="mr-1"> Wed</label>
+                                <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="thursday" class="mr-1"> Thu</label>
+                                <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="friday" class="mr-1"> Fri</label>
+                                <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="saturday" class="mr-1"> Sat</label>
+                                <label class="flex items-center text-sm"><input type="checkbox" name="availabilityDays-${id}" value="sunday" class="mr-1"> Sun</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compliance -->
+                    <div id="complianceConfig-${id}" class="sla-config-section hidden">
+                        <h4 class="text-md font-medium text-primary-color mb-3">Compliance Configuration</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-primary-color mb-2">Target Compliance</label>
+                            <select id="complianceTarget-${id}" class="w-full px-3 py-2 border border-color rounded-md">
+                                <option value="">Select Target</option>
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+
+                    <!-- Timeline Section -->
+                    <div style="background: var(--color-gray-light, #f9fafb); padding: 24px; border-radius: 12px; margin-bottom: 32px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0 0 20px 0; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-calendar-range"></i>
+                            Timeline
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="startDate-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                    <i class="bi bi-calendar-check mr-2"></i>Start Date *
+                                </label>
+                                <input type="date" id="startDate-${id}" name="startDate" required
+                                       class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                       style="font-size: 15px;">
+                            </div>
+                            
+                            <div>
+                                <label for="endDate-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                    <i class="bi bi-calendar-x mr-2"></i>End Date
+                                </label>
+                                <input type="date" id="endDate-${id}" name="endDate"
+                                       class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                       style="font-size: 15px;">
+                                <p class="text-xs text-muted mt-2">Optional: Leave blank for ongoing SLAs</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Information Section -->
+                    <div style="background: var(--color-gray-light, #f9fafb); padding: 24px; border-radius: 12px; margin-bottom: 32px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0 0 20px 0; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-info-circle"></i>
+                            Additional Information
+                        </h4>
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="tags-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                        <i class="bi bi-tags mr-2"></i>Tags
+                                    </label>
+                                    <input type="text" id="tags-${id}" name="tags"
+                                           class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                           placeholder="priority, quarterly, compliance"
+                                           style="font-size: 15px;">
+                                    <p class="text-xs text-muted mt-2">Separate tags with commas</p>
+                                </div>
+                                
+                                <div>
+                                    <label for="externalTrackerUrl-${id}" class="block text-sm font-semibold text-primary-color mb-3">
+                                        <i class="bi bi-link-45deg mr-2"></i>External Tracker URL
+                                    </label>
+                                    <input type="url" id="externalTrackerUrl-${id}" name="externalTrackerUrl"
+                                           class="w-full px-4 py-3 border-2 border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                           placeholder="https://..."
+                                           style="font-size: 15px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notification Settings Section -->
+                    <div style="background: var(--color-gray-light, #f9fafb); padding: 24px; border-radius: 12px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0 0 20px 0; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-bell"></i>
+                            Notification Settings
+                        </h4>
+                        <div>
+                            <label class="block text-sm font-semibold text-primary-color mb-3">
+                                <i class="bi bi-envelope mr-2"></i>Notification Emails
+                            </label>
+                            <div id="emailChips-${id}" class="flex flex-wrap gap-2 mb-3 p-3 border-2 border-color rounded-lg min-h-[60px]" style="background: var(--color-surface);">
+                                <!-- Email chips will appear here -->
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="flex-1 flex items-center gap-3 px-4 py-3 border-2 border-color rounded-lg transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary"
+                                     style="background: var(--color-surface);"
+                                     style="cursor: text;">
+                                    <i class="bi bi-envelope text-muted"></i>
+                                    <input type="text" id="notificationEmailInput-${id}"
+                                           class="outline-none flex-1 bg-transparent text-primary-color"
+                                           placeholder="Add email address..."
+                                           onkeydown="handleEmailInputKey(event, ${id})"
+                                           style="font-size: 15px;">
+                                </div>
+                                <button type="button" onclick="addEmailFromInput(${id})" 
+                                        class="px-5 py-3 rounded-lg font-medium transition-all"
+                                        style="background: var(--color-primary); color: white; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);"
+                                        onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.4)'"
+                                        onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.3)'">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="notificationEmail-${id}" name="notificationEmail">
+                            <p class="text-xs text-muted mt-2">
+                                <i class="bi bi-info-circle mr-1"></i>Press Enter, comma, or click + to add multiple email addresses
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden fields for data model compliance -->
+                <input type="hidden" id="isActive-${id}" name="isActive" value="1">
+                <input type="hidden" id="rowVersion-${id}" name="rowVersion" value="1">
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+/**
+ * Extracts SLA data from a specific form container element.
+ * Gathers all fields in camelCase format to match backend expectations.
+ * @param {HTMLElement} container - The form container DOM element
+ * @returns {Object|null} SLA data object or null if extraction fails
+ */
+function extractSLADataFromContainer(container) {
+    if (!container) return null;
+    
+    const tabId = container.id.replace('sla-container-', '');
+    const slaData = {};
+    
+    // Extract basic form fields
+    const getFieldValue = (fieldName) => {
+        const field = container.querySelector(`#${fieldName}-${tabId}`);
+        return field ? field.value.trim() : '';
+    };
+    
+    const getCheckboxValue = (fieldName) => {
+        const field = container.querySelector(`#${fieldName}-${tabId}`);
+        return field ? field.checked : false;
+    };
+    
+    // Collect basic information in camelCase (backend format)
+    slaData.slaName = getFieldValue('slaName');
+    slaData.teamId = getFieldValue('teamId');
+    slaData.description = getFieldValue('description');
+    slaData.slaType = getFieldValue('slaType');
+    slaData.startDate = getFieldValue('startDate');
+    slaData.endDate = getFieldValue('endDate');
+    slaData.currentValue = parseFloat(getFieldValue('currentValue')) || 0;
+    slaData.targetValue = parseFloat(getFieldValue('targetValue')) || 0;
+    slaData.frequency = getFieldValue('frequency');
+    slaData.status = getFieldValue('status');
+    // REMOVED: progress field - calculated automatically by ARRAYFORMULA in sheet
+    
+    // Collect notification emails as semicolon-separated string
+    const emailValue = getFieldValue('notificationEmail');
+    slaData.notificationEmails = emailValue ? emailValue.replace(/,/g, ';').trim() : '';
+    
+    // Collect additional fields
+    slaData.tags = getFieldValue('tags');
+    slaData.externalTrackerUrl = getFieldValue('externalTrackerUrl');
+    slaData.parentId = getFieldValue('parentId') || '';
+    
+    // Hidden fields
+    slaData.isActive = parseInt(getFieldValue('isActive')) || 1;
+    slaData.rowVersion = parseInt(getFieldValue('rowVersion')) || 1;
+    
+    // Skip if required fields are empty
+    if (!slaData.slaName || !slaData.teamId || !slaData.slaType || 
+        !slaData.startDate || !slaData.frequency || !slaData.status) {
+        console.warn('Missing required fields in SLA form');
+        return null;
+    }
+    
+    // Build customFields with type-specific configuration
+    const customFields = {
+        notifyOnRisk: getCheckboxValue('notifyOnRisk'),
+        notifyOnMiss: getCheckboxValue('notifyOnMiss')
+    };
+    
+    switch (slaData.slaType) {
+        case 'quantity':
+            customFields.action = getFieldValue('quantityAction');
+            customFields.unit = getFieldValue('quantityUnit');
+            
+            const quantityRange = getCheckboxValue('quantityRange');
+            customFields.targetType = quantityRange ? 'range' : 'single';
+            
+            if (quantityRange) {
+                const minField = container.querySelector(`#quantityTarget-${tabId} input[placeholder*="Minimum"]`);
+                const maxField = container.querySelector(`#quantityTarget-${tabId} input[placeholder*="Maximum"]`);
+                customFields.targetMin = minField ? parseFloat(minField.value) || 0 : 0;
+                customFields.targetMax = maxField ? parseFloat(maxField.value) || 0 : 0;
+            } else {
+                const targetValue = getFieldValue('quantityTargetValue');
+                customFields.target = targetValue ? parseFloat(targetValue) : 0;
+            }
+            break;
+            
+        case 'percentage':
+            const percentageRange = getCheckboxValue('percentageRange');
+            customFields.targetType = percentageRange ? 'range' : 'single';
+            
+            if (percentageRange) {
+                const minField = container.querySelector(`#percentageTarget-${tabId} input[placeholder*="Minimum"]`);
+                const maxField = container.querySelector(`#percentageTarget-${tabId} input[placeholder*="Maximum"]`);
+                customFields.targetMin = minField ? parseFloat(minField.value) || 0 : 0;
+                customFields.targetMax = maxField ? parseFloat(maxField.value) || 0 : 0;
+            } else {
+                const targetValue = getFieldValue('percentageTargetValue');
+                customFields.target = targetValue ? parseFloat(targetValue) : 0;
+            }
+            break;
+            
+        case 'timeliness':
+            // Store the target date as the target value
+            const targetDate = getFieldValue('timelinessTarget');
+            customFields.targetDate = targetDate;
+            // Also store as targetValue for backend compatibility (as timestamp or date string)
+            customFields.targetValue = targetDate;
+            break;
+            
+        case 'availability':
+            customFields.startTime = getFieldValue('availabilityStartTime');
+            customFields.endTime = getFieldValue('availabilityEndTime');
+            
+            const dayCheckboxes = container.querySelectorAll(`input[name="availabilityDays-${tabId}"]:checked`);
+            customFields.daysOfWeek = Array.from(dayCheckboxes).map(cb => cb.value);
+            break;
+            
+        case 'compliance':
+            const complianceValue = getFieldValue('complianceTarget');
+            customFields.targetValue = complianceValue === 'yes' ? true : 
+                                               complianceValue === 'no' ? false : null;
+            break;
+    }
+    
+    // Store custom fields as JSON string
+    slaData.customFields = JSON.stringify(customFields);
+    
+    // Add audit fields
+    const now = new Date().toISOString();
+    slaData.createdAt = now;
+    slaData.createdBy = window.APP_DATA.userData?.employeeId || 'UNKNOWN';
+    slaData.updatedAt = now;
+    slaData.updatedBy = window.APP_DATA.userData?.employeeId || 'UNKNOWN';
+    
+    return slaData;
+}
+
+/**
+ * Validates SLA data against backend model requirements (camelCase format).
+ * @param {Object} slaData - SLA data object to validate
+ * @returns {Object} Validation result with isValid flag and errors array
+ */
+function validateSLAData(slaData) {
+    const errors = [];
+    
+    // Required field validation
+    if (!slaData.slaName || slaData.slaName.length > 200) {
+        errors.push('SLA Name is required and must be 200 characters or less');
+    }
+    if (!slaData.teamId || !slaData.teamId.match(/^TEAM-\d{3}$/)) {
+        errors.push('Valid Team ID is required (format: TEAM-XXX)');
+    }
+    if (!slaData.slaType) {
+        errors.push('SLA Type is required');
+    }
+    if (!slaData.startDate) {
+        errors.push('Start Date is required');
+    }
+    if (!slaData.frequency) {
+        errors.push('Frequency is required');
+    }
+    if (!slaData.status) {
+        errors.push('Status is required');
+    }
+    
+    // Date validation
+    if (slaData.startDate && slaData.endDate) {
+        const startDate = new Date(slaData.startDate);
+        const endDate = new Date(slaData.endDate);
+        if (endDate < startDate) {
+            errors.push('End Date must be after Start Date');
+        }
+    }
+    
+    // REMOVED: Progress validation - progress is auto-calculated, not user input
+    
+    // Email validation
+    if (slaData.notificationEmails) {
+        const emails = slaData.notificationEmails.split(';');
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        for (const email of emails) {
+            if (email.trim() && !emailRegex.test(email.trim())) {
+                errors.push(`Invalid email format: ${email.trim()}`);
+                break;
+            }
+        }
+    }
+    
+    // URL validation
+    if (slaData.externalTrackerUrl) {
+        try {
+            new URL(slaData.externalTrackerUrl);
+        } catch (e) {
+            errors.push('External Tracker URL must be a valid URL');
+        }
+    }
+    
+    // Max length validations
+    if (slaData.description && slaData.description.length > 1000) {
+        errors.push('Description must be 1000 characters or less');
+    }
+    if (slaData.tags && slaData.tags.length > 500) {
+        errors.push('Tags must be 500 characters or less');
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+/**
+ * Shows visual error feedback on a specific form field
+ * @param {string} fieldId - The ID of the field (without tab suffix)
+ * @param {string} tabId - The tab identifier
+ * @param {string} errorMessage - The error message to display
+ */
+function showFieldError(fieldId, tabId, errorMessage) {
+    const fullFieldId = `${fieldId}-${tabId}`;
+    const field = document.getElementById(fullFieldId);
+    
+    if (!field) {
+        console.warn(`Field not found: ${fullFieldId}`);
+        return;
+    }
+    
+    // Add error styling to the field
+    field.classList.add('border-red-500', 'border-2');
+    field.classList.remove('border-color');
+    
+    // Remove existing error message if any
+    const existingError = document.getElementById(`${fullFieldId}-error`);
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Create and insert error message element
+    const errorElement = document.createElement('div');
+    errorElement.id = `${fullFieldId}-error`;
+    errorElement.className = 'text-red-600 text-sm mt-1 flex items-center gap-1';
+    errorElement.innerHTML = `<i class="bi bi-exclamation-circle"></i><span>${errorMessage}</span>`;
+    
+    // Insert after the field
+    field.parentNode.insertBefore(errorElement, field.nextSibling);
+    
+    // Scroll field into view if needed
+    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/**
+ * Clears error styling and message from a form field
+ * @param {string} fieldId - The ID of the field (without tab suffix)
+ * @param {string} tabId - The tab identifier
+ */
+function clearFieldError(fieldId, tabId) {
+    const fullFieldId = `${fieldId}-${tabId}`;
+    const field = document.getElementById(fullFieldId);
+    
+    if (!field) return;
+    
+    // Remove error styling
+    field.classList.remove('border-red-500', 'border-2');
+    field.classList.add('border-color');
+    
+    // Remove error message
+    const errorElement = document.getElementById(`${fullFieldId}-error`);
+    if (errorElement) {
+        errorElement.remove();
+    }
+}
+
+/**
+ * Clears all field errors in a container
+ * @param {string} tabId - The tab identifier
+ */
+function clearAllFieldErrors(tabId) {
+    const container = document.getElementById(`sla-container-${tabId}`);
+    if (!container) return;
+    
+    // Remove all error styling
+    const errorFields = container.querySelectorAll('.border-red-500');
+    errorFields.forEach(field => {
+        field.classList.remove('border-red-500', 'border-2');
+        field.classList.add('border-color');
+    });
+    
+    // Remove all error messages
+    const errorMessages = container.querySelectorAll('[id$="-error"]');
+    errorMessages.forEach(msg => msg.remove());
+}
+
+/**
+ * Highlights validation errors on form fields
+ * @param {string} tabId - The tab identifier
+ * @param {Array} errors - Array of error objects with field and message properties
+ */
+function highlightValidationErrors(tabId, errors) {
+    // Clear existing errors first
+    clearAllFieldErrors(tabId);
+    
+    // Highlight each error
+    errors.forEach(error => {
+        if (error.field) {
+            showFieldError(error.field, tabId, error.message);
+        }
+    });
+    
+    // Focus on first error field
+    if (errors.length > 0 && errors[0].field) {
+        const firstErrorField = document.getElementById(`${errors[0].field}-${tabId}`);
+        if (firstErrorField) {
+            firstErrorField.focus();
+        }
+    }
+}
+
+/**
+ * Real-time field validation rules
+ * Defines validation rules for individual fields
+ */
+const fieldValidationRules = {
+    slaName: {
+        required: true,
+        maxLength: 100,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return 'SLA Name is required';
+            }
+            if (value.length > 100) {
+                return 'SLA Name must be 100 characters or less';
+            }
+            return null;
+        }
+    },
+    description: {
+        required: true,
+        maxLength: 500,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return 'Description is required';
+            }
+            if (value.length > 500) {
+                return 'Description must be 500 characters or less';
+            }
+            return null;
+        }
+    },
+    teamName: {
+        required: true,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return 'Team is required';
+            }
+            return null;
+        }
+    },
+    taskName: {
+        required: true,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return 'Task is required';
+            }
+            return null;
+        }
+    },
+    slaType: {
+        required: true,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return 'SLA Type is required';
+            }
+            return null;
+        }
+    },
+    status: {
+        required: true,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return 'Status is required';
+            }
+            return null;
+        }
+    },
+    startDate: {
+        required: true,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return 'Start Date is required';
+            }
+            const date = new Date(value);
+            if (isNaN(date.getTime())) {
+                return 'Start Date must be a valid date';
+            }
+            return null;
+        }
+    },
+    endDate: {
+        required: true,
+        validate: (value, allValues) => {
+            if (!value || value.trim().length === 0) {
+                return 'End Date is required';
+            }
+            const endDate = new Date(value);
+            if (isNaN(endDate.getTime())) {
+                return 'End Date must be a valid date';
+            }
+            if (allValues && allValues.startDate) {
+                const startDate = new Date(allValues.startDate);
+                if (!isNaN(startDate.getTime()) && endDate <= startDate) {
+                    return 'End Date must be after Start Date';
+                }
+            }
+            return null;
+        }
+    },
+    externalTrackerUrl: {
+        required: false,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return null; // Optional field
+            }
+            const urlRegex = /^https?:\/\/[\w\-]+(\.[\w\-]+)+[\/#?]?.*$/;
+            if (!urlRegex.test(value)) {
+                return 'Must be a valid URL starting with http:// or https://';
+            }
+            return null;
+        }
+    },
+    tags: {
+        required: false,
+        maxLength: 500,
+        validate: (value) => {
+            if (value && value.length > 500) {
+                return 'Tags must be 500 characters or less';
+            }
+            return null;
+        }
+    },
+    notificationEmailInput: {
+        required: false,
+        validate: (value) => {
+            if (!value || value.trim().length === 0) {
+                return null; // Optional field
+            }
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailRegex.test(value.trim())) {
+                return 'Invalid email format';
+            }
+            return null;
+        }
+    }
+};
+
+/**
+ * Attaches real-time validation to form fields
+ * @param {string} tabId - The tab identifier
+ */
+function attachFieldValidation(tabId) {
+    Object.keys(fieldValidationRules).forEach(fieldName => {
+        const fieldId = `${fieldName}-${tabId}`;
+        const field = document.getElementById(fieldId);
+        
+        if (!field) return;
+        
+        const rules = fieldValidationRules[fieldName];
+        
+        // Validate on blur (when user leaves field)
+        field.addEventListener('blur', () => {
+            const error = rules.validate(field.value);
+            if (error) {
+                showFieldError(fieldName, tabId, error);
+            } else {
+                clearFieldError(fieldName, tabId);
+            }
+        });
+        
+        // Clear error on input (as user types)
+        field.addEventListener('input', () => {
+            const existingError = document.getElementById(`${fieldId}-error`);
+            if (existingError) {
+                clearFieldError(fieldName, tabId);
+            }
+        });
+        
+        // For date fields, also validate cross-field constraints
+        if (fieldName === 'endDate') {
+            field.addEventListener('blur', () => {
+                const startDateField = document.getElementById(`startDate-${tabId}`);
+                if (startDateField && startDateField.value) {
+                    const error = rules.validate(field.value, { startDate: startDateField.value });
+                    if (error) {
+                        showFieldError(fieldName, tabId, error);
+                    } else {
+                        clearFieldError(fieldName, tabId);
+                    }
+                }
+            });
+        }
+    });
+}
+
+// ========================================
+// FORM POPULATION FUNCTIONS
+// ========================================
+
+/**
+ * Populates an SLA form with existing SLA data for editing.
+ * Sets all form fields including basic info, notifications, and type-specific configuration.
+ * @param {string|number} formId - The form identifier (tab ID)
+ * @param {Object} sla - SLA object containing all data to populate
+ * @returns {void}
+ */
+function populateSLAForm(formId, sla) {
+    console.log('Populating form with:', sla);
+    
+    // Helper functions
+    const setFieldValue = (fieldId, value) => {
+        const field = document.getElementById(`${fieldId}-${formId}`);
+        if (field) {
+            field.value = value || '';
+            console.log(`Set ${fieldId}:`, value);
+        } else {
+            console.warn(`Field not found: ${fieldId}-${formId}`);
+        }
+    };
+    
+    const setCheckboxValue = (fieldId, value) => {
+        const field = document.getElementById(`${fieldId}-${formId}`);
+        if (field) {
+            field.checked = Boolean(value);
+            console.log(`Set checkbox ${fieldId}:`, value);
+        } else {
+            console.warn(`Checkbox not found: ${fieldId}-${formId}`);
+        }
+    };
+    
+    // Parse custom fields for new structure
+    const customFields = getCustomFields(sla);
+    
+    // Populate basic fields - backend returns camelCase
+    setFieldValue('slaName', sla.slaName || '');
+    setFieldValue('description', sla.description || '');
+    setFieldValue('startDate', sla.startDate || '');
+    setFieldValue('endDate', sla.endDate || '');
+    setFieldValue('status', sla.status || '');
+    setFieldValue('frequency', sla.frequency || '');
+    setFieldValue('tags', sla.tags || '');
+    setFieldValue('externalTrackerUrl', sla.externalTrackerUrl || '');
+    setFieldValue('parentId', sla.parentId || '');
+    
+    // Get notification settings from custom fields or legacy structure
+    const notifyOnRisk = customFields.notify_on_risk !== undefined ? 
+        customFields.notify_on_risk : 
+        (sla.notifications?.onRisk || false);
+    const notifyOnMiss = customFields.notify_on_miss !== undefined ?
+        customFields.notify_on_miss :
+        (sla.notifications?.onMiss || false);
+        
+    setCheckboxValue('notifyOnRisk', notifyOnRisk);
+    setCheckboxValue('notifyOnMiss', notifyOnMiss);
+    
+    // Populate email chips - backend returns camelCase
+    let emails = [];
+    if (sla.notificationEmails) {
+        // Backend format: semicolon-separated string
+        emails = sla.notificationEmails.split(';').map(e => e.trim()).filter(e => e);
+    }
+    
+    if (emails.length > 0) {
+        setTimeout(() => {
+            emails.forEach(email => {
+                if (email && email.trim()) {
+                    addEmailChip(formId, email.trim());
+                }
+            });
+            updateHiddenEmailField(formId);
+        }, 100);
+    }
+    
+    // Set team - backend returns teamId (TEAM-XXX format)
+    const teamName = sla.teamId ? getTeamName(sla.teamId) : '';
+    
+    // Set task if available (must happen before setting team to filter correctly)
+    if (sla.taskId) {
+        const taskNumber = sla.taskId.replace('TASK-', '').replace(/^0+/, '');
+        const taskName = `Task ${taskNumber}`;
+        setFieldValue('taskName', taskName);
+        
+        // Trigger team filtering after setting task
+        setTimeout(() => {
+            filterTeamsByTask(formId, taskName);
+            // Re-set team after filtering
+            setTimeout(() => {
+                setFieldValue('teamName', teamName);
+                if (sla.teamId) {
+                    const teamIdField = document.getElementById(`teamId-${formId}`);
+                    if (teamIdField) teamIdField.value = sla.teamId;
+                }
+            }, 200);
+        }, 100);
+    } else {
+        // No task selected, show all teams
+        setFieldValue('teamName', teamName);
+        
+        // Update hidden teamId field
+        if (sla.teamId) {
+            const teamIdField = document.getElementById(`teamId-${formId}`);
+            if (teamIdField) teamIdField.value = sla.teamId;
+        }
+    }
+    
+    // Set SLA type and show configuration - backend returns camelCase
+    const slaType = sla.slaType || '';
+    const slaTypeField = document.getElementById(`slaType-${formId}`);
+    if (slaTypeField && slaType) {
+        slaTypeField.value = slaType;
+        
+        // Manually call showSLAConfig to display the right configuration
+        showSLAConfig(formId, slaType);
+        
+        // Wait for configuration section to be shown, then populate specific fields
+        setTimeout(() => {
+            populateTypeSpecificFields(formId, sla);
+            
+            // Trigger validation update after population
+            if (typeof updateTabValidation === 'function') {
+                updateTabValidation(formId);
+            }
+        }, 200);
+    }
+}
+
+/**
+ * Populates type-specific configuration fields for an SLA form.
+ * Supports both new (custom_fields_json) and legacy (nested configuration) structures.
+ * @param {string|number} formId - The form identifier (tab ID)
+ * @param {Object} sla - SLA object containing configuration data
+ * @returns {void}
+ */
+function populateTypeSpecificFields(formId, sla) {
+    // Backend returns camelCase
+    const slaType = sla.slaType || '';
+    console.log('Populating type-specific fields for:', slaType);
+    
+    // Parse custom fields with fallback to configuration
+    const customFields = getCustomFields(sla);
+    const config = sla.configuration || {};
+    
+    const setFieldValue = (fieldId, value) => {
+        const field = document.getElementById(`${fieldId}-${formId}`);
+        if (field) {
+            field.value = value || '';
+            console.log(`Set ${fieldId}:`, value);
+        } else {
+            console.warn(`Field not found: ${fieldId}-${formId}`);
+        }
+    };
+    
+    const setCheckboxValue = (fieldId, value) => {
+        const field = document.getElementById(`${fieldId}-${formId}`);
+        if (field) {
+            field.checked = Boolean(value);
+            console.log(`Set checkbox ${fieldId}:`, value);
+        }
+    };
+    
+    switch (slaType) {
+        case 'quantity':
+            setFieldValue('quantityAction', customFields.action || config.action);
+            setFieldValue('quantityUnit', customFields.unit || config.unit);
+            
+            const quantityTargetType = customFields.target_type || config.targetType;
+            if (quantityTargetType === 'range') {
+                setCheckboxValue('quantityRange', true);
+                setTimeout(() => {
+                    toggleQuantityRange(formId);
+                    setTimeout(() => {
+                        const minField = document.querySelector(`#quantityTarget-${formId} input[placeholder*="Minimum"]`);
+                        const maxField = document.querySelector(`#quantityTarget-${formId} input[placeholder*="Maximum"]`);
+                        const min = customFields.target_min || config.target?.min;
+                        const max = customFields.target_max || config.target?.max;
+                        if (minField && min) minField.value = min;
+                        if (maxField && max) maxField.value = max;
+                    }, 100);
+                }, 50);
+            } else {
+                const target = customFields.target || (typeof config.target === 'number' ? config.target : 0);
+                if (target) setFieldValue('quantityTargetValue', target);
+            }
+            break;
+            
+        case 'percentage':
+            const percentTargetType = customFields.target_type || config.targetType;
+            if (percentTargetType === 'range') {
+                setCheckboxValue('percentageRange', true);
+                setTimeout(() => {
+                    togglePercentageRange(formId);
+                    setTimeout(() => {
+                        const minField = document.querySelector(`#percentageTarget-${formId} input[placeholder*="Minimum"]`);
+                        const maxField = document.querySelector(`#percentageTarget-${formId} input[placeholder*="Maximum"]`);
+                        const min = customFields.target_min || config.target?.min;
+                        const max = customFields.target_max || config.target?.max;
+                        if (minField && min) minField.value = min;
+                        if (maxField && max) maxField.value = max;
+                    }, 100);
+                }, 50);
+            } else {
+                const target = customFields.target || (typeof config.target === 'number' ? config.target : 0);
+                if (target) setFieldValue('percentageTargetValue', target);
+            }
+            break;
+            
+        case 'timeliness':
+            // Handle target date - check for targetDate first, then targetValue
+            const targetDate = customFields.targetDate || customFields.target_date || config.targetDate || config.targetValue;
+            if (targetDate) {
+                setFieldValue('timelinessTarget', targetDate);
+            }
+            break;
+            
+        case 'availability':
+            setFieldValue('availabilityStartTime', customFields.start_time || config.startTime);
+            setFieldValue('availabilityEndTime', customFields.end_time || config.endTime);
+            
+            // Set day checkboxes
+            const daysOfWeek = customFields.days_of_week || config.daysOfWeek;
+            if (daysOfWeek && Array.isArray(daysOfWeek)) {
+                setTimeout(() => {
+                    daysOfWeek.forEach(day => {
+                        const checkbox = document.querySelector(`input[name="availabilityDays-${formId}"][value="${day}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }, 50);
+            }
+            break;
+            
+        case 'compliance':
+            const targetVal = customFields.target_value !== undefined ? customFields.target_value : config.targetValue;
+            const complianceValue = targetVal === true ? 'yes' : 
+                                    targetVal === false ? 'no' : '';
+            if (complianceValue) setFieldValue('complianceTarget', complianceValue);
+            break;
+    }
+}
+
+/**
+ * Populates the parent SLA dropdown with existing SLAs.
+ * @param {string|number} id - Form identifier
+ * @returns {void}
+ */
+function populateParentSLADropdown(id) {
+    const parentSelect = document.getElementById(`parentId-${id}`);
+    if (!parentSelect) return;
+    
+    // Get SLA data from APP_DATA (single source of truth for both demo and real data)
+    const slaData = window.APP_DATA?.slas || [];
+    if (!Array.isArray(slaData) || slaData.length === 0) return;
+    
+    // Clear existing options except the first one
+    parentSelect.innerHTML = '<option value="">None (Root SLA)</option>';
+    
+    // Add existing SLAs as options
+    slaData.forEach(sla => {
+        const option = document.createElement('option');
+        option.value = sla.slaId;
+        option.textContent = `${sla.slaName} (${sla.teamId || 'Unknown'})`;
+        parentSelect.appendChild(option);
+    });
+}
+
+// ========================================
+// TASK-TEAM FILTERING FUNCTIONS
+// ========================================
+
+/**
+ * Populates the task dropdown with available tasks
+ * Uses TEAM_CONFIG for task list
+ * @param {string} id - Form identifier
+ */
+function populateTaskDropdown(id) {
+    const taskSelect = document.getElementById(`taskName-${id}`);
+    if (!taskSelect) return;
+    
+    // Clear existing options except the first
+    taskSelect.innerHTML = '<option value="">Select Task</option>';
+    
+    // Get all tasks from TEAM_CONFIG
+    const tasks = window.TEAM_CONFIG.getAllTasks();
+    tasks.forEach(task => {
+        const option = document.createElement('option');
+        option.value = task;
+        option.textContent = task;
+        taskSelect.appendChild(option);
+    });
+}
+
+/**
+ * Filters teams based on selected task and auto-selects if only one option
+ * Uses TEAM_CONFIG for team filtering
+ * @param {string} id - Form identifier
+ * @param {string} taskName - Selected task name
+ */
+function filterTeamsByTask(id, taskName) {
+    const teamSelect = document.getElementById(`teamName-${id}`);
+    const taskIdField = document.getElementById(`taskId-${id}`);
+    
+    if (!teamSelect) return;
+    
+    // Update hidden task ID field (e.g., "Task 1" -> "TASK-001")
+    if (taskIdField && taskName) {
+        const taskNumber = taskName.replace('Task ', '');
+        taskIdField.value = `TASK-${taskNumber.padStart(3, '0')}`;
+    } else if (taskIdField) {
+        taskIdField.value = '';
+    }
+    
+    // Clear team selection when task changes
+    teamSelect.value = '';
+    const teamIdField = document.getElementById(`teamId-${id}`);
+    if (teamIdField) teamIdField.value = '';
+    
+    if (!taskName) {
+        // No task selected - show all teams
+        populateAllTeams(id);
+        return;
+    }
+    
+    // Get teams for this task from TEAM_CONFIG
+    const teamObjects = window.TEAM_CONFIG.getTeamsForTask(taskName) || [];
+    
+    // Repopulate team dropdown with teams for this task
+    teamSelect.innerHTML = '<option value="">Select Team</option>';
+    teamObjects.forEach(teamObj => {
+        const option = document.createElement('option');
+        option.value = teamObj.name;
+        option.textContent = teamObj.name;
+        teamSelect.appendChild(option);
+    });
+    
+    // Auto-select if only one team available
+    if (teamObjects.length === 1) {
+        teamSelect.value = teamObjects[0].name;
+        updateTeamId(id, teamObjects[0].name);
+    }
+}
+
+/**
+ * Populates all teams when no task is selected
+ * Uses TEAM_CONFIG for team list
+ * @param {string} id - Form identifier
+ */
+function populateAllTeams(id) {
+    const teamSelect = document.getElementById(`teamName-${id}`);
+    if (!teamSelect) return;
+    
+    // Get all teams from TEAM_CONFIG
+    const allTeams = window.TEAM_CONFIG.getAllTeams();
+    
+    teamSelect.innerHTML = '<option value="">Select Team</option>';
+    allTeams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.name;
+        option.textContent = team.name;
+        teamSelect.appendChild(option);
+    });
+}
+
+/**
+ * Fetches valid teams from LOOKUP_TEAMS sheet
+ * @returns {Promise<Array>} Array of team objects from sheet
+ */
+async function getValidTeamsFromSheet() {
+    // Check if we're in GAS environment
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler((result) => {
+                    if (result && result.success && result.teams) {
+                        resolve(result.teams);
+                    } else {
+                        console.error('Failed to get teams:', result?.error);
+                        // Fallback to hardcoded list
+                        resolve(getFallbackTeams());
+                    }
+                })
+                .withFailureHandler((error) => {
+                    console.error('Error calling getTeamsFromLookup:', error);
+                    // Fallback to hardcoded list
+                    resolve(getFallbackTeams());
+                })
+                .getTeamsFromLookup();
+        });
+    } else {
+        // Fallback for local development - return all teams
+        return Promise.resolve(getFallbackTeams());
+    }
+}
+
+/**
+ * Returns hardcoded fallback team list
+ * @returns {Array} Array of team objects
+ */
+function getFallbackTeams() {
+    return [
+        {id: 'TEAM-001', name: 'Program Management Team'},
+        {id: 'TEAM-002', name: 'APM Team'},
+        {id: 'TEAM-003', name: 'PPM Team'},
+        {id: 'TEAM-004', name: 'Technical Evaluation Team'},
+        {id: 'TEAM-005', name: 'Training Support Team'},
+        {id: 'TEAM-006', name: 'Business Intelligence Team'},
+        {id: 'TEAM-007', name: 'Operational Support Team'},
+        {id: 'TEAM-008', name: 'Quality Support Team'},
+        {id: 'TEAM-009', name: 'Communication Team'},
+        {id: 'TEAM-010', name: 'TW/Template Team'},
+        {id: 'TEAM-011', name: 'Cost Team'}
+    ];
+}
+
+// Export functions for global access
+window.createSLAForm = createSLAForm;
+window.extractSLADataFromContainer = extractSLADataFromContainer;
+window.validateSLAData = validateSLAData;
+window.showFieldError = showFieldError;
+window.clearFieldError = clearFieldError;
+window.clearAllFieldErrors = clearAllFieldErrors;
+window.highlightValidationErrors = highlightValidationErrors;
+window.attachFieldValidation = attachFieldValidation;
+window.populateSLAForm = populateSLAForm;
+window.populateTypeSpecificFields = populateTypeSpecificFields;
+window.populateParentSLADropdown = populateParentSLADropdown;
+window.populateTaskDropdown = populateTaskDropdown;
+window.filterTeamsByTask = filterTeamsByTask;
+window.populateAllTeams = populateAllTeams;
+window.getValidTeamsFromSheet = getValidTeamsFromSheet;
+window.getFallbackTeams = getFallbackTeams;
+
+console.log('✓ Form-builder module loaded - 16 functions exported (including task-team filtering)');
+
+</script>

@@ -1,0 +1,511 @@
+<script>
+/**
+ * SLA Backend Integration Layer
+ * Connects the frontend to Google Apps Script CrudService.gs
+ * This file contains all backend interaction functions
+ */
+
+// Backend API wrapper functions
+const SLA_API = {
+    /**
+     * Create a new SLA in the backend
+     * @param {Object} slaData - SLA data matching the data model schema
+     * @returns {Promise<Object>} Result object with success status and slaId
+     */
+    async create(slaData) {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .createSLA(slaData);
+        });
+    },
+
+    /**
+     * Read/Get an SLA by ID
+     * @param {string} slaId - SLA ID to retrieve
+     * @returns {Promise<Object>} SLA data object
+     */
+    async read(slaId) {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .readSLA(slaId);
+        });
+    },
+
+    /**
+     * Update an existing SLA
+     * @param {string} slaId - SLA ID to update
+     * @param {Object} updates - Fields to update
+     * @returns {Promise<Object>} Result object
+     */
+    async update(slaId, updates) {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .updateSLA(slaId, updates);
+        });
+    },
+
+    /**
+     * Delete an SLA (soft delete)
+     * @param {string} slaId - SLA ID to delete
+     * @returns {Promise<Object>} Result object
+     */
+    async delete(slaId) {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .deleteSLA(slaId);
+        });
+    },
+
+    /**
+     * Query SLAs with filters, sorting, and pagination
+     * @param {Object} options - Query options
+     * @returns {Promise<Object>} Paginated results
+     */
+    async query(options = {}) {
+        console.log('SLA_API.query called with options:', options);
+        return new Promise((resolve, reject) => {
+            console.log('Executing google.script.run.querySLAs...');
+            google.script.run
+                .withSuccessHandler((result) => {
+                    console.log('google.script.run.querySLAs SUCCESS');
+                    console.log('Result received:', result);
+                    resolve(result);
+                })
+                .withFailureHandler((error) => {
+                    console.error('google.script.run.querySLAs FAILURE');
+                    console.error('Error received:', error);
+                    reject(error);
+                })
+                .querySLAs(options);
+        });
+    },
+
+    /**
+     * Get lookup data (teams, statuses)
+     * @param {string} type - 'teams' or 'statuses'
+     * @returns {Promise<Array>} Lookup data array
+     */
+    async getLookupData(type) {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .getLookupData(type);
+        });
+    },
+
+    /**
+     * Bulk create multiple SLAs
+     * @param {Array<Object>} slas - Array of SLA data objects
+     * @returns {Promise<Object>} Result object with created IDs and errors
+     */
+    async bulkCreate(slas) {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .bulkCreateSLAs(slas);
+        });
+    }
+};
+
+/**
+ * Prepare frontend form data for backend API
+ * Removes frontend-only fields and ensures proper data types
+ */
+function transformToBackendSchema(formData) {
+    // Parse customFields if it's a string
+    let customFields = formData.customFields;
+    if (typeof customFields === 'string') {
+        try {
+            customFields = JSON.parse(customFields);
+        } catch (e) {
+            customFields = {};
+        }
+    }
+    
+    // Extract range fields from customFields if present
+    const targetRangeMin = customFields?.targetMin;
+    const targetRangeMax = customFields?.targetMax;
+    const useRange = customFields?.targetType === 'range';
+    
+    // Determine target value
+    let actualTargetValue;
+    if (useRange && targetRangeMin !== undefined && targetRangeMax !== undefined) {
+        // When using range, use midpoint as target value
+        actualTargetValue = (parseFloat(targetRangeMin) + parseFloat(targetRangeMax)) / 2;
+    } else if (customFields?.targetValue !== undefined) {
+        // For compliance (boolean) or other types that store in customFields.targetValue
+        actualTargetValue = customFields.targetValue === true ? 1 : customFields.targetValue === false ? 0 : customFields.targetValue;
+    } else {
+        // Use explicit target or fall back to form's targetValue
+        actualTargetValue = customFields?.target || formData.targetValue;
+    }
+    
+    // Remove frontend-only fields that backend doesn't expect
+    const cleanData = { ...formData };
+    delete cleanData.id; // Backend generates slaId
+    delete cleanData.createdAt;
+    delete cleanData.createdBy;
+    delete cleanData.updatedAt;
+    delete cleanData.updatedBy;
+    delete cleanData.isActive;
+    delete cleanData.rowVersion;
+    
+    // Map status values to valid backend values
+    let status = (formData.status || 'not-started').toLowerCase().replace(/\s+/g, '-');
+    // Handle "active" -> "not-started" (active isn't a valid status)
+    if (status === 'active') {
+        status = 'not-started';
+    }
+    
+    // Transform the data
+    const transformed = {
+        ...cleanData,
+        // Normalize status values (valid: met, at-risk, ontrack, exceeded, missed, pending, not-started)
+        status: status,
+        // Normalize frequency (backend expects lowercase)
+        frequency: (formData.frequency || 'once').toLowerCase(),
+        // Ensure numeric fields are parsed
+        currentValue: parseFloat(formData.currentValue) || 0,
+        targetValue: parseFloat(actualTargetValue) || parseFloat(formData.targetValue) || 0,
+        // Add range fields if present
+        targetRangeMin: targetRangeMin ? parseFloat(targetRangeMin) : undefined,
+        targetRangeMax: targetRangeMax ? parseFloat(targetRangeMax) : undefined,
+        useRange: useRange || false,
+        // Ensure arrays (backend expects arrays, not strings)
+        tags: Array.isArray(formData.tags) ? formData.tags : 
+              (formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t) : []),
+        notificationEmails: Array.isArray(formData.notificationEmails) ? formData.notificationEmails :
+                           (formData.notificationEmails ? formData.notificationEmails.split(';').map(e => e.trim()).filter(e => e) : []),
+        // Keep customFields but ensure it's an object
+        customFields: customFields || {}
+    };
+    
+    // Remove undefined values
+    Object.keys(transformed).forEach(key => {
+        if (transformed[key] === undefined) {
+            delete transformed[key];
+        }
+    });
+    
+    return transformed;
+}
+
+/**
+ * Normalize backend data for frontend UI compatibility
+ * Backend returns camelCase - we just convert arrays to strings where needed
+ */
+function transformFromBackendSchema(backendData) {
+    return {
+        ...backendData,  // Keep all fields from backend as-is
+        // Add 'id' alias for 'slaId' (common pattern in UI code)
+        id: backendData.slaId,
+        // Convert arrays to strings for form inputs and display
+        tags: Array.isArray(backendData.tags) 
+            ? backendData.tags.join(',') 
+            : (backendData.tags || ''),
+        notificationEmails: Array.isArray(backendData.notificationEmails)
+            ? backendData.notificationEmails.join(';')
+            : (backendData.notificationEmails || '')
+    };
+}
+
+/**
+ * Load all SLAs from backend on page load
+ */
+async function loadSLAsFromBackend() {
+    console.log('=== loadSLAsFromBackend: START ===');
+    try {
+        showLoadingIndicator('Loading SLAs...');
+        
+        console.log('Calling SLA_API.query with filters:', { isActive: true });
+        const result = await SLA_API.query({
+            filters: { isActive: true },
+            sort: { field: 'updatedAt', direction: 'desc' }
+        });
+        
+        console.log('SLA_API.query result:', result);
+        console.log('Result success:', result.success);
+        console.log('Result data count:', result.data ? result.data.length : 0);
+        
+        if (result.success) {
+            console.log('Raw backend data (first item):', result.data[0]);
+            
+            // Initialize APP_DATA structure
+            window.APP_DATA = window.APP_DATA || {
+                slas: [],
+                userData: null,
+                isDemo: false,
+                source: 'unknown'
+            };
+            
+            // Transform and store backend data
+            window.APP_DATA.slas = result.data.map(transformFromBackendSchema);
+            window.APP_DATA.source = 'backend';
+            window.APP_DATA.isDemo = false;
+            window.APP_DATA.lastSync = new Date().toISOString();
+            
+            console.log('Transformed data count:', window.APP_DATA.slas.length);
+            console.log('Transformed data (first item):', window.APP_DATA.slas[0]);
+            
+            // Update UI components
+            console.log('Updating UI components...');
+            if (typeof updateDashboardStats === 'function') updateDashboardStats();
+            if (typeof updateDashboardRecentSLAs === 'function') updateDashboardRecentSLAs();
+            if (typeof updateTaskCounts === 'function') updateTaskCounts();
+            if (typeof renderSLAList === 'function') renderSLAList();
+            
+            hideLoadingIndicator();
+            console.log('=== loadSLAsFromBackend: SUCCESS ===');
+            return true;
+        } else {
+            console.error('Query failed with error:', result.error);
+            throw new Error(result.error || 'Failed to load SLAs');
+        }
+        
+    } catch (error) {
+        console.error('=== loadSLAsFromBackend: ERROR ===');
+        console.error('Error type:', error.constructor.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Full error object:', error);
+        showNotification('Failed to load SLAs: ' + error.message, 'error');
+        hideLoadingIndicator();
+        return false;
+    }
+}
+
+/**
+ * Submit new SLA(s) to backend
+ */
+async function submitSLAsToBackend() {
+    try {
+        const slaDataArray = collectSLAData();
+        
+        if (slaDataArray.length === 0) {
+            showNotification('Please add at least one SLA', 'error');
+            return;
+        }
+        
+        showLoadingIndicator('Creating SLAs...');
+        
+        const results = [];
+        const errors = [];
+        
+        // Create each SLA
+        for (const slaData of slaDataArray) {
+            try {
+                // Transform to backend schema
+                const backendData = transformToBackendSchema(slaData);
+                
+                // Call backend
+                const result = await SLA_API.create(backendData);
+                
+                if (result.success) {
+                    results.push(result.slaId);
+                } else {
+                    errors.push({ sla: slaData.slaName, error: result.error });
+                }
+            } catch (error) {
+                errors.push({ sla: slaData.slaName, error: error.toString() });
+            }
+        }
+        
+        hideLoadingIndicator();
+        
+        // Show results
+        if (errors.length === 0) {
+            showNotification(`Successfully created ${results.length} SLA(s)!`, 'success');
+            
+            // Reload data and navigate to list
+            await loadSLAsFromBackend();
+            showSection('list');
+            
+            // Reset form
+            resetCreateForm();
+        } else {
+            const successCount = results.length;
+            const errorCount = errors.length;
+            showNotification(
+                `Created ${successCount} SLA(s). ${errorCount} failed. Check console for details.`,
+                'warning'
+            );
+            console.error('SLA creation errors:', errors);
+        }
+        
+    } catch (error) {
+        console.error('Error submitting SLAs:', error);
+        showNotification('Error creating SLAs: ' + error.message, 'error');
+        hideLoadingIndicator();
+    }
+}
+
+/**
+ * Update an existing SLA via backend
+ */
+async function updateSLAInBackend(slaId, updates) {
+    try {
+        showLoadingIndicator('Updating SLA...');
+        
+        const result = await SLA_API.update(slaId, updates);
+        
+        hideLoadingIndicator();
+        
+        if (result.success) {
+            showNotification('SLA updated successfully!', 'success');
+            
+            // Reload the SLA data
+            await refreshSLADetail(slaId);
+            return true;
+        } else {
+            showNotification('Update failed: ' + result.error, 'error');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('Error updating SLA:', error);
+        showNotification('Error updating SLA: ' + error.message, 'error');
+        hideLoadingIndicator();
+        return false;
+    }
+}
+
+/**
+ * Delete an SLA via backend
+ */
+async function deleteSLAFromBackend(slaId) {
+    if (!confirm('Are you sure you want to delete this SLA?')) {
+        return;
+    }
+    
+    try {
+        showLoadingIndicator('Deleting SLA...');
+        
+        const result = await SLA_API.delete(slaId);
+        
+        hideLoadingIndicator();
+        
+        if (result.success) {
+            showNotification('SLA deleted successfully!', 'success');
+            
+            // Reload data and navigate to list
+            await loadSLAsFromBackend();
+            showSection('list');
+            return true;
+        } else {
+            showNotification('Delete failed: ' + result.error, 'error');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('Error deleting SLA:', error);
+        showNotification('Error deleting SLA: ' + error.message, 'error');
+        hideLoadingIndicator();
+        return false;
+    }
+}
+
+/**
+ * Refresh SLA detail view from backend
+ */
+async function refreshSLADetail(slaId) {
+    try {
+        const result = await SLA_API.read(slaId);
+        
+        if (result.success) {
+            // Transform and update in local data
+            const sla = transformFromBackendSchema(result.data);
+            const index = window.APP_DATA.slas.findIndex(s => s.id === slaId);
+            
+            if (index !== -1) {
+                window.APP_DATA.slas[index] = sla;
+            } else {
+                window.APP_DATA.slas.push(sla);
+            }
+            
+            // Re-render detail view
+            renderSLADetail(slaId);
+            return true;
+        } else {
+            showNotification('Failed to refresh SLA: ' + result.error, 'error');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('Error refreshing SLA:', error);
+        showNotification('Error refreshing SLA: ' + error.message, 'error');
+        return false;
+    }
+}
+
+/**
+ * Loading indicator functions
+ */
+function showLoadingIndicator(message = 'Loading...') {
+    let indicator = document.getElementById('loading-indicator');
+    
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'loading-indicator';
+        indicator.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        indicator.innerHTML = `
+            <div class="bg-surface rounded-lg p-6 shadow-lg">
+                <div class="flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <span class="text-primary-color font-medium">${message}</span>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(indicator);
+    } else {
+        indicator.querySelector('span').textContent = message;
+        indicator.classList.remove('hidden');
+    }
+}
+
+function hideLoadingIndicator() {
+    const indicator = document.getElementById('loading-indicator');
+    if (indicator) {
+        indicator.classList.add('hidden');
+    }
+}
+
+/**
+ * Reset create form after submission
+ */
+function resetCreateForm() {
+    slaCounter = 0;
+    isEditMode = false;
+    editingSlaId = null;
+    
+    const slaContainer = document.getElementById('slaContainer');
+    const tabsContainer = document.getElementById('slaTabs');
+    const submitContainer = document.getElementById('submitButtonContainer');
+    
+    if (slaContainer) slaContainer.innerHTML = '';
+    if (tabsContainer) tabsContainer.innerHTML = '';
+    if (submitContainer) submitContainer.style.display = 'none';
+    
+    // Show tabs section again
+    const tabsSection = document.getElementById('slaTabsSection');
+    if (tabsSection) {
+        tabsSection.classList.remove('hidden');
+    }
+    
+    // Reset header and button text
+    const header = document.querySelector('#create h2');
+    const submitButton = document.querySelector('#create button[type="submit"]');
+    
+    if (header) header.textContent = 'Create New SLAs';
+    if (submitButton) submitButton.textContent = 'Submit All SLAs';
+}
+</script>

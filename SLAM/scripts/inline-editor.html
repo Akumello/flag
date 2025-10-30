@@ -1,0 +1,1073 @@
+<script>
+/**
+ * In-Place SLA Editor
+ * Allows editing SLA details directly on the detail view without navigation
+ */
+
+// Track edit state
+let inlineEditState = {
+    isEditing: false,
+    originalData: null,
+    slaId: null
+};
+
+/**
+ * Formats a date string or Date object to YYYY-MM-DD format for HTML date inputs
+ * @param {string|Date} date - Date to format
+ * @returns {string} Date in YYYY-MM-DD format
+ */
+function formatDateForInput(date) {
+    if (!date) return '';
+    
+    // If it's already in YYYY-MM-DD format, return it
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return date;
+    }
+    
+    // Parse the date and format to YYYY-MM-DD
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return ''; // Invalid date
+    
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Enable inline editing mode for SLA details
+ */
+function enableInlineEditing(slaId) {
+    // Get SLA data from APP_DATA (single source of truth for both demo and real data)
+    const slaData = window.APP_DATA?.slas || [];
+    const sla = slaData.find(s => s.slaId === slaId);
+    
+    if (!sla) {
+        showNotification('SLA not found', 'error');
+        return;
+    }
+    
+    console.log('Enabling inline edit for SLA:', sla);
+    
+    // Store original data for cancel operation
+    inlineEditState = {
+        isEditing: true,
+        originalData: JSON.parse(JSON.stringify(sla)),
+        slaId: slaId
+    };
+    
+    // Transform detail view to edit mode
+    renderInlineEditMode(sla);
+    
+    // Update button visibility
+    toggleEditButtons(true);
+}
+
+/**
+ * Render the detail view in edit mode with editable fields
+ */
+function renderInlineEditMode(sla) {
+    const detailSection = document.getElementById('detail');
+    if (!detailSection) return;
+    
+    // Update header with edit indicator
+    const header = detailSection.querySelector('h2');
+    if (header) {
+        header.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <i class="bi bi-pencil-square text-warning"></i>
+                <span>Editing: ${sla.slaName}</span>
+            </div>
+        `;
+    }
+    
+    // Transform overview section to editable
+    renderEditableOverview(sla);
+    
+    // Add save/cancel buttons if not present
+    addEditActionButtons();
+}
+
+/**
+ * Render editable overview section
+ */
+function renderEditableOverview(sla) {
+    const overviewSection = document.querySelector('#detail .bg-surface');
+    if (!overviewSection) return;
+    
+    // Backend now returns consistent camelCase - no fallbacks needed
+    const slaName = sla.slaName || '';
+    const slaType = sla.slaType || 'quantity';
+    
+    // Convert dates from ISO format to YYYY-MM-DD for date inputs
+    const startDate = sla.startDate ? formatDateForInput(sla.startDate) : '';
+    const endDate = sla.endDate ? formatDateForInput(sla.endDate) : '';
+    
+    const currentValue = sla.currentValue || 0;
+    const targetValue = sla.targetValue || 0;
+    const teamId = sla.teamId || '';
+    const frequency = sla.frequency || 'once';
+    const externalTrackerUrl = sla.externalTrackerUrl || '';
+    const tags = sla.tags || [];
+    const tagsStr = Array.isArray(tags) ? tags.join(', ') : (typeof tags === 'string' ? tags : '');
+    
+    // Get custom fields for type-specific data
+    const customFields = getCustomFields(sla);
+    
+    // Get emails - backend returns camelCase
+    let emailsArray = [];
+    if (sla.notificationEmails) {
+        emailsArray = sla.notificationEmails.split(';').map(e => e.trim()).filter(e => e);
+    }
+    
+    // Type-specific value fields HTML
+    let valueFieldsHTML = '';
+    
+    if (slaType === 'timeliness') {
+        // For timeliness, show date picker for target
+        const targetDate = customFields.targetDate || targetValue;
+        const targetDateFormatted = formatDateForInput(targetDate);
+        
+        valueFieldsHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Status</label>
+                    <select id="edit-completion-status" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="not-started" ${sla.status === 'not-started' ? 'selected' : ''}>Not Started</option>
+                        <option value="ontrack" ${sla.status === 'ontrack' ? 'selected' : ''}>In Progress</option>
+                        <option value="met" ${sla.status === 'met' ? 'selected' : ''}>Completed</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Target Completion Date *</label>
+                    <input type="date" id="edit-targetDate" value="${targetDateFormatted}" 
+                           class="w-full px-3 py-2 border border-color rounded-md" required>
+                </div>
+            </div>
+        `;
+    } else if (slaType === 'quantity') {
+        // For quantity, show numeric inputs with optional unit
+        const unit = customFields.unit || '';
+        
+        valueFieldsHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                    <input type="number" id="edit-currentValue" value="${currentValue}" 
+                           step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                    <input type="number" id="edit-targetValue" value="${targetValue}" 
+                           step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Unit (optional)</label>
+                    <input type="text" id="edit-unit" value="${unit}" 
+                           class="w-full px-3 py-2 border border-color rounded-md"
+                           placeholder="e.g., tickets, requests">
+                </div>
+            </div>
+        `;
+    } else if (slaType === 'percentage') {
+        // For percentage, show numeric inputs with % suffix
+        valueFieldsHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Current Value (%)</label>
+                    <input type="number" id="edit-currentValue" value="${currentValue}" 
+                           min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Target Value (%)</label>
+                    <input type="number" id="edit-targetValue" value="${targetValue}" 
+                           min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+            </div>
+        `;
+    } else if (slaType === 'availability') {
+        // For availability, show percentage and time range
+        const startTime = customFields.startTime || '00:00';
+        const endTime = customFields.endTime || '23:59';
+        
+        valueFieldsHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Current Uptime (%)</label>
+                    <input type="number" id="edit-currentValue" value="${currentValue}" 
+                           min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Target Uptime (%)</label>
+                    <input type="number" id="edit-targetValue" value="${targetValue}" 
+                           min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Service Start Time</label>
+                    <input type="time" id="edit-startTime" value="${startTime}" 
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Service End Time</label>
+                    <input type="time" id="edit-endTime" value="${endTime}" 
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+            </div>
+        `;
+    } else if (slaType === 'compliance') {
+        // For compliance, show Yes/No dropdown
+        const isCompliant = currentValue === 1 || currentValue === true || currentValue === 'true';
+        
+        valueFieldsHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Compliance Status</label>
+                    <select id="edit-complianceStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="1" ${isCompliant ? 'selected' : ''}>Compliant (Yes)</option>
+                        <option value="0" ${!isCompliant ? 'selected' : ''}>Non-Compliant (No)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Requirement</label>
+                    <input type="text" id="edit-requirement" value="${customFields.requirement || ''}" 
+                           class="w-full px-3 py-2 border border-color rounded-md"
+                           placeholder="e.g., Must pass security audit">
+                </div>
+            </div>
+        `;
+    } else {
+        // Default numeric inputs for other types
+        valueFieldsHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                    <input type="number" id="edit-currentValue" value="${currentValue}" 
+                           step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                    <input type="number" id="edit-targetValue" value="${targetValue}" 
+                           step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+            </div>
+        `;
+    }
+    
+    overviewSection.innerHTML = `
+        <h3 class="text-lg font-semibold text-primary-color mb-4">
+            <i class="bi bi-pencil-square text-warning mr-2"></i>Edit SLA Details
+        </h3>
+        
+        <form id="inline-edit-form" class="space-y-6">
+            <!-- Basic Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">SLA Name *</label>
+                    <input type="text" id="edit-slaName" value="${slaName}" 
+                           class="w-full px-3 py-2 border border-color rounded-md" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Status</label>
+                    <select id="edit-status" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="not-started" ${sla.status === 'not-started' ? 'selected' : ''}>Not Started</option>
+                        <option value="ontrack" ${sla.status === 'ontrack' ? 'selected' : ''}>On Track</option>
+                        <option value="at-risk" ${sla.status === 'at-risk' ? 'selected' : ''}>At Risk</option>
+                        <option value="met" ${sla.status === 'met' ? 'selected' : ''}>Met</option>
+                        <option value="exceeded" ${sla.status === 'exceeded' ? 'selected' : ''}>Exceeded</option>
+                        <option value="missed" ${sla.status === 'missed' ? 'selected' : ''}>Missed</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Description</label>
+                <textarea id="edit-description" rows="3" 
+                          class="w-full px-3 py-2 border border-color rounded-md">${sla.description || ''}</textarea>
+            </div>
+            
+            <!-- Dates -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Start Date</label>
+                    <input type="date" id="edit-startDate" value="${startDate}" 
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">End Date</label>
+                    <input type="date" id="edit-endDate" value="${endDate}" 
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+            </div>
+            
+            <!-- Type-Specific Value Fields -->
+            ${valueFieldsHTML}
+            
+            <!-- Team and Frequency -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Team ID</label>
+                    <input type="text" id="edit-teamId" value="${teamId}" 
+                           class="w-full px-3 py-2 border border-color rounded-md"
+                           placeholder="TEAM-001">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Frequency</label>
+                    <select id="edit-frequency" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="once" ${frequency === 'once' ? 'selected' : ''}>Once</option>
+                        <option value="daily" ${frequency === 'daily' ? 'selected' : ''}>Daily</option>
+                        <option value="weekly" ${frequency === 'weekly' ? 'selected' : ''}>Weekly</option>
+                        <option value="biweekly" ${frequency === 'biweekly' ? 'selected' : ''}>Biweekly</option>
+                        <option value="monthly" ${frequency === 'monthly' ? 'selected' : ''}>Monthly</option>
+                        <option value="quarterly" ${frequency === 'quarterly' ? 'selected' : ''}>Quarterly</option>
+                        <option value="annually" ${frequency === 'annually' ? 'selected' : ''}>Annually</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Notification Emails -->
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Notification Emails</label>
+                <div id="edit-email-chips-display" class="flex flex-wrap gap-2 mb-2"></div>
+                <div class="flex gap-2">
+                    <input type="email" id="edit-email-input" placeholder="email@example.com"
+                           class="flex-1 px-3 py-2 border border-color rounded-md">
+                    <button type="button" id="edit-email-add-btn" 
+                            class="px-4 py-2 bg-primary text-white rounded-md hover:opacity-90">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+                <input type="hidden" id="edit-emails-hidden" value="">
+            </div>
+            
+            <!-- External Tracker URL -->
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">External Tracker URL</label>
+                <input type="url" id="edit-externalTrackerUrl" value="${externalTrackerUrl}" 
+                       class="w-full px-3 py-2 border border-color rounded-md"
+                       placeholder="https://...">
+            </div>
+            
+            <!-- Tags -->
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Tags</label>
+                <div id="edit-tags-chips-container" class="border-2 border-color rounded-md p-2 min-h-[42px] flex flex-wrap items-center gap-2 cursor-text">
+                    <div id="edit-tags-chips-display" class="inline-flex flex-wrap gap-1"></div>
+                    <input type="text" id="edit-tags-input" 
+                           class="outline-none border-0 flex-1 min-w-[100px] bg-transparent"
+                           placeholder="Type and press comma to add tag..."
+                           style="padding: 0; margin: 0;">
+                </div>
+                <input type="hidden" id="edit-tags-hidden" value="">
+                <p class="text-xs text-muted mt-2">Press comma or enter to add a tag</p>
+            </div>
+            
+            <!-- Update Notes -->
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Update Notes</label>
+                <textarea id="edit-update-notes" rows="2" 
+                          class="w-full px-3 py-2 border border-color rounded-md"
+                          placeholder="Describe what changed and why..."></textarea>
+            </div>
+        </form>
+    `;
+    
+    // Initialize email chips
+    initializeEditEmailChips(emailsArray);
+    
+    // Initialize tag chips
+    const tagsArray = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(t => t) : [];
+    initializeEditTagChips(tagsArray);
+    
+    // Attach event listeners AFTER HTML is rendered
+    attachEditModeEventListeners();
+}
+
+/**
+ * Attach event listeners for edit mode inputs
+ * This prevents conflicts with main form handlers
+ */
+function attachEditModeEventListeners() {
+    // Email input event listener
+    const emailInput = document.getElementById('edit-email-input');
+    if (emailInput) {
+        // Remove any existing listeners by cloning and replacing
+        const newEmailInput = emailInput.cloneNode(true);
+        emailInput.parentNode.replaceChild(newEmailInput, emailInput);
+        
+        newEmailInput.addEventListener('keydown', function(event) {
+            console.log('[INLINE EDITOR] Email input keydown:', event.key);
+            handleEditEmailInput(event);
+        });
+    }
+    
+    // Email add button event listener
+    const emailAddBtn = document.getElementById('edit-email-add-btn');
+    if (emailAddBtn) {
+        emailAddBtn.addEventListener('click', function() {
+            console.log('[INLINE EDITOR] Email add button clicked');
+            addEditEmailChip();
+        });
+    }
+    
+    // Tag input event listeners
+    const tagInput = document.getElementById('edit-tags-input');
+    if (tagInput) {
+        // Remove any existing listeners
+        const newTagInput = tagInput.cloneNode(true);
+        tagInput.parentNode.replaceChild(newTagInput, tagInput);
+        
+        newTagInput.addEventListener('keydown', function(event) {
+            console.log('[INLINE EDITOR] Tag input keydown:', event.key);
+            handleEditTagInput(event);
+        });
+        
+        newTagInput.addEventListener('keyup', function(event) {
+            console.log('[INLINE EDITOR] Tag input keyup');
+            handleEditTagKeyUp(event);
+        });
+    }
+    
+    // Tag container click to focus input
+    const tagContainer = document.getElementById('edit-tags-chips-container');
+    if (tagContainer) {
+        tagContainer.addEventListener('click', function() {
+            const input = document.getElementById('edit-tags-input');
+            if (input) input.focus();
+        });
+    }
+}
+
+/**
+ * Initialize email chips in edit mode
+ */
+function initializeEditEmailChips(emails) {
+    emails.forEach(email => {
+        if (email && email.trim()) {
+            addEditEmailChipElement(email.trim());
+        }
+    });
+}
+
+/**
+ * Handle email input in edit mode
+ */
+function handleEditEmailInput(event) {
+    // Guard to ensure we're in edit mode (prevent cross-contamination with main form)
+    if (!inlineEditState.isEditing) {
+        console.warn('handleEditEmailInput called but not in edit mode');
+        return;
+    }
+    
+    console.trace('handleEditEmailInput called');
+    
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        addEditEmailChip();
+    } else if (event.key === ',' || event.key === ';') {
+        event.preventDefault();
+        addEditEmailChip();
+    } else if (event.key === 'Backspace' && event.target.value === '') {
+        // Remove last chip
+        const chipsDisplay = document.getElementById('edit-email-chips-display');
+        if (!chipsDisplay) {
+            console.error('Email chips display not found');
+            return;
+        }
+        const chips = chipsDisplay.querySelectorAll('.email-chip');
+        if (chips && chips.length > 0) {
+            const lastChip = chips[chips.length - 1];
+            const email = lastChip.dataset.email;
+            if (email) {
+                removeEditEmailChip(email);
+            }
+        }
+    }
+}
+
+/**
+ * Add email chip in edit mode
+ */
+function addEditEmailChip() {
+    console.trace('addEditEmailChip called');
+    
+    const input = document.getElementById('edit-email-input');
+    if (!input) {
+        console.error('Email input field not found');
+        return;
+    }
+    
+    const email = input.value.trim();
+    
+    // Check if validateEmail function exists (from utils.html)
+    if (email && typeof validateEmail === 'function' && validateEmail(email)) {
+        addEditEmailChipElement(email);
+        input.value = '';
+    } else if (email) {
+        // Basic email validation fallback
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(email)) {
+            addEditEmailChipElement(email);
+            input.value = '';
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification('Invalid email address', 'error');
+            } else {
+                console.error('Invalid email address:', email);
+            }
+        }
+    }
+}
+
+/**
+ * Add email chip element
+ */
+function addEditEmailChipElement(email) {
+    const chipsDisplay = document.getElementById('edit-email-chips-display');
+    if (!chipsDisplay) {
+        console.error('Email chips display not found');
+        return;
+    }
+    
+    // Check if already exists
+    const existing = chipsDisplay.querySelector(`[data-email="${CSS.escape(email)}"]`);
+    if (existing) return;
+    
+    const chip = document.createElement('span');
+    chip.className = 'email-chip inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm';
+    chip.style.backgroundColor = 'var(--color-primary)';
+    chip.style.color = 'white';
+    chip.dataset.email = email;
+    
+    // Create email text node
+    const emailText = document.createTextNode(email);
+    chip.appendChild(emailText);
+    
+    // Create remove button
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'hover:opacity-75';
+    removeBtn.innerHTML = '<i class="bi bi-x-lg text-xs"></i>';
+    removeBtn.addEventListener('click', () => removeEditEmailChip(email));
+    chip.appendChild(removeBtn);
+    
+    chipsDisplay.appendChild(chip);
+    updateEditEmailsHidden();
+}
+
+/**
+ * Remove email chip in edit mode
+ */
+function removeEditEmailChip(email) {
+    const chipsDisplay = document.getElementById('edit-email-chips-display');
+    if (!chipsDisplay) {
+        console.error('Email chips display not found');
+        return;
+    }
+    
+    const chip = chipsDisplay.querySelector(`[data-email="${CSS.escape(email)}"]`);
+    if (chip) {
+        chip.remove();
+        updateEditEmailsHidden();
+    }
+}
+
+/**
+ * Update hidden emails field
+ */
+function updateEditEmailsHidden() {
+    const chipsDisplay = document.getElementById('edit-email-chips-display');
+    const hiddenField = document.getElementById('edit-emails-hidden');
+    
+    if (!chipsDisplay) {
+        console.error('Email chips display not found');
+        return;
+    }
+    
+    if (!hiddenField) {
+        console.error('Hidden emails field not found');
+        return;
+    }
+    
+    const chips = chipsDisplay.querySelectorAll('.email-chip');
+    const emails = Array.from(chips).map(chip => chip.dataset.email).filter(e => e);
+    
+    hiddenField.value = emails.join(';');
+}
+
+/**
+ * Initialize tag chips in edit mode
+ */
+function initializeEditTagChips(tags) {
+    tags.forEach(tag => {
+        if (tag && tag.trim()) {
+            addEditTagChipElement(tag.trim());
+        }
+    });
+}
+
+/**
+ * Handle tag input keydown events
+ */
+function handleEditTagInput(event) {
+    if (event.key === ',' || event.key === 'Enter') {
+        event.preventDefault();
+        addEditTagFromInput();
+    } else if (event.key === 'Backspace' && event.target.value === '') {
+        // Remove last tag chip
+        const chipsDisplay = document.getElementById('edit-tags-chips-display');
+        if (!chipsDisplay) return;
+        
+        const chips = chipsDisplay.querySelectorAll('.tag-chip');
+        if (chips && chips.length > 0) {
+            const lastChip = chips[chips.length - 1];
+            const tag = lastChip.dataset.tag;
+            if (tag) {
+                removeEditTagChip(tag);
+            }
+        }
+    }
+}
+
+/**
+ * Handle tag input keyup to detect comma in pasted content
+ */
+function handleEditTagKeyUp(event) {
+    const input = event.target;
+    if (input.value.includes(',')) {
+        // Split by comma and add each as a tag
+        const tags = input.value.split(',').map(t => t.trim()).filter(t => t);
+        tags.forEach(tag => addEditTagChipElement(tag));
+        input.value = '';
+    }
+}
+
+/**
+ * Add tag from input field
+ */
+function addEditTagFromInput() {
+    const input = document.getElementById('edit-tags-input');
+    if (!input) return;
+    
+    const tag = input.value.trim();
+    if (tag) {
+        addEditTagChipElement(tag);
+        input.value = '';
+    }
+}
+
+/**
+ * Add tag chip element
+ */
+function addEditTagChipElement(tag) {
+    const chipsDisplay = document.getElementById('edit-tags-chips-display');
+    if (!chipsDisplay) {
+        console.error('Tags chips display not found');
+        return;
+    }
+    
+    // Sanitize tag - keep alphanumeric, hyphens, and underscores
+    const sanitizedTag = tag.toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (!sanitizedTag) return; // Skip if nothing left after sanitization
+    
+    // Check if already exists
+    const existing = chipsDisplay.querySelector(`[data-tag="${CSS.escape(sanitizedTag)}"]`);
+    if (existing) {
+        console.log('Tag already exists:', sanitizedTag);
+        return;
+    }
+    
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all';
+    chip.style.backgroundColor = 'var(--color-secondary, #6366f1)';
+    chip.style.color = 'white';
+    chip.dataset.tag = sanitizedTag;
+    
+    // Create tag text
+    const tagText = document.createTextNode(sanitizedTag);
+    chip.appendChild(tagText);
+    
+    // Create remove button
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'hover:opacity-75 flex items-center justify-center';
+    removeBtn.style.cssText = 'width: 14px; height: 14px;';
+    removeBtn.innerHTML = '<i class="bi bi-x text-sm"></i>';
+    removeBtn.addEventListener('click', () => removeEditTagChip(sanitizedTag));
+    chip.appendChild(removeBtn);
+    
+    chipsDisplay.appendChild(chip);
+    updateEditTagsHidden();
+}
+
+/**
+ * Remove tag chip
+ */
+function removeEditTagChip(tag) {
+    const chipsDisplay = document.getElementById('edit-tags-chips-display');
+    if (!chipsDisplay) return;
+    
+    const chip = chipsDisplay.querySelector(`[data-tag="${CSS.escape(tag)}"]`);
+    if (chip) {
+        chip.remove();
+        updateEditTagsHidden();
+    }
+}
+
+/**
+ * Update hidden tags field
+ */
+function updateEditTagsHidden() {
+    const chipsDisplay = document.getElementById('edit-tags-chips-display');
+    const hiddenField = document.getElementById('edit-tags-hidden');
+    
+    if (!chipsDisplay || !hiddenField) return;
+    
+    const chips = chipsDisplay.querySelectorAll('.tag-chip');
+    const tags = Array.from(chips).map(chip => chip.dataset.tag).filter(t => t);
+    
+    hiddenField.value = tags.join(',');
+}
+
+/**
+ * Add edit action buttons to detail view
+ */
+function addEditActionButtons() {
+    const detailHeader = document.querySelector('#detail .flex.items-center.justify-between');
+    if (!detailHeader) return;
+    
+    // Remove existing edit buttons if present
+    const existingButtons = document.getElementById('inline-edit-actions');
+    if (existingButtons) {
+        existingButtons.remove();
+    }
+    
+    // Add new buttons
+    const buttonsHTML = `
+        <div id="inline-edit-actions" class="flex gap-3">
+            <button onclick="saveInlineEdits()" 
+                    class="px-4 py-2 bg-success text-white rounded-md hover:opacity-90">
+                <i class="bi bi-check-lg mr-2"></i>Save Changes
+            </button>
+            <button onclick="cancelInlineEditing()" 
+                    class="px-4 py-2 bg-surface border border-color rounded-md hover:bg-gray-100">
+                <i class="bi bi-x-lg mr-2"></i>Cancel
+            </button>
+        </div>
+    `;
+    
+    detailHeader.innerHTML += buttonsHTML;
+}
+
+/**
+ * Toggle edit button visibility
+ */
+function toggleEditButtons(isEditing) {
+    console.log('=== TOGGLE EDIT BUTTONS ===');
+    console.log('isEditing:', isEditing);
+    
+    const editButton = document.querySelector('#detail button[onclick*="enableInlineEditing"]');
+    const updateButton = document.querySelector('#detail button[onclick*="showUpdateModal"]');
+    const deleteButton = document.querySelector('#detail button.btn-danger');
+    const backButton = document.querySelector('#detail button[onclick="goBack()"]');
+    
+    console.log('Found editButton:', editButton);
+    console.log('Found updateButton:', updateButton);
+    console.log('Found deleteButton:', deleteButton);
+    console.log('Found backButton:', backButton);
+    
+    if (isEditing) {
+        console.log('Hiding buttons for edit mode...');
+        if (editButton) editButton.style.display = 'none';
+        if (updateButton) updateButton.style.display = 'none';
+        if (deleteButton) deleteButton.style.display = 'none';
+        if (backButton) backButton.style.display = 'none';
+    } else {
+        console.log('Showing buttons for normal mode...');
+        if (editButton) editButton.style.display = '';
+        if (updateButton) updateButton.style.display = '';
+        if (deleteButton) deleteButton.style.display = '';
+        if (backButton) backButton.style.display = '';
+    }
+    console.log('=== TOGGLE EDIT BUTTONS COMPLETE ===');
+}
+
+/**
+ * Save inline edits to backend
+ */
+async function saveInlineEdits() {
+    if (!inlineEditState.isEditing || !inlineEditState.slaId) {
+        showNotification('No active edit session', 'error');
+        return;
+    }
+    
+    try {
+        // Get original SLA to determine type
+        const slaData = window.APP_DATA?.slas || [];
+        const slaIndex = slaData.findIndex(s => s.slaId === inlineEditState.slaId);
+        
+        if (slaIndex === -1) {
+            showNotification('SLA not found in data', 'error');
+            return;
+        }
+        
+        const originalSla = slaData[slaIndex];
+        const slaType = originalSla.slaType || 'quantity';
+        
+        // Collect common data from form
+        const slaName = document.getElementById('edit-slaName')?.value;
+        const description = document.getElementById('edit-description')?.value;
+        const status = document.getElementById('edit-status')?.value;
+        const startDate = document.getElementById('edit-startDate')?.value;
+        const endDate = document.getElementById('edit-endDate')?.value;
+        const teamId = document.getElementById('edit-teamId')?.value;
+        const frequency = document.getElementById('edit-frequency')?.value;
+        const externalTrackerUrl = document.getElementById('edit-externalTrackerUrl')?.value;
+        
+        // Collect type-specific values
+        let currentValue, targetValue, customFields;
+        
+        try {
+            customFields = JSON.parse(originalSla.customFields || originalSla.custom_fields_json || '{}');
+        } catch (e) {
+            customFields = {};
+        }
+        
+        if (slaType === 'timeliness') {
+            // For timeliness, get target date
+            const targetDate = document.getElementById('edit-targetDate')?.value;
+            if (!targetDate) {
+                showNotification('Target completion date is required', 'error');
+                return;
+            }
+            targetValue = targetDate;
+            currentValue = 0; // Not used for timeliness
+            customFields.targetDate = targetDate;
+        } else if (slaType === 'quantity') {
+            // For quantity, get numeric values and unit
+            currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
+            targetValue = parseFloat(document.getElementById('edit-targetValue')?.value) || 0;
+            const unit = document.getElementById('edit-unit')?.value || '';
+            if (unit) customFields.unit = unit;
+        } else if (slaType === 'percentage') {
+            // For percentage, get numeric values (0-100)
+            currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
+            targetValue = parseFloat(document.getElementById('edit-targetValue')?.value) || 0;
+        } else if (slaType === 'availability') {
+            // For availability, get uptime percentages and times
+            currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
+            targetValue = parseFloat(document.getElementById('edit-targetValue')?.value) || 0;
+            const startTime = document.getElementById('edit-startTime')?.value;
+            const endTime = document.getElementById('edit-endTime')?.value;
+            if (startTime) customFields.startTime = startTime;
+            if (endTime) customFields.endTime = endTime;
+        } else if (slaType === 'compliance') {
+            // For compliance, get Yes/No status
+            currentValue = parseInt(document.getElementById('edit-complianceStatus')?.value) || 0;
+            targetValue = 1; // Always Yes/compliant
+            const requirement = document.getElementById('edit-requirement')?.value;
+            if (requirement) customFields.requirement = requirement;
+        } else {
+            // Default handling
+            currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
+            targetValue = parseFloat(document.getElementById('edit-targetValue')?.value) || 0;
+        }
+        
+        // Get tags from chips (hidden field)
+        const tagsHidden = document.getElementById('edit-tags-hidden')?.value;
+        const tags = tagsHidden ? tagsHidden.split(',').filter(t => t) : [];
+        
+        // Get emails from chips
+        const emailsHidden = document.getElementById('edit-emails-hidden')?.value;
+        const notificationEmails = emailsHidden ? emailsHidden.split(';').filter(e => e) : [];
+        
+        // Validate required fields
+        if (!slaName || !startDate || !endDate) {
+            showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        const updateNotes = document.getElementById('edit-update-notes')?.value;
+        
+        // Calculate progress
+        const progress = targetValue > 0 ? Math.min(100, Math.round((currentValue / targetValue) * 100)) : 0;
+        
+        // Add update notes to custom fields if provided
+        if (updateNotes) {
+            customFields.lastUpdateNotes = updateNotes;
+            customFields.lastUpdateTime = new Date().toISOString();
+        }
+        
+        // Prepare updates object for backend (only changed fields)
+        const updates = {
+            slaName: slaName,
+            description: description,
+            status: status,
+            startDate: startDate,
+            endDate: endDate,
+            currentValue: currentValue,
+            targetValue: targetValue,
+            teamId: teamId,
+            frequency: frequency,
+            externalTrackerUrl: externalTrackerUrl,
+            notificationEmails: notificationEmails,  // Backend expects array
+            tags: tags,  // Backend expects array
+            customFields: customFields,
+            rowVersion: originalSla.rowVersion || 0  // For optimistic locking
+        };
+        
+        // Update the SLA in local data array (for immediate UI update)
+        const updatedSla = {
+            ...originalSla,
+            ...updates,
+            notificationEmails: notificationEmails.join(';'),  // Store as string in local data
+            tags: tags.join(','),  // Store as string in local data
+            updatedAt: new Date().toISOString(),
+            updatedBy: window.APP_DATA.userData?.email || 'system'
+        };
+        
+        slaData[slaIndex] = updatedSla;
+        
+        // Call backend update with only the changed fields
+        if (typeof updateSLAInBackend === 'function') {
+            try {
+                const success = await updateSLAInBackend(inlineEditState.slaId, updates);
+                if (!success) {
+                    showNotification('Update saved locally but backend sync failed', 'warning');
+                    return;
+                }
+            } catch (error) {
+                console.error('Backend update failed:', error);
+                showNotification('Backend update failed: ' + error.message, 'error');
+                return;
+            }
+        }
+        
+        showNotification('SLA updated successfully', 'success');
+        
+        // Exit edit mode
+        const savedSlaId = inlineEditState.slaId;
+        inlineEditState = {
+            isEditing: false,
+            originalData: null,
+            slaId: null
+        };
+        
+        // Remove inline edit action buttons
+        const editActions = document.getElementById('inline-edit-actions');
+        if (editActions) {
+            editActions.remove();
+        }
+        
+        // Re-render detail view in read mode
+        renderSLADetail(savedSlaId);
+        toggleEditButtons(false);
+        
+    } catch (error) {
+        console.error('Error saving inline edits:', error);
+        showNotification('Error saving changes: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Cancel inline editing and revert to original
+ */
+function cancelInlineEditing() {
+    console.log('=== CANCEL INLINE EDITING CALLED ===');
+    console.log('Current inlineEditState:', JSON.stringify(inlineEditState, null, 2));
+    
+    if (!confirm('Discard all changes?')) {
+        console.log('User cancelled the discard confirmation');
+        return;
+    }
+    
+    const savedSlaId = inlineEditState.slaId;
+    console.log('Saved SLA ID:', savedSlaId);
+    
+    if (savedSlaId) {
+        // Restore original data from APP_DATA (single source of truth)
+        const slaData = window.APP_DATA?.slas || [];
+        console.log('Total SLAs in APP_DATA:', slaData.length);
+        const index = slaData.findIndex(s => s.slaId === savedSlaId);
+        console.log('Found SLA at index:', index);
+        if (index !== -1 && inlineEditState.originalData) {
+            console.log('Restoring original data...');
+            slaData[index] = inlineEditState.originalData;
+            console.log('Original data restored');
+        }
+    }
+    
+    // Reset state
+    console.log('Resetting inlineEditState...');
+    inlineEditState = {
+        isEditing: false,
+        originalData: null,
+        slaId: null
+    };
+    console.log('State reset:', JSON.stringify(inlineEditState, null, 2));
+    
+    // Remove inline edit action buttons
+    console.log('Looking for inline-edit-actions element...');
+    const editActions = document.getElementById('inline-edit-actions');
+    console.log('Found editActions element:', editActions);
+    if (editActions) {
+        console.log('Removing editActions element...');
+        editActions.remove();
+        console.log('EditActions removed');
+    } else {
+        console.log('No editActions element found to remove');
+    }
+    
+    // Show original buttons BEFORE re-rendering
+    console.log('Calling toggleEditButtons(false) BEFORE renderSLADetail...');
+    toggleEditButtons(false);
+    console.log('toggleEditButtons completed');
+    
+    // Re-render in read mode AFTER resetting state
+    console.log('Calling renderSLADetail for ID:', savedSlaId);
+    if (savedSlaId) {
+        renderSLADetail(savedSlaId);
+        console.log('renderSLADetail completed');
+    } else {
+        console.log('No savedSlaId, skipping renderSLADetail');
+    }
+    
+    console.log('Showing notification...');
+    showNotification('Changes discarded', 'info');
+    console.log('=== CANCEL INLINE EDITING COMPLETE ===');
+}
+
+/**
+ * Update the edit button to use inline editing
+ */
+function initializeInlineEditButton() {
+    // This will be called when detail view is rendered
+    // The editCurrentSLA() function will be updated to call enableInlineEditing() instead
+}
+
+// Export functions for global access
+window.enableInlineEditing = enableInlineEditing;
+window.saveInlineEdits = saveInlineEdits;
+window.cancelInlineEditing = cancelInlineEditing;
+window.handleEditEmailInput = handleEditEmailInput;
+window.addEditEmailChip = addEditEmailChip;
+window.removeEditEmailChip = removeEditEmailChip;
+window.handleEditTagInput = handleEditTagInput;
+window.handleEditTagKeyUp = handleEditTagKeyUp;
+window.removeEditTagChip = removeEditTagChip;
+</script>

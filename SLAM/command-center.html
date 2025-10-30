@@ -1888,13 +1888,141 @@
             };
 
             console.log('SLA Data to be sent to backend:', JSON.stringify(payload, null, 2));
-            showJsonModal(payload);
             
-            // Show success message and redirect
-            showNotification('All SLAs processed successfully!');
-            setTimeout(() => {
-                showSection('list');
-            }, 2000);
+            // Submit to backend
+            submitSLAsToBackend(payload.slas);
+        }
+
+        /**
+         * Submits SLA data to backend for creation
+         * @param {Array<Object>} slas - Array of SLA data objects
+         * @returns {Promise<void>}
+         */
+        async function submitSLAsToBackend(slas) {
+            try {
+                console.log('=== submitSLAsToBackend START ===');
+                console.log('SLAs to submit:', slas.length);
+                
+                // Show loading indicator
+                showLoadingIndicator('Creating SLAs...');
+                
+                // Check if we're in GAS environment or local
+                const isGasEnvironment = typeof google !== 'undefined' && google.script;
+                
+                if (!isGasEnvironment) {
+                    // Local environment - show modal instead
+                    console.log('Local environment detected - showing JSON modal');
+                    hideLoadingIndicator();
+                    showJsonModal({ timestamp: new Date().toISOString(), slas: slas });
+                    showNotification('Local mode: SLAs not saved to backend');
+                    return;
+                }
+                
+                // Transform each SLA for backend
+                console.log('Transforming SLAs for backend...');
+                const transformedSLAs = slas.map(transformToBackendSchema);
+                console.log('Transformed SLAs:', JSON.stringify(transformedSLAs[0], null, 2));
+                
+                // Call backend bulk create
+                console.log('Calling SLA_API.bulkCreate...');
+                const result = await SLA_API.bulkCreate(transformedSLAs);
+                console.log('Backend result:', result);
+                
+                hideLoadingIndicator();
+                
+                if (result.success && result.errors.length === 0) {
+                    // All SLAs created successfully
+                    console.log('All SLAs created successfully:', result.created);
+                    showNotification(`Successfully created ${result.created.length} SLA(s)!`);
+                    
+                    // Reload data from backend
+                    console.log('Reloading SLAs from backend...');
+                    await loadSLAsFromBackend();
+                    
+                    // Clear forms and reset
+                    clearAllSLAForms();
+                    
+                    // Navigate to list view
+                    setTimeout(() => {
+                        showSection('list');
+                    }, 1000);
+                    
+                } else if (result.success && result.errors.length > 0) {
+                    // Partial success
+                    console.warn('Partial success:', result);
+                    showNotification(
+                        `Created ${result.created.length} SLA(s). ${result.errors.length} failed.`, 
+                        'warning'
+                    );
+                    
+                    // Show details of failures
+                    const errorDetails = result.errors.map(e => 
+                        `SLA ${e.index + 1}: ${e.error}`
+                    ).join('\n');
+                    console.error('Creation errors:', errorDetails);
+                    
+                    // Reload to show successful ones
+                    await loadSLAsFromBackend();
+                    
+                } else {
+                    // Complete failure
+                    console.error('Bulk create failed:', result);
+                    console.error('Error details:', result.errors);
+                    
+                    // Extract error message from first error
+                    let errorMessage = 'Unknown error';
+                    if (result.errors && result.errors.length > 0) {
+                        errorMessage = result.errors[0].error;
+                        console.error('First error:', errorMessage);
+                    }
+                    
+                    showNotification(`Failed to create SLAs: ${errorMessage}`, 'error');
+                }
+                
+                console.log('=== submitSLAsToBackend END ===');
+                
+            } catch (error) {
+                console.error('=== submitSLAsToBackend ERROR ===');
+                console.error('Error:', error);
+                hideLoadingIndicator();
+                showNotification(`Error creating SLAs: ${error.message || error.toString()}`, 'error');
+            }
+        }
+
+        /**
+         * Clears all SLA forms and resets the form state
+         * @returns {void}
+         */
+        function clearAllSLAForms() {
+            // Remove all tabs except the first one
+            const tabsContainer = document.getElementById('slaTabs');
+            const tabs = tabsContainer.querySelectorAll('.sla-tab:not(:first-child):not(:last-child)');
+            tabs.forEach(tab => tab.remove());
+            
+            // Remove all form containers except the first one
+            const formsContainer = document.getElementById('slaContainer');
+            const forms = formsContainer.querySelectorAll('.sla-form-container:not(:first-child)');
+            forms.forEach(form => form.remove());
+            
+            // Reset the first form
+            const firstForm = formsContainer.querySelector('.sla-form-container:first-child');
+            if (firstForm) {
+                const formId = firstForm.id.replace('sla-container-', '');
+                const form = firstForm.querySelector('form');
+                if (form) {
+                    form.reset();
+                }
+                // Clear any email chips
+                const emailDisplay = document.getElementById(`emailChipsDisplay-${formId}`);
+                if (emailDisplay) {
+                    emailDisplay.innerHTML = '';
+                }
+            }
+            
+            // Reset counter
+            slaCounter = 1;
+            
+            console.log('All SLA forms cleared');
         }
 
         /**

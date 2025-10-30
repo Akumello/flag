@@ -1,0 +1,9 @@
+<script>
+    // Application Data - Consolidates data from separate sources
+    // This combines metadata, user data, and SLA data into a unified structure
+    window.APP_DATA = {
+        metadata: window.APP_METADATA || {},
+        demoData: window.SLA_DATA || {},
+        userData: window.USER_DATA || {}
+    };
+</script>

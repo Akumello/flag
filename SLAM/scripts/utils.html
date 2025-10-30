@@ -1,0 +1,276 @@
+<script>
+/**
+ * ========================================================================
+ * UTILITY FUNCTIONS MODULE
+ * ========================================================================
+ * Centralized utility and helper functions for SLA Tracker application.
+ * Includes formatting, calculations, and data transformation utilities.
+ * 
+ * Functions exported to window object:
+ * - formatDate, formatDateTime, formatRelativeTime
+ * - getCustomFields, getTeamName
+ * - calculateProgress, calculateTimeRemaining
+ * - getStatusBadgeClass, getProgressBarClass
+ * - getActivityIconColor, getStatusColor
+ * - validateEmail
+ * ========================================================================
+ */
+
+// ========================================
+// DATE & TIME FORMATTING
+// ========================================
+
+/**
+ * Formats a date string into a localized, human-readable format.
+ * @param {string} dateString - ISO date string or any valid date format
+ * @returns {string} Formatted date (e.g., "Jan 15, 2024")
+ */
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+}
+
+/**
+ * Formats datetime string to readable format.
+ * @param {string} datetime - ISO datetime string
+ * @returns {string} Formatted datetime
+ */
+function formatDateTime(datetime) {
+    if (!datetime) return 'N/A';
+    try {
+        const date = new Date(datetime);
+        return date.toLocaleString();
+    } catch (e) {
+        return datetime;
+    }
+}
+
+/**
+ * Formats a timestamp into a human-readable relative time string.
+ * @param {string} timestamp - ISO timestamp string
+ * @returns {string} Relative time (e.g., "2 days ago", "5 hours ago", "just now")
+ */
+function formatRelativeTime(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now - time;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffDays > 0) {
+        return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+    } else if (diffHours > 0) {
+        return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+    } else if (diffMinutes > 0) {
+        return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+    } else {
+        return 'Just now';
+    }
+}
+
+/**
+ * Calculates the time remaining until an SLA's end date.
+ * @param {string} endDate - ISO date string of the SLA end date
+ * @returns {string} Human-readable time remaining (e.g., "5 days", "Today")
+ */
+function calculateTimeRemaining(endDate) {
+    const now = new Date();
+    const end = new Date(endDate);
+    const diffTime = end - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return 'Expired';
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1 day';
+    return `${diffDays} days`;
+}
+
+// ========================================
+// DATA PARSING & TRANSFORMATION
+// ========================================
+
+/**
+ * Safely parses custom_fields_json with fallback for errors.
+ * @param {Object} sla - SLA object containing custom_fields_json
+ * @returns {Object} Parsed custom fields or empty object
+ */
+function getCustomFields(sla) {
+    if (!sla) return {};
+    try {
+        return JSON.parse(sla.custom_fields_json || '{}');
+    } catch (e) {
+        console.error('Failed to parse custom_fields_json:', e);
+        return {};
+    }
+}
+
+/**
+ * Converts team_id to team_name using TEAM_ID_MAP.
+ * @param {string} teamId - Team ID in format TEAM-XXX
+ * @returns {string} Team name or the teamId if not found
+ */
+function getTeamName(teamId) {
+    const TEAM_NAMES = {
+        'TEAM-001': 'Program Management Team',
+        'TEAM-002': 'APM Team',
+        'TEAM-003': 'PPM Team',
+        'TEAM-004': 'Technical Evaluation Team',
+        'TEAM-005': 'Training Support Team',
+        'TEAM-006': 'Business Intelligence Team',
+        'TEAM-007': 'Operational Support Team',
+        'TEAM-008': 'Quality Support Team',
+        'TEAM-009': 'Communication Team',
+        'TEAM-010': 'TW/Template Team',
+        'TEAM-011': 'Cost Team'
+    };
+    return TEAM_NAMES[teamId] || teamId || 'Unknown Team';
+}
+
+// ========================================
+// PROGRESS CALCULATIONS
+// ========================================
+
+/**
+ * Calculates the progress percentage for an SLA based on its current value and target.
+ * Handles different target types (single value, range, percentage).
+ * @param {Object} sla - SLA object with configuration and currentValue
+ * @returns {number} Progress percentage (0-100)
+ */
+function calculateProgress(sla) {
+    // If progress is already set and valid, use it
+    if (sla.progress && sla.progress > 0) {
+        return sla.progress; // No cap - allows unlimited over-achievement
+    }
+    
+    // Backend now returns consistent camelCase
+    const current = sla.currentValue || 0;
+    const target = sla.targetValue || 0;
+    
+    // Fallback to nested configuration if flat fields not available
+    if (target === 0 && sla.configuration?.target) {
+        const configTarget = sla.configuration.target;
+        
+        if (sla.configuration.targetType === 'range' && typeof configTarget === 'object') {
+            const min = configTarget.min || 0;
+            
+            if (current >= min) {
+                return 100;
+            } else {
+                return Math.round((current / min) * 100);
+            }
+        } else if (typeof configTarget === 'number') {
+            return Math.min(Math.round((current / configTarget) * 100), 200);
+        }
+    }
+    
+    // Calculate from flat fields
+    if (target > 0) {
+        return Math.min(Math.round((current / target) * 100), 200);
+    }
+    
+    return 0;
+}
+
+// ========================================
+// CSS CLASS HELPERS
+// ========================================
+
+/**
+ * Returns the appropriate CSS class for a status badge based on SLA status.
+ * @param {string} status - SLA status ('met', 'at-risk', 'ontrack', 'missed')
+ * @returns {string} CSS class name for the badge
+ */
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case 'met': return 'badge-success';
+        case 'at-risk': return 'badge-warning';
+        case 'ontrack': return 'badge-ontrack';
+        default: return 'badge-info';
+    }
+}
+
+/**
+ * Returns the appropriate CSS class for a progress bar based on SLA status.
+ * @param {string} status - SLA status ('met', 'at-risk', 'ontrack', 'missed')
+ * @returns {string} CSS class name for the progress bar
+ */
+function getProgressBarClass(status) {
+    switch (status) {
+        case 'met': return 'progress-success';
+        case 'at-risk': return 'progress-warning';
+        case 'ontrack': return 'progress-ontrack';
+        default: return 'progress-success';
+    }
+}
+
+/**
+ * Returns the appropriate color for an activity icon based on activity type.
+ * @param {string} type - Activity type ('success', 'warning', 'error', 'info')
+ * @returns {string} CSS color variable
+ */
+function getActivityIconColor(type) {
+    switch (type) {
+        case 'success': return 'var(--color-status-success)';
+        case 'warning': return 'var(--color-status-warning)';
+        case 'error': return 'var(--color-status-error)';
+        case 'info': return 'var(--color-status-info)';
+        default: return 'var(--color-gray-medium)';
+    }
+}
+
+/**
+ * Returns the appropriate color for a status type in activity logs.
+ * @param {string} type - Status type ('success', 'warning', 'error', 'info')
+ * @returns {string} CSS color variable
+ */
+function getStatusColor(type) {
+    const colorMap = {
+        'success': 'var(--color-status-success)',
+        'warning': 'var(--color-status-warning)',
+        'error': 'var(--color-status-error)',
+        'info': 'var(--color-status-info)',
+        'default': 'var(--color-gray-medium)'
+    };
+    return colorMap[type] || 'var(--color-gray-medium)';
+}
+
+// ========================================
+// VALIDATION HELPERS
+// ========================================
+
+/**
+ * Validates email format using standard regex pattern.
+ * @param {string} email - Email address to validate
+ * @returns {boolean} True if valid email format
+ */
+function validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// ========================================
+// EXPORT TO WINDOW OBJECT
+// ========================================
+
+// Export all utility functions to window object for global access
+window.formatDate = formatDate;
+window.formatDateTime = formatDateTime;
+window.formatRelativeTime = formatRelativeTime;
+window.calculateTimeRemaining = calculateTimeRemaining;
+window.getCustomFields = getCustomFields;
+window.getTeamName = getTeamName;
+window.calculateProgress = calculateProgress;
+window.getStatusBadgeClass = getStatusBadgeClass;
+window.getProgressBarClass = getProgressBarClass;
+window.getActivityIconColor = getActivityIconColor;
+window.getStatusColor = getStatusColor;
+window.validateEmail = validateEmail;
+
+console.log('✓ Utils module loaded - 12 utility functions exported');
+
+</script>

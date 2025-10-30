@@ -1,0 +1,162 @@
+<style>
+  /* SLA Tab Styles */
+  .sla-tab {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    margin-right: 8px;
+    padding: 10px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .sla-tab.active {
+    border-color: var(--color-primary);
+    color: white;
+    background: var(--color-primary);
+  }
+  
+  .sla-tab:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+  
+  .sla-tab.invalid {
+    border-color: #dc2626;
+    color: #dc2626;
+    background: #fef2f2;
+  }
+
+  .sla-tab.invalid.active {
+    border-color: #dc2626;
+    color: white;
+    background: #dc2626;
+  }
+
+  .sla-tab.valid {
+    border-color: #059669;
+    color: #059669;
+    background: #f0fdf4;
+  }
+
+  .sla-tab.valid.active {
+    border-color: #059669;
+    color: white;
+    background: #059669;
+  }
+
+  .add-sla-button {
+    background: white;
+    border: 2px dashed #9ca3af;
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: #6b7280;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .add-sla-button:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: #f9fafb;
+  }
+
+  .tab-close-btn {
+    opacity: 0.7;
+    margin-left: 8px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 16px;
+    line-height: 1;
+    font-weight: bold;
+    transition: opacity 0.2s ease;
+  }
+
+  .tab-close-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .sla-tab:not(.active) .tab-close-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+  
+  .sla-form-container {
+    display: none;
+  }
+  
+  .sla-form-container.active {
+    display: block;
+  }
+
+  /* Profile Button Styles */
+  .profile-btn {
+    position: relative;
+  }
+
+  #profileMenu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 9999;
+    display: block;
+  }
+
+  #profileMenu.hidden {
+    display: none !important;
+  }
+
+  .profile-btn img {
+    transition: transform 0.2s ease;
+  }
+
+  .profile-btn:hover img {
+    transform: scale(1.05);
+  }
+
+  /* User Task Card Special Styling */
+  .user-task-card {
+    border: 2px solid var(--color-primary) !important;
+    background: rgba(0, 79, 135, 0.05) !important;
+    box-shadow: 0 4px 12px rgba(0, 79, 135, 0.15) !important;
+    position: relative;
+  }
+
+  .user-task-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--color-primary);
+    border-radius: 8px 8px 0 0;
+  }
+
+  .user-task-card:hover {
+    border-color: var(--color-primary-hover) !important;
+    box-shadow: 0 6px 16px rgba(0, 79, 135, 0.25) !important;
+  }
+
+  .my-task-indicator {
+    animation: pulse-blue 2s infinite;
+  }
+
+  @keyframes pulse-blue {
+    0%, 100% { 
+      background-color: #dbeafe; 
+      color: #1e40af; 
+    }
+    50% { 
+      background-color: #bfdbfe; 
+      color: #1d4ed8; 
+    }
+  }
+</style>

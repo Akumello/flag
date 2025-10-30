@@ -1,0 +1,1036 @@
+<script>
+/**
+ * ========================================================================
+ * SLA DETAIL RENDERER MODULE
+ * ========================================================================
+ * Comprehensive rendering functions for SLA detail views.
+ * Handles displaying SLA information, progress tracking, metrics,
+ * activity logs, and sidebar information.
+ * 
+ * Functions exported to window object:
+ * - renderSLADetail
+ * - renderActivityLog
+ * - renderProgressTracking
+ * - renderSLASidebar
+ * - generateMetricsHTML
+ * - generateQuickStatsHTML
+ * - getTargetDisplay
+ * ========================================================================
+ */
+
+/**
+ * Renders the detailed view of a specific SLA.
+ * Updates all sections: header, metrics, progress tracking, activity log, and sidebar.
+ * @param {string} slaId - The unique identifier of the SLA to display
+ * @returns {void}
+ */
+function renderSLADetail(slaId) {
+    console.log('=== RENDER SLA DETAIL CALLED ===');
+    console.log('SLA ID:', slaId);
+    console.log('Rendering SLA detail for ID:', slaId);
+    
+    // Get SLA data from APP_DATA (single source of truth for both demo and real data)
+    const slaData = window.APP_DATA?.slas || [];
+    console.log('Total SLAs available:', slaData.length);
+    const sla = slaData.find(s => s.slaId === slaId);
+    
+    if (!sla) {
+        console.error('SLA not found:', slaId);
+        console.log('Available SLA IDs:', slaData.map(s => s.slaId));
+        return;
+    }
+    
+    console.log('Found SLA:', sla.slaName, 'Type:', sla.slaType);
+    console.log('SLA Data:', sla);
+    
+    // Parse custom fields if available
+    const customFields = getCustomFields(sla);
+    const teamName = getTeamName(sla.teamId);
+    
+    // Calculate current progress
+    const currentProgress = calculateProgress(sla);
+    sla.progress = currentProgress; // Update the stored progress
+
+    // Update header
+    const detailHeader = document.querySelector('#detail h2');
+    if (detailHeader) {
+        detailHeader.textContent = sla.slaName + ' SLA';
+    }
+
+    // Update overview section
+    const overviewSection = document.querySelector('#detail .bg-surface');
+    if (overviewSection) {
+        let overviewContent = overviewSection.querySelector('.space-y-4');
+        
+        // If .space-y-4 doesn't exist (e.g., after inline editing), rebuild the structure
+        if (!overviewContent) {
+            console.log('Overview content structure missing, rebuilding...');
+            overviewSection.innerHTML = `
+                <h3 class="text-lg font-semibold text-primary-color mb-4">Overview</h3>
+                <div class="space-y-4">
+                    <!-- Content will be inserted here -->
+                </div>
+            `;
+            overviewContent = overviewSection.querySelector('.space-y-4');
+        }
+        
+        if (overviewContent) {
+            // Backend returns camelCase - use backend data as source of truth with display fallbacks
+            const slaName = sla.slaName || 'Unnamed SLA';
+            const slaType = sla.slaType || 'unknown';
+            const status = sla.status || 'unknown';
+            const frequency = sla.frequency || 'Not specified';
+            const progress = sla.progress !== undefined ? sla.progress : 0;
+            const currentValue = sla.currentValue !== undefined ? sla.currentValue : 0;
+            
+            // Handle target value vs target range
+            let targetValue;
+            let targetDisplay;
+            let currentDisplay;
+            let currentLabel = 'Current Value';
+            let targetLabel = 'Target Value';
+            
+            // Get custom fields for type-specific data
+            const customFields = getCustomFields(sla);
+            
+            // Type-specific handling
+            if (slaType === 'timeliness') {
+                // Timeliness uses date-based targets
+                const targetDate = customFields.targetDate || sla.targetValue;
+                
+                if (targetDate && typeof targetDate === 'string' && targetDate.includes('-')) {
+                    targetDisplay = formatDate(targetDate);
+                    targetValue = targetDate;
+                    targetLabel = 'Target Date';
+                    currentLabel = 'Status';
+                    
+                    // Calculate days until/past target
+                    const target = new Date(targetDate);
+                    const today = new Date();
+                    const diffTime = target - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (status === 'met') {
+                        currentDisplay = 'Completed';
+                    } else if (diffDays > 0) {
+                        currentDisplay = `${diffDays} days remaining`;
+                    } else if (diffDays === 0) {
+                        currentDisplay = 'Due today';
+                    } else {
+                        currentDisplay = `${Math.abs(diffDays)} days overdue`;
+                    }
+                } else {
+                    targetDisplay = targetDate || 'Not set';
+                    currentDisplay = currentValue || 'Not started';
+                }
+            } else if (slaType === 'quantity') {
+                // Quantity includes optional unit
+                const unit = customFields.unit || '';
+                
+                if (sla.useRange) {
+                    const minVal = sla.targetRangeMin !== undefined ? sla.targetRangeMin : 0;
+                    const maxVal = sla.targetRangeMax !== undefined ? sla.targetRangeMax : 0;
+                    targetDisplay = `${minVal} - ${maxVal}${unit ? ' ' + unit : ''}`;
+                    targetValue = maxVal;
+                    targetLabel = 'Target Range';
+                } else {
+                    targetValue = sla.targetValue !== undefined ? sla.targetValue : 0;
+                    targetDisplay = `${targetValue}${unit ? ' ' + unit : ''}`;
+                }
+                currentDisplay = `${currentValue}${unit ? ' ' + unit : ''}`;
+                
+            } else if (slaType === 'percentage') {
+                // Percentage shows % symbol
+                if (sla.useRange) {
+                    const minVal = sla.targetRangeMin !== undefined ? sla.targetRangeMin : 0;
+                    const maxVal = sla.targetRangeMax !== undefined ? sla.targetRangeMax : 0;
+                    targetDisplay = `${minVal}% - ${maxVal}%`;
+                    targetValue = maxVal;
+                    targetLabel = 'Target Range';
+                } else {
+                    targetValue = sla.targetValue !== undefined ? sla.targetValue : 0;
+                    targetDisplay = `${targetValue}%`;
+                }
+                currentDisplay = `${currentValue}%`;
+                
+            } else if (slaType === 'availability') {
+                // Availability shows percentage for uptime
+                targetValue = sla.targetValue !== undefined ? sla.targetValue : 0;
+                targetDisplay = `${targetValue}%`;
+                currentDisplay = `${currentValue}%`;
+                currentLabel = 'Current Uptime';
+                targetLabel = 'Target Uptime';
+                
+            } else if (slaType === 'compliance') {
+                // Compliance shows Yes/No
+                currentDisplay = currentValue ? 'Yes' : 'No';
+                targetDisplay = 'Yes';
+                targetValue = 1;
+                currentLabel = 'Compliant';
+                targetLabel = 'Required';
+                
+            } else {
+                // Default handling for other types
+                if (sla.useRange) {
+                    const minVal = sla.targetRangeMin !== undefined ? sla.targetRangeMin : 0;
+                    const maxVal = sla.targetRangeMax !== undefined ? sla.targetRangeMax : 0;
+                    targetDisplay = `${minVal} - ${maxVal}`;
+                    targetValue = maxVal;
+                    targetLabel = 'Target Range';
+                } else {
+                    targetValue = sla.targetValue !== undefined ? sla.targetValue : 0;
+                    targetDisplay = targetValue;
+                }
+                currentDisplay = currentValue;
+            }
+            
+            const startDate = sla.startDate || '';
+            const endDate = sla.endDate || '';
+            const tags = sla.tags || '';
+            const externalUrl = sla.externalTrackerUrl || '';
+            const parentId = sla.parentId || '';
+            
+            console.log('Detail values:', {
+                targetValue,
+                targetDisplay,
+                currentValue,
+                progress,
+                status,
+                useRange: sla.useRange
+            });
+            
+            overviewContent.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                        <span class="text-sm text-muted">SLA ID</span>
+                        <p class="text-sm font-medium text-primary-color">${slaId}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">SLA Name</span>
+                        <p class="text-sm font-medium text-primary-color">${slaName}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Type</span>
+                        <p class="text-sm font-medium text-primary-color">${slaType.charAt(0).toUpperCase() + slaType.slice(1)}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Team</span>
+                        <p class="text-sm font-medium text-primary-color">${teamName}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Status</span>
+                        <p class="text-sm font-medium text-primary-color">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(status)}">${status}</span>
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Frequency</span>
+                        <p class="text-sm font-medium text-primary-color">${frequency}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Progress</span>
+                        <p class="text-sm font-medium text-primary-color">${progress}%</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">${currentLabel}</span>
+                        <p class="text-sm font-medium text-primary-color">${currentDisplay !== undefined ? currentDisplay : 0}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">${targetLabel}</span>
+                        <p class="text-sm font-medium text-primary-color">${targetDisplay !== undefined ? targetDisplay : 0}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">Start Date</span>
+                        <p class="text-sm font-medium text-primary-color">${formatDate(startDate)}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-muted">End Date</span>
+                        <p class="text-sm font-medium text-primary-color">${endDate ? formatDate(endDate) : 'Ongoing'}</p>
+                    </div>
+                    ${parentId ? `
+                    <div>
+                        <span class="text-sm text-muted">Parent SLA</span>
+                        <p class="text-sm font-medium text-primary-color">
+                            <a href="#" onclick="showSLADetail('${parentId}'); return false;" class="link-primary">${parentId}</a>
+                        </p>
+                    </div>
+                    ` : ''}
+                    ${tags ? `
+                    <div class="col-span-2">
+                        <span class="text-sm text-muted">Tags</span>
+                        <p class="text-sm font-medium text-primary-color mt-1">
+                            ${(tags && typeof tags === 'string' && tags.trim()) 
+                                ? tags.split(',').map(t => `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-primary-color text-white mr-1">${t.trim()}</span>`).join(' ')
+                                : '<span class="text-gray-400">No tags</span>'}
+                        </p>
+                    </div>
+                    ` : ''}
+                    ${externalUrl ? `
+                    <div class="col-span-2">
+                        <span class="text-sm text-muted">External Tracker</span>
+                        <p class="text-sm font-medium text-primary-color">
+                            <a href="${externalUrl}" target="_blank" class="link-primary">${externalUrl}</a>
+                        </p>
+                    </div>
+                    ` : ''}
+                </div>
+                <div>
+                    <span class="text-sm text-muted">Description</span>
+                    <p class="text-sm text-primary-color mt-1">${sla.description || 'No description provided'}</p>
+                </div>
+                ${sla.createdAt ? `
+                <div class="pt-3 border-t border-color text-xs text-muted">
+                    Created: ${formatDateTime(sla.createdAt)} by ${sla.createdBy || 'Unknown'}
+                    ${sla.updatedAt ? `<br>Last Updated: ${formatDateTime(sla.updatedAt)} by ${sla.updatedBy || 'Unknown'}` : ''}
+                </div>
+                ` : ''}
+            `;
+        }
+    }
+
+    // Update progress tracking section
+    renderProgressTracking(sla);
+
+    // Update activity log
+    renderActivityLog(sla);
+
+    // Update sidebar
+    renderSLASidebar(sla);
+}
+
+/**
+ * Renders the activity log for a given SLA in the detail view.
+ * Displays chronological activity entries with status-colored indicators.
+ * @param {Object} sla - SLA object containing activityLog array
+ * @returns {void}
+ */
+function renderActivityLog(sla) {
+    // Find the activity log container by looking for its parent heading
+    const activitySections = document.querySelectorAll('.space-y-3');
+    let activityContainer = null;
+    
+    for (let section of activitySections) {
+        const heading = section.parentElement?.querySelector('h3');
+        if (heading && heading.textContent.includes('Activity Log')) {
+            activityContainer = section;
+            break;
+        }
+    }
+    
+    if (!activityContainer) {
+        console.error('Activity log container not found');
+        return;
+    }
+    
+    // Build activity log from available data
+    const activities = [];
+    
+    // Add creation activity - backend returns camelCase
+    if (sla.createdAt) {
+        activities.push({
+            type: 'created',
+            message: 'SLA created',
+            timestamp: sla.createdAt,
+            user: sla.createdBy
+        });
+    }
+    
+    // Add update activity if different from creation
+    if (sla.updatedAt && sla.updatedAt !== sla.createdAt) {
+        activities.push({
+            type: 'info',
+            message: 'SLA updated',
+            timestamp: sla.updatedAt,
+            user: sla.updatedBy
+        });
+    }
+    
+    // Add status-based activity
+    const status = sla.status;
+    if (status) {
+        activities.push({
+            type: status === 'met' || status === 'exceeded' ? 'success' : 
+                  status === 'at-risk' ? 'warning' : 'info',
+            message: `Status: ${status.replace('-', ' ')}`,
+            timestamp: sla.updatedAt,
+            user: 'System'
+        });
+    }
+    
+    // Sort by timestamp (newest first)
+    activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    if (activities.length === 0) {
+        activityContainer.innerHTML = `
+            <div class="text-center py-8">
+                <i class="bi bi-clock-history text-gray-400 text-2xl"></i>
+                <p class="text-muted mt-2">No activity logged yet</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const activitiesHTML = activities.map(activity => {
+        const statusColor = getStatusColor(activity.type);
+        const userName = activity.user || 'System';
+        const userDisplay = userName !== 'System' ? `<span class="text-primary-color font-medium">${userName}</span> • ` : '';
+        return `
+            <div class="flex items-start space-x-3 py-2">
+                <div class="w-2 h-2 rounded-full mt-2" style="background-color: ${statusColor}"></div>
+                <div class="flex-1">
+                    <p class="text-sm text-primary-color">${activity.message}</p>
+                    <p class="text-xs text-muted">${userDisplay}${formatRelativeTime(activity.timestamp)}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    activityContainer.innerHTML = activitiesHTML;
+}
+
+/**
+ * Renders the progress tracking section for an SLA in the detail view.
+ * Displays progress bar, metrics, and target information.
+ * @param {Object} sla - SLA object with progress and metrics data
+ * @returns {void}
+ */
+function renderProgressTracking(sla) {
+    const progressSection = document.querySelectorAll('#detail .bg-surface')[1];
+    if (!progressSection) return;
+
+    const currentProgress = calculateProgress(sla);
+    const metricsHtml = generateMetricsHTML(sla);
+    const progressContent = progressSection.querySelector('.space-y-4');
+    if (progressContent) {
+        progressContent.innerHTML = `
+            ${metricsHtml}
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-primary-color">Overall Progress</span>
+                    <span class="text-sm text-muted">${currentProgress}%</span>
+                </div>
+                <div class="w-full rounded-full h-3" style="background-color: var(--color-gray-light)">
+                    <div class="${getProgressBarClass(sla.status)} h-3 rounded-full progress-bar" style="width: ${currentProgress}%"></div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Generates HTML for displaying SLA-specific metrics based on SLA type.
+ * Supports both new (custom_fields_json) and legacy (nested configuration) structures.
+ * @param {Object} sla - SLA object with type, metrics, and configuration
+ * @returns {string} HTML string containing formatted metrics display
+ */
+function generateMetricsHTML(sla) {
+    // Parse custom fields
+    const customFields = getCustomFields(sla);
+    
+    // Backend returns camelCase - use as source of truth, no fallbacks
+    const slaType = sla.slaType;
+    const currentValue = sla.currentValue;
+    
+    // Handle target value vs target range
+    let targetValue;
+    if (sla.useRange) {
+        targetValue = sla.targetRangeMax; // Use max for calculations
+    } else {
+        targetValue = sla.targetValue;
+    }
+    
+    const progressPercent = calculateProgress(sla);
+    const status = sla.status;
+    
+    switch (slaType) {
+        case 'timeliness':
+            // Get target date from custom fields
+            const targetDate = customFields.targetDate || targetValue;
+            
+            // Check if it's a date string (YYYY-MM-DD format)
+            if (targetDate && typeof targetDate === 'string' && targetDate.includes('-')) {
+                const target = new Date(targetDate);
+                const today = new Date();
+                const diffTime = target - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                let statusText, statusColor, statusClass;
+                if (status === 'met') {
+                    statusText = 'Completed';
+                    statusColor = 'success';
+                    statusClass = 'stat-card-green';
+                } else if (diffDays > 0) {
+                    statusText = `${diffDays} Days Left`;
+                    statusColor = diffDays > 7 ? 'success' : 'warning';
+                    statusClass = diffDays > 7 ? 'stat-card-green' : 'stat-card-orange';
+                } else if (diffDays === 0) {
+                    statusText = 'Due Today';
+                    statusColor = 'warning';
+                    statusClass = 'stat-card-orange';
+                } else {
+                    statusText = `${Math.abs(diffDays)}d Overdue`;
+                    statusColor = 'danger';
+                    statusClass = 'stat-card-red';
+                }
+                
+                return `
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                            <div class="text-2xl font-bold text-primary-color">${formatDate(new Date())}</div>
+                            <div class="text-sm text-muted">Today</div>
+                        </div>
+                        <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                            <div class="text-2xl font-bold text-primary-color">${formatDate(targetDate)}</div>
+                            <div class="text-sm text-muted">Target Date</div>
+                        </div>
+                        <div class="text-center p-4 rounded-lg ${statusClass}">
+                            <div class="text-2xl font-bold" style="color: var(--color-status-${statusColor})">${statusText}</div>
+                            <div class="text-sm text-muted">Status</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Fallback for legacy or non-date timeliness SLAs
+                return `
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                            <div class="text-2xl font-bold text-primary-color">${currentValue}</div>
+                            <div class="text-sm text-muted">Current</div>
+                        </div>
+                        <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                            <div class="text-2xl font-bold text-primary-color">${targetValue}</div>
+                            <div class="text-sm text-muted">Target</div>
+                        </div>
+                        <div class="text-center p-4 rounded-lg stat-card-green">
+                            <div class="text-2xl font-bold" style="color: var(--color-status-success)">${progressPercent}%</div>
+                            <div class="text-sm text-muted">Progress</div>
+                        </div>
+                    </div>
+                `;
+            }
+        case 'quantity':
+            const action = customFields.action;
+            const unit = customFields.unit || '';
+            
+            // Handle range-based quantity targets
+            let quantityTarget;
+            let quantityTargetDisplay;
+            if (sla.useRange) {
+                quantityTarget = sla.targetRangeMax;
+                quantityTargetDisplay = `${sla.targetRangeMin}-${sla.targetRangeMax}`;
+            } else {
+                quantityTarget = targetValue;
+                quantityTargetDisplay = targetValue;
+            }
+            
+            const statusText = sla.useRange ? 
+                (currentValue >= sla.targetRangeMin ? 'Within Range' : 'Below Target') : 
+                (currentValue >= targetValue ? 'Target Met' : 'In Progress');
+            
+            const statusClass = (sla.useRange ? currentValue >= sla.targetRangeMin : currentValue >= targetValue) ? 
+                'stat-card-green' : 'stat-card-orange';
+            
+            const statusColor = (sla.useRange ? currentValue >= sla.targetRangeMin : currentValue >= targetValue) ? 
+                'success' : 'warning';
+            
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${currentValue}${unit ? ' ' + unit : ''}</div>
+                        <div class="text-sm text-muted">Current</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${quantityTargetDisplay}${unit ? ' ' + unit : ''}</div>
+                        <div class="text-sm text-muted">Target${sla.useRange ? ' Range' : ''}</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${statusClass}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${statusColor})">${statusText}</div>
+                        <div class="text-sm text-muted">${progressPercent}% Complete</div>
+                    </div>
+                </div>
+                ${action ? `<div class="text-sm text-muted mt-2"><strong>Action:</strong> ${action}</div>` : ''}
+            `;
+        case 'percentage':
+            // Handle range-based percentage targets
+            let percentTarget;
+            let percentMin, percentMax;
+            
+            if (sla.useRange) {
+                percentMin = sla.targetRangeMin !== undefined ? sla.targetRangeMin : 0;
+                percentMax = sla.targetRangeMax !== undefined ? sla.targetRangeMax : 0;
+                percentTarget = `${percentMin}% - ${percentMax}%`;
+            } else {
+                percentTarget = `${targetValue}%`;
+            }
+            
+            const percentStatusText = sla.useRange ?
+                (currentValue >= percentMin ? 'Within Range' : 'Below Target') :
+                (currentValue >= targetValue ? 'Target Met' : 'In Progress');
+                
+            const percentStatusClass = (sla.useRange ? currentValue >= percentMin : currentValue >= targetValue) ?
+                'stat-card-green' : 'stat-card-orange';
+                
+            const percentStatusColor = (sla.useRange ? currentValue >= percentMin : currentValue >= targetValue) ?
+                'success' : 'warning';
+                
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${currentValue}%</div>
+                        <div class="text-sm text-muted">Current</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${percentTarget}</div>
+                        <div class="text-sm text-muted">Target${sla.useRange ? ' Range' : ''}</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${percentStatusClass}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${percentStatusColor})">${percentStatusText}</div>
+                        <div class="text-sm text-muted">${progressPercent}% Complete</div>
+                    </div>
+                </div>
+            `;
+        case 'availability':
+            const startTime = customFields.startTime || '';
+            const endTime = customFields.endTime || '';
+            const daysOfWeek = customFields.daysOfWeek || [];
+            
+            const availStatusClass = currentValue >= targetValue ? 'stat-card-green' : 
+                (currentValue >= targetValue * 0.95 ? 'stat-card-orange' : 'stat-card-red');
+            const availStatusColor = currentValue >= targetValue ? 'success' : 
+                (currentValue >= targetValue * 0.95 ? 'warning' : 'danger');
+            const availStatusText = currentValue >= targetValue ? 'Healthy' : 
+                (currentValue >= targetValue * 0.95 ? 'At Risk' : 'Critical');
+            
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${currentValue}%</div>
+                        <div class="text-sm text-muted">Current Uptime</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${targetValue}%</div>
+                        <div class="text-sm text-muted">Target Uptime</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${availStatusClass}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${availStatusColor})">${availStatusText}</div>
+                        <div class="text-sm text-muted">${progressPercent}% of Target</div>
+                    </div>
+                </div>
+                ${startTime && endTime ? `<div class="text-sm text-muted mt-2"><strong>Service Hours:</strong> ${startTime} - ${endTime}</div>` : ''}
+                ${Array.isArray(daysOfWeek) && daysOfWeek.length > 0 ? `<div class="text-sm text-muted"><strong>Days:</strong> ${daysOfWeek.join(', ')}</div>` : ''}
+            `;
+        case 'compliance':
+            const complianceTarget = customFields.targetValue !== undefined ? customFields.targetValue : 1;
+            const complianceRequirement = customFields.requirement || '';
+            
+            const isCompliant = currentValue === 1 || currentValue === true || currentValue === 'true';
+            const complianceStatusClass = isCompliant ? 'stat-card-green' : 'stat-card-red';
+            const complianceStatusColor = isCompliant ? 'success' : 'danger';
+            const complianceStatusText = isCompliant ? 'Compliant' : 'Non-Compliant';
+            
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${isCompliant ? 'Yes' : 'No'}</div>
+                        <div class="text-sm text-muted">Current Status</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">Yes</div>
+                        <div class="text-sm text-muted">Required</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${complianceStatusClass}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${complianceStatusColor})">${complianceStatusText}</div>
+                        <div class="text-sm text-muted">${isCompliant ? '100%' : '0%'} Complete</div>
+                    </div>
+                </div>
+                ${complianceRequirement ? `<div class="text-sm text-muted mt-2"><strong>Requirement:</strong> ${complianceRequirement}</div>` : ''}
+            `;
+        case 'composite':
+        case 'multi-metric':
+            // Handle composite and multi-metric SLAs
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${currentValue}</div>
+                        <div class="text-sm text-muted">Weighted Score</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${targetValue}</div>
+                        <div class="text-sm text-muted">Target Score</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${progressPercent >= 100 ? 'stat-card-green' : 'stat-card-orange'}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${progressPercent >= 100 ? 'success' : 'warning'})">${progressPercent}%</div>
+                        <div class="text-sm text-muted">Overall Progress</div>
+                    </div>
+                </div>
+                <div class="text-sm text-muted mt-2">Multi-metric SLA with weighted components</div>
+            `;
+        case 'recurring':
+            // Handle recurring SLAs - backend returns camelCase
+            const frequency = sla.frequency;
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${currentValue}</div>
+                        <div class="text-sm text-muted">Current Period</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${targetValue}</div>
+                        <div class="text-sm text-muted">Target</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg ${progressPercent >= 100 ? 'stat-card-green' : 'stat-card-orange'}">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-${progressPercent >= 100 ? 'success' : 'warning'})">${progressPercent}%</div>
+                        <div class="text-sm text-muted">Progress</div>
+                    </div>
+                </div>
+                <div class="text-sm text-muted mt-2">Frequency: ${frequency || 'Not specified'}</div>
+            `;
+        default:
+            // Handle unknown or custom SLA types
+            return `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${currentValue}</div>
+                        <div class="text-sm text-muted">Current</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
+                        <div class="text-2xl font-bold text-primary-color">${targetValue}</div>
+                        <div class="text-sm text-muted">Target</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg stat-card-green">
+                        <div class="text-2xl font-bold" style="color: var(--color-status-success)">${progressPercent}%</div>
+                        <div class="text-sm text-muted">Progress</div>
+                    </div>
+                </div>
+                <div class="text-sm text-muted mt-2">Type: ${slaType}</div>
+            `;
+    }
+}
+
+/**
+ * Renders the sidebar in the SLA detail view.
+ * Displays status, timing, quick stats, and team information.
+ * Supports both new (snake_case) and legacy (camelCase) field structures.
+ * @param {Object} sla - SLA object to display in sidebar
+ * @returns {void}
+ */
+function renderSLASidebar(sla) {
+    console.log('=== renderSLASidebar START ===');
+    console.log('SLA data:', sla);
+    
+    // Parse custom fields
+    const customFields = getCustomFields(sla);
+    console.log('Custom fields:', customFields);
+    
+    // Backend returns camelCase - use as source of truth
+    const status = sla.status;
+    const endDate = sla.endDate;
+    console.log('Status:', status, 'End Date:', endDate);
+    
+    // Update status card - select the sidebar (2nd child of grid, NOT the lg:col-span-2)
+    const detailGrid = document.querySelector('#detail .grid.lg\\:grid-cols-3');
+    console.log('Found detail grid:', detailGrid);
+    
+    if (!detailGrid) {
+        console.error('Detail grid not found!');
+        return;
+    }
+    
+    // The sidebar is the 2nd child of the grid (first is lg:col-span-2 main content)
+    const sidebar = detailGrid.children[1];
+    console.log('Found sidebar (2nd grid child):', sidebar);
+    
+    if (!sidebar) {
+        console.error('Sidebar not found!');
+        return;
+    }
+    
+    const statusCards = sidebar.querySelectorAll('.bg-surface');
+    console.log('Found status cards in sidebar:', statusCards.length);
+    
+    if (statusCards[0]) {
+        console.log('Processing Status Card [0]');
+        const statusContent = statusCards[0].querySelector('.space-y-3');
+        console.log('Status content element:', statusContent);
+        if (statusContent) {
+            const timeRemaining = calculateTimeRemaining(endDate);
+            console.log('Time remaining:', timeRemaining);
+            statusContent.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">Current Status</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(status)}">${status.replace('-', ' ')}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">Time Remaining</span>
+                    <span class="text-sm font-medium text-primary-color">${timeRemaining}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">End Date</span>
+                    <span class="text-sm font-medium text-primary-color">${endDate ? formatDate(endDate) : 'Ongoing'}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">Active</span>
+                    <span class="text-sm font-medium text-primary-color">${sla.isActive ? 'Yes' : 'No'}</span>
+                </div>
+            `;
+            console.log('Status card updated successfully');
+        } else {
+            console.warn('Status content element not found!');
+        }
+    } else {
+        console.warn('Status card [0] not found!');
+    }
+
+    // Update quick stats
+    if (statusCards[1]) {
+        console.log('Processing Quick Stats Card [1]');
+        const quickStatsContent = statusCards[1].querySelector('.space-y-3');
+        console.log('Quick stats content element:', quickStatsContent);
+        if (quickStatsContent) {
+            // Backend returns camelCase - use as source of truth
+            const currentValue = sla.currentValue;
+            const progress = sla.progress;
+            const slaType = sla.slaType;
+            
+            // Handle target value vs target range
+            let targetDisplay;
+            if (sla.useRange) {
+                targetDisplay = `${sla.targetRangeMin} - ${sla.targetRangeMax}`;
+            } else {
+                targetDisplay = sla.targetValue;
+            }
+            
+            console.log('Quick stats values - current:', currentValue, 'target:', targetDisplay, 'progress:', progress, 'type:', slaType, 'useRange:', sla.useRange);
+            
+            // Get unit from custom fields
+            const customFields = sla.customFieldsJson ? 
+                (typeof sla.customFieldsJson === 'string' ? JSON.parse(sla.customFieldsJson) : sla.customFieldsJson) : {};
+            const unit = customFields.unit;
+            console.log('Unit:', unit);
+            
+            quickStatsContent.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">Current Value</span>
+                    <span class="text-sm font-medium text-primary-color">${currentValue}${unit ? ' ' + unit : ''}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">Target ${sla.useRange ? 'Range' : 'Value'}</span>
+                    <span class="text-sm font-medium text-primary-color">${targetDisplay}${unit ? ' ' + unit : ''}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">Progress</span>
+                    <span class="text-sm font-medium text-primary-color">${progress}%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted">Type</span>
+                    <span class="text-sm font-medium text-primary-color">${slaType ? slaType.charAt(0).toUpperCase() + slaType.slice(1) : 'N/A'}</span>
+                </div>
+            `;
+            console.log('Quick stats updated successfully');
+        } else {
+            console.warn('Quick stats content element not found!');
+        }
+    } else {
+        console.warn('Quick stats card [1] not found!');
+    }
+
+    // Update notifications
+    if (statusCards[2]) {
+        console.log('Processing Notifications Card [2]');
+        const notificationContent = statusCards[2].querySelector('.space-y-3');
+        console.log('Notification content element:', notificationContent);
+        if (notificationContent) {
+            // Get notification settings from custom fields - backend returns camelCase
+            const notifyOnRisk = customFields.notifyOnRisk;
+            const notifyOnMiss = customFields.notifyOnMiss;
+            
+            console.log('Notification settings - onRisk:', notifyOnRisk, 'onMiss:', notifyOnMiss);
+            
+            // Get emails from backend - camelCase field, semicolon-separated string
+            let emails = [];
+            if (sla.notificationEmails) {
+                emails = sla.notificationEmails.split(';').map(e => e.trim()).filter(e => e);
+            }
+            
+            console.log('Email recipients:', emails);
+            
+            notificationContent.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-primary-color">At Risk Alerts</span>
+                    <div class="w-5 h-5 rounded-full flex items-center justify-center" style="background-color: var(--color-status-${notifyOnRisk ? 'success' : 'error'})">
+                        <span class="text-white text-xs">${notifyOnRisk ? '✓' : '✕'}</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-primary-color">Miss Notifications</span>
+                    <div class="w-5 h-5 rounded-full flex items-center justify-center" style="background-color: var(--color-status-${notifyOnMiss ? 'success' : 'error'})">
+                        <span class="text-white text-xs">${notifyOnMiss ? '✓' : '✕'}</span>
+                    </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-color">
+                    <span class="text-sm text-muted">Email Recipients</span>
+                    <p class="text-sm font-medium text-primary-color">${
+                        emails.length > 0 ? emails.join(', ') : 'None'
+                    }</p>
+                </div>
+            `;
+            console.log('Notifications updated successfully');
+        } else {
+            console.warn('Notification content element not found!');
+        }
+    } else {
+        console.warn('Notifications card [2] not found!');
+    }
+    
+    // Update audit information - backend returns camelCase
+    const createdAt = sla.createdAt;
+    const createdBy = sla.createdBy;
+    const updatedAt = sla.updatedAt;
+    const updatedBy = sla.updatedBy;
+    const rowVersion = sla.rowVersion;
+    
+    console.log('Audit data - created:', createdAt, 'by:', createdBy, 'updated:', updatedAt, 'by:', updatedBy, 'version:', rowVersion);
+    
+    if (statusCards[3] && (createdAt || updatedAt)) {
+        console.log('Processing Audit Trail Card [3]');
+        const auditContent = statusCards[3].querySelector('.space-y-3');
+        console.log('Audit content element:', auditContent);
+        if (auditContent) {
+            auditContent.innerHTML = `
+                ${createdAt ? `
+                <div class="flex flex-col">
+                    <span class="text-sm text-muted">Created</span>
+                    <span class="text-sm font-medium text-primary-color">${formatRelativeTime(createdAt)}</span>
+                    ${createdBy ? `<span class="text-xs text-muted mt-1">by ${createdBy}</span>` : ''}
+                </div>
+                ` : ''}
+                ${updatedAt ? `
+                <div class="flex flex-col">
+                    <span class="text-sm text-muted">Last Updated</span>
+                    <span class="text-sm font-medium text-primary-color">${formatRelativeTime(updatedAt)}</span>
+                    ${updatedBy ? `<span class="text-xs text-muted mt-1">by ${updatedBy}</span>` : ''}
+                </div>
+                ` : ''}
+                ${rowVersion ? `
+                <div class="flex flex-col pt-3 border-t border-color">
+                    <span class="text-sm text-muted">Row Version</span>
+                    <span class="text-xs font-mono text-primary-color">v${rowVersion}</span>
+                </div>
+                ` : ''}
+            `;
+            console.log('Audit trail updated successfully');
+        } else {
+            console.warn('Audit content element not found!');
+        }
+    } else {
+        console.warn('Audit trail card [3] not found or no audit data available');
+    }
+    
+    console.log('=== renderSLASidebar END ===');
+    
+    // Render activity log
+    renderActivityLog(sla);
+}
+
+/**
+ * Generates HTML for quick stats display in the SLA sidebar.
+ * Shows different metrics based on SLA type.
+ * @param {Object} sla - SLA object with metrics data
+ * @returns {string} HTML string containing quick stats
+ */
+function generateQuickStatsHTML(sla) {
+    if (sla.slaType === 'timeliness' && sla.metrics) {
+        return `
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-muted">Best Response</span>
+                <span class="text-sm font-medium" style="color: var(--color-status-success)">${sla.metrics.bestResponse}ms</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-muted">Worst Response</span>
+                <span class="text-sm font-medium" style="color: var(--color-status-error)">${sla.metrics.worstResponse}ms</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-muted">Total Requests</span>
+                <span class="text-sm font-medium text-primary-color">${sla.metrics.totalRequests.toLocaleString()}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-muted">Violations</span>
+                <span class="text-sm font-medium" style="color: var(--color-status-error)">${sla.metrics.violations.toLocaleString()}</span>
+            </div>
+        `;
+    }
+    // Add other metric types as needed
+    return `
+        <div class="flex items-center justify-between">
+            <span class="text-sm text-muted">Current Value</span>
+            <span class="text-sm font-medium text-primary-color">${sla.currentValue}</span>
+        </div>
+    `;
+}
+
+/**
+ * Generates a human-readable display string for an SLA's target configuration.
+ * Handles different target types including single values, ranges, percentages, and complex configurations.
+ * @param {Object} configuration - SLA configuration object containing target information
+ * @returns {string} Formatted target display string
+ */
+function getTargetDisplay(configuration) {
+    if (!configuration) {
+        return 'N/A';
+    }
+    
+    // Handle timeliness with date-based target
+    if (configuration.targetDate && typeof configuration.targetDate === 'string' && configuration.targetDate.includes('-')) {
+        return formatDate(configuration.targetDate);
+    }
+    
+    // Handle legacy timeliness with cadence (quarterly, monthly, etc.) and frequency
+    if ((configuration.cadence || configuration.frequency) && configuration.targetDay) {
+        const freq = configuration.frequency || configuration.cadence;
+        const freqDisplay = freq.charAt(0).toUpperCase() + freq.slice(1);
+        return `${freqDisplay} by Day ${configuration.targetDay}`;
+    }
+    
+    // Handle range targets
+    if (configuration.targetType === 'range' && configuration.target && typeof configuration.target === 'object') {
+        const min = configuration.target.min || 0;
+        const max = configuration.target.max || 0;
+        return `${min}-${max}`;
+    }
+    
+    // Handle single numeric targets
+    if (configuration.target && typeof configuration.target === 'number') {
+        return configuration.target;
+    }
+    
+    // Handle targetValue (legacy)
+    if (configuration.targetValue !== undefined) {
+        if (typeof configuration.targetValue === 'boolean') {
+            return configuration.targetValue ? 'Yes' : 'No';
+        }
+        return configuration.targetValue;
+    }
+    
+    // Handle single target as string/other
+    if (configuration.target !== undefined) {
+        if (typeof configuration.target === 'boolean') {
+            return configuration.target ? 'Yes' : 'No';
+        }
+        return configuration.target.toString();
+    }
+    
+    return 'N/A';
+}
+
+// Export functions for global access
+window.renderSLADetail = renderSLADetail;
+window.renderActivityLog = renderActivityLog;
+window.renderProgressTracking = renderProgressTracking;
+window.renderSLASidebar = renderSLASidebar;
+window.generateMetricsHTML = generateMetricsHTML;
+window.generateQuickStatsHTML = generateQuickStatsHTML;
+window.getTargetDisplay = getTargetDisplay;
+
+console.log('✓ SLA detail renderer module loaded - 7 rendering functions exported');
+
+</script>

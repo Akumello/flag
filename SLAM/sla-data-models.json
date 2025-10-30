@@ -1,0 +1,641 @@
+{
+  "metadata": {
+    "title": "SLA Application Data Models - Google Sheets Optimized",
+    "version": "4.0.0",
+    "lastUpdated": "2024-10-19",
+    "description": "Normalized data model optimized for Google Sheets CRUD operations with security and audit trails",
+    "implementation": {
+      "platform": "Google Apps Script + Google Sheets",
+      "sheets": [
+        "SLA_MASTER",
+        "SLA_RELATIONSHIPS",
+        "SLA_ACTIVITY_LOG",
+        "SLA_ATTACHMENTS",
+        "LOOKUP_TEAMS",
+        "LOOKUP_STATUSES",
+        "AUDIT_LOG",
+        "USER_PERMISSIONS"
+      ],
+      "security": {
+        "encryption": "Sensitive fields use Google KMS",
+        "accessControl": "Domain-restricted sharing with granular permissions",
+        "audit": "All CRUD operations logged with timestamp and user"
+      }
+    },
+    "changelog": {
+      "4.0.0": [
+        "Normalized data structure for spreadsheet storage",
+        "Added sheet-specific schemas with row/column definitions",
+        "Implemented audit trail for all operations",
+        "Added data validation rules for Sheets",
+        "Optimized for Google Apps Script CRUD operations",
+        "Added security and permission schemas",
+        "Implemented soft delete with archival",
+        "Added indexes for efficient querying"
+      ]
+    }
+  },
+
+  "sheets": {
+    "SLA_MASTER": {
+      "description": "Primary SLA records - one row per SLA",
+      "primaryKey": "sla_id",
+      "indexes": ["sla_id", "status", "team_id", "parent_id"],
+      "columns": {
+        "sla_id": {
+          "type": "string",
+          "column": "A",
+          "required": true,
+          "unique": true,
+          "pattern": "^SLA-[0-9]{6}$",
+          "generatedBy": "PropertiesService counter with LockService",
+          "description": "Auto-generated unique ID using persistent counter (SLA-000001, SLA-000002, etc.)"
+        },
+        "parent_id": {
+          "type": "string",
+          "column": "B",
+          "foreignKey": "SLA_MASTER.sla_id",
+          "description": "Reference to parent SLA if child"
+        },
+        "sla_name": {
+          "type": "string",
+          "column": "C",
+          "required": true,
+          "maxLength": 100,
+          "validation": "NOT_BLANK"
+        },
+        "sla_type": {
+          "type": "string",
+          "column": "D",
+          "required": true,
+          "validation": "DROPDOWN",
+          "values": ["quantity", "percentage", "timeliness", "availability", "compliance", "composite", "multi-metric", "recurring"]
+        },
+        "description": {
+          "type": "string",
+          "column": "E",
+          "maxLength": 500
+        },
+        "team_id": {
+          "type": "string",
+          "column": "F",
+          "required": true,
+          "foreignKey": "LOOKUP_TEAMS.team_id"
+        },
+        "start_date": {
+          "type": "date",
+          "column": "G",
+          "required": true,
+          "format": "YYYY-MM-DD",
+          "validation": "DATE_IS_VALID"
+        },
+        "end_date": {
+          "type": "date",
+          "column": "H",
+          "required": true,
+          "format": "YYYY-MM-DD",
+          "validation": "DATE_AFTER_START"
+        },
+        "status": {
+          "type": "string",
+          "column": "I",
+          "required": true,
+          "validation": "DROPDOWN",
+          "foreignKey": "LOOKUP_STATUSES.status_id",
+          "conditionalFormatting": {
+            "met": "green",
+            "at-risk": "yellow",
+            "ontrack": "blue",
+            "exceeded": "dark-green",
+            "missed": "red"
+          }
+        },
+        "progress": {
+          "type": "number",
+          "column": "J",
+          "format": "NUMBER_2_DECIMALS",
+          "formula": "ARRAYFORMULA in J1 header - calculates for all rows automatically",
+          "calculation": {
+            "with_range": "0-100% as current approaches min, 100% between min-max, >100% beyond max",
+            "numeric_types": "(current_value / target_value) * 100, rounded to 2 decimals",
+            "timeliness": "100 if current <= target (on time), else 0 (late)",
+            "compliance": "100 if current = target (compliant), else 0 (non-compliant)"
+          },
+          "description": "Auto-calculated progress percentage, supports target ranges"
+        },
+        "current_value": {
+          "type": "number",
+          "column": "K",
+          "required": true
+        },
+        "target_value": {
+          "type": "number",
+          "column": "L",
+          "required": true,
+          "description": "Single target value (ignored if use_range is true)"
+        },
+        "target_range_min": {
+          "type": "number",
+          "column": "M",
+          "description": "Minimum target for range-based SLAs"
+        },
+        "target_range_max": {
+          "type": "number",
+          "column": "N",
+          "description": "Maximum target for range-based SLAs"
+        },
+        "use_range": {
+          "type": "boolean",
+          "column": "O",
+          "default": false,
+          "description": "If true, uses target_range_min and target_range_max instead of target_value"
+        },
+        "frequency": {
+          "type": "string",
+          "column": "P",
+          "validation": "DROPDOWN",
+          "values": ["once", "daily", "weekly", "biweekly", "monthly", "quarterly", "annually"]
+        },
+        "notification_emails": {
+          "type": "string",
+          "column": "Q",
+          "description": "Semicolon-separated emails",
+          "validation": "EMAIL_LIST",
+          "example": "user1@domain.com;user2@domain.com"
+        },
+        "external_tracker_url": {
+          "type": "string",
+          "column": "R",
+          "validation": "URL",
+          "description": "Primary external tracking system"
+        },
+        "tags": {
+          "type": "string",
+          "column": "S",
+          "description": "Comma-separated tags",
+          "example": "priority-high,compliance,Q4"
+        },
+        "custom_fields_json": {
+          "type": "string",
+          "column": "T",
+          "description": "JSON string for flexible custom data",
+          "maxLength": 2000,
+          "example": "{\"employeeCount\":11,\"region\":\"APAC\"}"
+        },
+        "is_active": {
+          "type": "boolean",
+          "column": "U",
+          "default": true,
+          "description": "Soft delete flag"
+        },
+        "created_at": {
+          "type": "datetime",
+          "column": "V",
+          "setBy": "createSLA() function",
+          "format": "YYYY-MM-DD HH:MM:SS",
+          "description": "Set once at creation, never changes"
+        },
+        "created_by": {
+          "type": "string",
+          "column": "W",
+          "setBy": "Session.getActiveUser().getEmail() at creation"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "column": "X",
+          "setBy": "updateSLA() function",
+          "format": "YYYY-MM-DD HH:MM:SS",
+          "description": "Updated on every modification"
+        },
+        "updated_by": {
+          "type": "string",
+          "column": "Y",
+          "setBy": "Session.getActiveUser().getEmail() on update"
+        },
+        "row_version": {
+          "type": "number",
+          "column": "Z",
+          "default": 1,
+          "description": "Optimistic locking version, incremented on each update"
+        }
+      },
+      "protectedRanges": ["A:A", "V:Z"],
+      "namedRanges": {
+        "SLA_MASTER_DATA": "A2:Z",
+        "SLA_MASTER_HEADERS": "A1:Z1"
+      }
+    },
+
+    "SLA_RELATIONSHIPS": {
+      "description": "Parent-child and dependency relationships",
+      "primaryKey": "relationship_id",
+      "columns": {
+        "relationship_id": {
+          "type": "string",
+          "column": "A",
+          "pattern": "^REL-[0-9]{6}$"
+        },
+        "relationship_type": {
+          "type": "string",
+          "column": "B",
+          "validation": "DROPDOWN",
+          "values": ["parent-child", "dependency", "related"]
+        },
+        "source_sla_id": {
+          "type": "string",
+          "column": "C",
+          "foreignKey": "SLA_MASTER.sla_id"
+        },
+        "target_sla_id": {
+          "type": "string",
+          "column": "D",
+          "foreignKey": "SLA_MASTER.sla_id"
+        },
+        "dependency_type": {
+          "type": "string",
+          "column": "E",
+          "values": ["blocking", "informational", "percentage-based"]
+        },
+        "aggregation_rule": {
+          "type": "string",
+          "column": "F",
+          "values": ["sum", "average", "min", "max", "all-pass"]
+        }
+      }
+    },
+
+    "SLA_ACTIVITY_LOG": {
+      "description": "Immutable activity log for all SLA events",
+      "primaryKey": "log_id",
+      "indexes": ["sla_id", "timestamp", "user_id"],
+      "columns": {
+        "log_id": {
+          "type": "string",
+          "column": "A",
+          "pattern": "^LOG-[0-9]{10}$",
+          "formula": "=CONCATENATE(\"LOG-\",TEXT(EPOCHTIME(),\"0000000000\"))"
+        },
+        "sla_id": {
+          "type": "string",
+          "column": "B",
+          "required": true,
+          "foreignKey": "SLA_MASTER.sla_id"
+        },
+        "timestamp": {
+          "type": "datetime",
+          "column": "C",
+          "required": true,
+          "formula": "=NOW()"
+        },
+        "user_id": {
+          "type": "string",
+          "column": "D",
+          "required": true,
+          "formula": "=SESSION_USER()"
+        },
+        "user_name": {
+          "type": "string",
+          "column": "E"
+        },
+        "action_type": {
+          "type": "string",
+          "column": "F",
+          "validation": "DROPDOWN",
+          "values": ["created", "updated", "deleted", "status_change", "progress_update", "comment", "attachment_added"]
+        },
+        "action_details": {
+          "type": "string",
+          "column": "G",
+          "maxLength": 500
+        },
+        "old_value": {
+          "type": "string",
+          "column": "H"
+        },
+        "new_value": {
+          "type": "string",
+          "column": "I"
+        }
+      },
+      "protection": "FULL_SHEET_PROTECTED",
+      "retention": "7_YEARS"
+    },
+
+    "LOOKUP_TEAMS": {
+      "description": "Team reference data",
+      "primaryKey": "team_id",
+      "columns": {
+        "team_id": {
+          "type": "string",
+          "column": "A",
+          "pattern": "^TEAM-[0-9]{3}$"
+        },
+        "team_name": {
+          "type": "string",
+          "column": "B"
+        },
+        "department": {
+          "type": "string",
+          "column": "C"
+        },
+        "manager_email": {
+          "type": "string",
+          "column": "D"
+        },
+        "is_active": {
+          "type": "boolean",
+          "column": "E"
+        }
+      }
+    },
+
+    "USER_PERMISSIONS": {
+      "description": "User access control and permissions",
+      "primaryKey": "permission_id",
+      "columns": {
+        "permission_id": {
+          "type": "string",
+          "column": "A"
+        },
+        "user_email": {
+          "type": "string",
+          "column": "B",
+          "required": true,
+          "validation": "EMAIL"
+        },
+        "permission_type": {
+          "type": "string",
+          "column": "C",
+          "validation": "DROPDOWN",
+          "values": ["admin", "editor", "viewer", "commenter"]
+        },
+        "team_ids": {
+          "type": "string",
+          "column": "D",
+          "description": "Comma-separated team IDs user can access"
+        },
+        "sla_ids": {
+          "type": "string",
+          "column": "E",
+          "description": "Specific SLA IDs if not team-based"
+        },
+        "granted_at": {
+          "type": "datetime",
+          "column": "F"
+        },
+        "granted_by": {
+          "type": "string",
+          "column": "G"
+        },
+        "expires_at": {
+          "type": "datetime",
+          "column": "H"
+        }
+      }
+    }
+  },
+
+  "googleAppsScript": {
+    "services": {
+      "CrudService": {
+        "description": "Main CRUD operations service",
+        "methods": {
+          "createSLA": {
+            "parameters": ["slaData", "userId"],
+            "returns": "slaId",
+            "validation": "SCHEMA_VALIDATION",
+            "hooks": ["beforeCreate", "afterCreate"],
+            "audit": true
+          },
+          "readSLA": {
+            "parameters": ["slaId", "userId"],
+            "returns": "slaObject",
+            "cache": "5_MINUTES",
+            "permissions": "CHECK_READ_ACCESS"
+          },
+          "updateSLA": {
+            "parameters": ["slaId", "updates", "userId"],
+            "validation": "SCHEMA_VALIDATION",
+            "locking": "OPTIMISTIC",
+            "audit": true
+          },
+          "deleteSLA": {
+            "parameters": ["slaId", "userId"],
+            "type": "SOFT_DELETE",
+            "audit": true
+          },
+          "querySLAs": {
+            "parameters": ["filters", "sort", "pagination", "userId"],
+            "returns": "paginatedResults",
+            "maxResults": 1000
+          }
+        }
+      },
+      "ValidationService": {
+        "methods": {
+          "validateSLAData": {
+            "parameters": ["data", "schema"],
+            "returns": "validationResult"
+          },
+          "checkUniqueConstraints": {
+            "parameters": ["field", "value"],
+            "returns": "boolean"
+          }
+        }
+      },
+      "SecurityService": {
+        "methods": {
+          "checkPermission": {
+            "parameters": ["userId", "slaId", "action"],
+            "returns": "boolean"
+          },
+          "encryptSensitiveData": {
+            "parameters": ["data"],
+            "returns": "encryptedData"
+          },
+          "logSecurityEvent": {
+            "parameters": ["event"],
+            "async": true
+          }
+        }
+      },
+      "AuditService": {
+        "methods": {
+          "logActivity": {
+            "parameters": ["slaId", "action", "details", "userId"],
+            "async": true
+          },
+          "getAuditTrail": {
+            "parameters": ["slaId", "dateRange"],
+            "returns": "auditEntries"
+          }
+        }
+      },
+      "NotificationService": {
+        "methods": {
+          "sendStatusChangeAlert": {
+            "parameters": ["slaId", "oldStatus", "newStatus"],
+            "async": true
+          },
+          "sendProgressUpdate": {
+            "parameters": ["slaId", "progress"],
+            "async": true
+          }
+        }
+      },
+      "BackupService": {
+        "methods": {
+          "createBackup": {
+            "schedule": "DAILY",
+            "retention": "30_DAYS"
+          },
+          "restoreFromBackup": {
+            "parameters": ["backupId", "userId"],
+            "requires": "ADMIN_PERMISSION"
+          }
+        }
+      }
+    },
+
+    "configuration": {
+      "spreadsheetId": "ENVIRONMENT_VARIABLE",
+      "cacheExpiration": 300,
+      "maxRetries": 3,
+      "batchSize": 500,
+      "triggers": {
+        "onEdit": "handleSheetEdit",
+        "onChange": "handleSheetChange",
+        "timeDriven": {
+          "dailyReport": "0 8 * * *",
+          "statusCheck": "*/30 * * * *"
+        }
+      },
+      "security": {
+        "domainRestriction": "company.com",
+        "requireAuthentication": true,
+        "sessionTimeout": 3600,
+        "ipWhitelist": ["10.0.0.0/8"],
+        "rateLimiting": {
+          "requests": 100,
+          "window": 60
+        }
+      },
+      "performance": {
+        "useBatchOperations": true,
+        "lazyLoading": true,
+        "indexedColumns": ["sla_id", "status", "team_id"],
+        "cacheStrategy": "LRU",
+        "compressionEnabled": true
+      }
+    },
+
+    "dataValidation": {
+      "rules": {
+        "EMAIL": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        "URL": "^https?://[\\w\\-]+(\\.[\\w\\-]+)+[/#?]?.*$",
+        "DATE_IS_VALID": "=AND(ISNUMBER(H2),H2>=TODAY())",
+        "DATE_AFTER_START": "=I2>H2",
+        "BETWEEN_0_1": "=AND(G2>=0,G2<=1)",
+        "NOT_BLANK": "=NOT(ISBLANK(C2))",
+        "EMAIL_LIST": "^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})(;[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})*$"
+      },
+      "customFormulas": {
+        "STATUS_CALCULATION": "=IF(K2>=100,\"met\",IF(K2>=90,\"ontrack\",IF(K2>=75,\"at-risk\",\"missed\")))",
+        "DAYS_REMAINING": "=MAX(0,I2-TODAY())",
+        "PROGRESS_COLOR": "=IF(K2>=100,\"green\",IF(K2>=75,\"yellow\",\"red\"))"
+      }
+    },
+
+    "errorHandling": {
+      "strategies": {
+        "VALIDATION_ERROR": {
+          "action": "RETURN_ERROR",
+          "message": "Data validation failed: {details}",
+          "log": true
+        },
+        "PERMISSION_DENIED": {
+          "action": "RETURN_ERROR",
+          "message": "Insufficient permissions",
+          "log": true,
+          "alert": "SECURITY_TEAM"
+        },
+        "CONCURRENCY_ERROR": {
+          "action": "RETRY",
+          "maxRetries": 3,
+          "backoff": "EXPONENTIAL"
+        },
+        "SHEET_QUOTA_ERROR": {
+          "action": "QUEUE",
+          "notification": "ADMIN"
+        }
+      }
+    }
+  },
+
+  "bestPractices": {
+    "dataNormalization": [
+      "Use separate sheets for different entity types",
+      "Implement foreign key relationships",
+      "Avoid storing JSON in cells when possible (except custom_fields)",
+      "Use named ranges for better maintainability"
+    ],
+    "security": [
+      "Implement row-level security via permissions sheet",
+      "Use service account for automated operations",
+      "Encrypt sensitive data before storage",
+      "Regular security audits via activity logs",
+      "Domain-restricted sharing"
+    ],
+    "performance": [
+      "Use batch operations for multiple updates",
+      "Implement caching for frequently accessed data",
+      "Index key columns for faster lookups",
+      "Limit formula complexity in sheets",
+      "Use Apps Script for complex calculations"
+    ],
+    "maintenance": [
+      "Version control via Git for Apps Script code",
+      "Automated daily backups",
+      "Data validation at both sheet and script level",
+      "Regular cleanup of soft-deleted records",
+      "Monitor sheet size and performance metrics"
+    ],
+    "scalability": [
+      "Partition data by date/status when exceeding 50k rows",
+      "Use BigQuery for analytics on large datasets",
+      "Implement pagination for all read operations",
+      "Archive old data to separate sheets/storage"
+    ]
+  },
+
+  "implementation": {
+    "setupInstructions": {
+      "step1": "Create a new Google Spreadsheet",
+      "step2": "Run the setupSheets() function to create all required sheets",
+      "step3": "Configure data validation rules via setupValidation()",
+      "step4": "Set up named ranges via setupNamedRanges()",
+      "step5": "Deploy Web App for API access",
+      "step6": "Configure triggers for automation",
+      "step7": "Set up permissions and sharing"
+    },
+    "codeStructure": {
+      "files": [
+        "Code.gs - Main entry point",
+        "CrudService.gs - CRUD operations",
+        "ValidationService.gs - Data validation",
+        "SecurityService.gs - Access control",
+        "AuditService.gs - Logging and audit",
+        "NotificationService.gs - Email/alerts",
+        "Utils.gs - Helper functions",
+        "Config.gs - Configuration constants"
+      ]
+    },
+    "deployment": {
+      "environment": "Google Workspace",
+      "authentication": "OAuth 2.0",
+      "api": "REST via Web App",
+      "frontend": "Google Apps Script HTML Service",
+      "monitoring": "Google Cloud Logging"
+    }
+  }
+}

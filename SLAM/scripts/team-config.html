@@ -1,0 +1,227 @@
+<script>
+/**
+ * ========================================================================
+ * TEAM CONFIGURATION MODULE
+ * ========================================================================
+ * Single source of truth for team-task relationships in the frontend.
+ * Loads data from backend once and caches it for the session.
+ * 
+ * Usage:
+ *   await window.TEAM_CONFIG.initialize();
+ *   const taskName = window.TEAM_CONFIG.getTaskFromTeamId('TEAM-001');
+ *   const teamName = window.TEAM_CONFIG.getTeamName('TEAM-001');
+ *   const teams = window.TEAM_CONFIG.getTeamsForTask('Task 1');
+ * ========================================================================
+ */
+
+window.TEAM_CONFIG = {
+    // Cache for loaded data
+    _data: null,
+    _initialized: false,
+    
+    /**
+     * Initializes the team configuration by loading from backend.
+     * Call this once during app initialization.
+     * @returns {Promise<boolean>} True if successful, false otherwise
+     */
+    async initialize() {
+        if (this._initialized) {
+            console.log('[TEAM_CONFIG] Already initialized, using cached data');
+            return true;
+        }
+        
+        try {
+            console.log('[TEAM_CONFIG] Loading team-task mapping from backend...');
+            
+            // Check if we're in GAS environment or local
+            const isGasEnvironment = typeof google !== 'undefined' && 
+                                     typeof google.script !== 'undefined' && 
+                                     typeof google.script.run !== 'undefined';
+            
+            if (isGasEnvironment) {
+                // Load from backend
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler((result) => {
+                            if (result.success) {
+                                this._data = result;
+                                this._initialized = true;
+                                console.log('[TEAM_CONFIG] Loaded mapping from backend:', 
+                                    Object.keys(result.mapping).length, 'tasks,',
+                                    Object.keys(result.teamToTask).length, 'teams');
+                                resolve(true);
+                            } else {
+                                console.error('[TEAM_CONFIG] Backend error:', result.error);
+                                this._loadFallbackData();
+                                resolve(false);
+                            }
+                        })
+                        .withFailureHandler((error) => {
+                            console.error('[TEAM_CONFIG] Failed to load from backend:', error);
+                            this._loadFallbackData();
+                            resolve(false);
+                        })
+                        .getTaskTeamMapping();
+                });
+            } else {
+                // Local environment - use fallback data
+                console.log('[TEAM_CONFIG] Local environment detected, using fallback data');
+                this._loadFallbackData();
+                return true;
+            }
+            
+        } catch (error) {
+            console.error('[TEAM_CONFIG] Error initializing:', error);
+            this._loadFallbackData();
+            return false;
+        }
+    },
+    
+    /**
+     * Loads fallback data for local/demo environment.
+     * @private
+     */
+    _loadFallbackData() {
+        console.log('[TEAM_CONFIG] Loading fallback data');
+        
+        const mapping = {
+            'Task 1': [
+                {id: 'TEAM-001', name: 'Program Management Team'}
+            ],
+            'Task 2': [
+                {id: 'TEAM-002', name: 'APM Team'},
+                {id: 'TEAM-010', name: 'TW/Template Team'},
+                {id: 'TEAM-011', name: 'Cost Team'}
+            ],
+            'Task 3': [
+                {id: 'TEAM-003', name: 'PPM Team'}
+            ],
+            'Task 4': [
+                {id: 'TEAM-004', name: 'Technical Evaluation Team'}
+            ],
+            'Task 5': [
+                {id: 'TEAM-005', name: 'Training Support Team'}
+            ],
+            'Task 6': [
+                {id: 'TEAM-006', name: 'Business Intelligence Team'}
+            ],
+            'Task 7': [
+                {id: 'TEAM-007', name: 'Operational Support Team'}
+            ],
+            'Task 8': [
+                {id: 'TEAM-008', name: 'Quality Support Team'}
+            ],
+            'Task 9': [
+                {id: 'TEAM-009', name: 'Communication Team'}
+            ]
+        };
+        
+        // Build reverse lookups
+        const teamToTask = {};
+        const teamIdToName = {};
+        const teamNameToId = {};
+        
+        for (const [taskName, teams] of Object.entries(mapping)) {
+            teams.forEach(team => {
+                teamToTask[team.id] = taskName;
+                teamIdToName[team.id] = team.name;
+                teamNameToId[team.name] = team.id;
+            });
+        }
+        
+        this._data = {
+            success: true,
+            mapping: mapping,
+            teamToTask: teamToTask,
+            teamIdToName: teamIdToName,
+            teamNameToId: teamNameToId
+        };
+        
+        this._initialized = true;
+        console.log('[TEAM_CONFIG] Fallback data loaded successfully');
+    },
+    
+    /**
+     * Gets the task name for a given team ID.
+     * @param {string} teamId - Team ID (e.g., 'TEAM-001')
+     * @returns {string|null} Task name (e.g., 'Task 1') or null if not found
+     */
+    getTaskFromTeamId(teamId) {
+        if (!this._initialized || !this._data) {
+            console.warn('[TEAM_CONFIG] Not initialized. Call initialize() first.');
+            return null;
+        }
+        return this._data.teamToTask[teamId] || null;
+    },
+    
+    /**
+     * Gets the team name for a given team ID.
+     * @param {string} teamId - Team ID (e.g., 'TEAM-001')
+     * @returns {string|null} Team name (e.g., 'Program Management Team') or null if not found
+     */
+    getTeamName(teamId) {
+        if (!this._initialized || !this._data) {
+            console.warn('[TEAM_CONFIG] Not initialized. Call initialize() first.');
+            return null;
+        }
+        return this._data.teamIdToName[teamId] || null;
+    },
+    
+    /**
+     * Gets the team ID for a given team name.
+     * @param {string} teamName - Team name (e.g., 'Program Management Team')
+     * @returns {string|null} Team ID (e.g., 'TEAM-001') or null if not found
+     */
+    getTeamId(teamName) {
+        if (!this._initialized || !this._data) {
+            console.warn('[TEAM_CONFIG] Not initialized. Call initialize() first.');
+            return null;
+        }
+        return this._data.teamNameToId[teamName] || null;
+    },
+    
+    /**
+     * Gets all teams for a given task.
+     * @param {string} taskName - Task name (e.g., 'Task 1')
+     * @returns {Array<Object>} Array of team objects [{id, name}, ...] or empty array
+     */
+    getTeamsForTask(taskName) {
+        if (!this._initialized || !this._data) {
+            console.warn('[TEAM_CONFIG] Not initialized. Call initialize() first.');
+            return [];
+        }
+        return this._data.mapping[taskName] || [];
+    },
+    
+    /**
+     * Gets all tasks.
+     * @returns {Array<string>} Array of task names ['Task 1', 'Task 2', ...]
+     */
+    getAllTasks() {
+        if (!this._initialized || !this._data) {
+            console.warn('[TEAM_CONFIG] Not initialized. Call initialize() first.');
+            return [];
+        }
+        return Object.keys(this._data.mapping);
+    },
+    
+    /**
+     * Gets all teams across all tasks.
+     * @returns {Array<Object>} Array of unique team objects [{id, name}, ...]
+     */
+    getAllTeams() {
+        if (!this._initialized || !this._data) {
+            console.warn('[TEAM_CONFIG] Not initialized. Call initialize() first.');
+            return [];
+        }
+        
+        const teamsMap = new Map();
+        for (const teams of Object.values(this._data.mapping)) {
+            teams.forEach(team => {
+                teamsMap.set(team.id, team);
+            });
+        }
+        return Array.from(teamsMap.values());
+    }
+};
+</script>

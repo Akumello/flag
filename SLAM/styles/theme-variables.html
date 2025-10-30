@@ -1,0 +1,220 @@
+<style>
+  /* Prevent overscroll bounce/jitter */
+  html {
+    overscroll-behavior: none;
+  }
+  
+  body {
+    overscroll-behavior: none;
+  }
+  
+  :root {
+    /* Base Colors - Original GSA Palette */
+    --color-gray-light: #F2F2F2;
+    --color-gray-medium: #BBBDBF;
+    --color-gray-dark: #424143;
+    --color-blue-dark: #004F87;
+    --color-orange: #CF4817;
+    --color-green: #286D3B;
+    --color-red-dark: #522032;
+    --color-blue-light: #1B7CAC;
+    
+    /* Light Mode Semantic Colors */
+    --color-background: var(--color-gray-light);
+    --color-surface: #FFFFFF;
+    --color-border: var(--color-gray-medium);
+    
+    --color-text-primary: var(--color-gray-dark);
+    --color-text-secondary: #6B6B6B;
+    --color-text-muted: #8E8E8E;
+    
+    --color-primary: var(--color-blue-dark);
+    --color-primary-hover: var(--color-blue-light);
+    --color-text-on-primary: #000000;
+    
+    --color-status-success: var(--color-green);
+    --color-status-success-bg: #E6F4EA;
+    --color-status-warning: var(--color-orange);
+    --color-status-warning-bg: #FEF0E5;
+    --color-status-error: var(--color-red-dark);
+    --color-status-error-bg: #F9E6EB;
+    --color-status-info: var(--color-blue-light);
+    --color-status-info-bg: #E5F3F9;
+    --color-status-ontrack: #0066CC;
+    --color-status-ontrack-bg: #E3F2FD;
+    
+    --color-priority-critical: var(--color-red-dark);
+    --color-priority-critical-bg: var(--color-status-error-bg);
+    --color-priority-high: var(--color-orange);
+    --color-priority-high-bg: var(--color-status-warning-bg);
+    --color-priority-medium: var(--color-blue-light);
+    --color-priority-medium-bg: var(--color-status-info-bg);
+    --color-priority-low: var(--color-green);
+    --color-priority-low-bg: var(--color-status-success-bg);
+    
+    --font-family: Calibri, sans-serif;
+  }
+
+  /* Dark Mode Variables */
+  [data-theme="dark"] {
+    /* Dark Mode Semantic Colors */
+    --color-background: #1a1a1a;
+    --color-surface: #2d2d2d;
+    --color-border: #4a4a4a;
+    
+    --color-text-primary: #e5e5e5;
+    --color-text-secondary: #b8b8b8;
+    --color-text-muted: #999999;
+    
+    --color-primary: #3a7bc8;
+    --color-primary-hover: #5c94d4;
+    --color-text-on-primary: #FFFFFF;
+    
+    /* Slightly adjusted colors for better contrast on dark */
+    --color-status-success: #4caf50;
+    --color-status-success-bg: #1b4d1f;
+    --color-status-warning: #ff9800;
+    --color-status-warning-bg: #4d2c00;
+    --color-status-error: #f44336;
+    --color-status-error-bg: #4d1319;
+    --color-status-info: #2196f3;
+    --color-status-info-bg: #0d2c4d;
+    --color-status-ontrack: #42a5f5;
+    --color-status-ontrack-bg: #1a237e;
+    
+    --color-priority-critical: #f44336;
+    --color-priority-critical-bg: var(--color-status-error-bg);
+    --color-priority-high: #ff9800;
+    --color-priority-high-bg: var(--color-status-warning-bg);
+    --color-priority-medium: #2196f3;
+    --color-priority-medium-bg: var(--color-status-info-bg);
+    --color-priority-low: #4caf50;
+    --color-priority-low-bg: var(--color-status-success-bg);
+  }
+
+  /* Dark mode specific adjustments */
+  [data-theme="dark"] .stat-card-blue,
+  [data-theme="dark"] .stat-card-green,
+  [data-theme="dark"] .stat-card-orange,
+  [data-theme="dark"] .stat-card-red,
+  [data-theme="dark"] .stat-card-ontrack {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  [data-theme="dark"] input,
+  [data-theme="dark"] select,
+  [data-theme="dark"] textarea {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border-color: var(--color-border);
+  }
+
+  [data-theme="dark"] input:focus,
+  [data-theme="dark"] select:focus,
+  [data-theme="dark"] textarea:focus {
+    background-color: var(--color-surface);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+
+  [data-theme="dark"] input::placeholder,
+  [data-theme="dark"] textarea::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  [data-theme="dark"] table thead {
+    background-color: var(--color-surface) !important;
+    border-color: var(--color-border);
+  }
+
+  [data-theme="dark"] table tbody tr {
+    background-color: var(--color-background) !important;
+    border-color: var(--color-border);
+  }
+
+  [data-theme="dark"] table tbody tr:hover {
+    background-color: var(--color-surface) !important;
+  }
+
+  [data-theme="dark"] .sla-card {
+    background-color: var(--color-surface) !important;
+  }
+
+  /* Additional Dark Mode Improvements */
+  [data-theme="dark"] .badge-success,
+  [data-theme="dark"] .badge-warning,
+  [data-theme="dark"] .badge-error,
+  [data-theme="dark"] .badge-ontrack,
+  [data-theme="dark"] .badge-info,
+  [data-theme="dark"] .badge-priority-critical,
+  [data-theme="dark"] .badge-priority-high,
+  [data-theme="dark"] .badge-priority-medium,
+  [data-theme="dark"] .badge-priority-low {
+    color: var(--color-text-primary);
+    font-weight: 600;
+  }
+
+  [data-theme="dark"] .progress-bar {
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  [data-theme="dark"] .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  [data-theme="dark"] .border-t {
+    border-color: var(--color-border) !important;
+  }
+
+  [data-theme="dark"] .border-b {
+    border-color: var(--color-border) !important;
+  }
+
+  [data-theme="dark"] .divide-y > * + * {
+    border-color: var(--color-border) !important;
+  }
+
+  /* Dark mode modal */
+  [data-theme="dark"] #updateModal .bg-surface {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  /* Dark mode notification */
+  [data-theme="dark"] #notification {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Transition for smooth theme switching */
+  * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Theme Toggle Button */
+  .theme-toggle-btn {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+  }
+
+  .theme-toggle-btn:hover {
+    background-color: var(--color-gray-medium);
+  }
+
+  [data-theme="dark"] .theme-toggle-btn:hover {
+    background-color: #374151;
+  }
+
+  /* Bootstrap Icons fallback */
+  .bi::before {
+    display: inline-block;
+    font-family: bootstrap-icons !important;
+    font-style: normal;
+    font-weight: normal !important;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    vertical-align: -.125em;
+  }
+</style>

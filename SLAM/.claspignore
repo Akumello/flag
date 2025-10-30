@@ -1,0 +1,35 @@
+# Ignore node modules
+node_modules/
+
+# Ignore local development files
+.DS_Store
+*.log
+
+# Ignore documentation that shouldn't be pushed to Apps Script
+*.md
+!README.md
+
+# Ignore git files
+.git/
+.gitignore
+
+
+# Ignore data files (keep them local for now)
+**/sla-sample-data.json
+**/sla-data-models.json
+**/sla-data-loader.js
+
+# Ignore audit and report files
+*audit*.md
+*report*.md
+*summary*.md
+*progress*.md
+reports/**/*
+
+# Ignore any test files
+**/*test*.js
+**/*spec*.js
+
+# Ignore local configuration
+.env
+.env.local
