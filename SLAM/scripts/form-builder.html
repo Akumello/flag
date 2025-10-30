@@ -1170,12 +1170,18 @@ function populateParentSLADropdown(id) {
  * Uses TEAM_CONFIG for task list
  * @param {string} id - Form identifier
  */
-function populateTaskDropdown(id) {
+async function populateTaskDropdown(id) {
     const taskSelect = document.getElementById(`taskName-${id}`);
     if (!taskSelect) return;
     
     // Clear existing options except the first
     taskSelect.innerHTML = '<option value="">Select Task</option>';
+    
+    // Ensure TEAM_CONFIG is initialized
+    if (!window.TEAM_CONFIG._initialized) {
+        console.log('[populateTaskDropdown] TEAM_CONFIG not initialized, initializing now...');
+        await window.TEAM_CONFIG.initialize();
+    }
     
     // Get all tasks from TEAM_CONFIG
     const tasks = window.TEAM_CONFIG.getAllTasks();
