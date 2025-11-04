@@ -17,10 +17,10 @@
  * @param {string} slaData.teamId - Team identifier responsible for the SLA (required)
  * @param {Date|string} slaData.startDate - Start date of the SLA period (required)
  * @param {Date|string} slaData.endDate - End date of the SLA period (required)
- * @param {string} [slaData.status='not-started'] - Current status: 'met', 'at-risk', 'ontrack', 'exceeded', 'missed', 'pending', 'not-started'
+ * @param {string} [slaData.status='not-started'] - Current status: 'met', 'at-risk', 'on-track', 'exceeded', 'missed', 'pending', 'pending-request', 'not-started', 'n-a'
  * @param {number} [slaData.currentValue=0] - Current measured value
  * @param {number} slaData.targetValue - Target value to achieve (required)
- * @param {string} [slaData.frequency='once'] - Frequency of measurement: 'once', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'annually'
+ * @param {string} [slaData.frequency='once'] - Frequency of measurement: 'once', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'annually', 'as-requested'
  * @param {string[]} [slaData.notificationEmails] - Array of email addresses for notifications
  * @param {string} [slaData.externalTrackerUrl] - URL to external tracking system
  * @param {string[]} [slaData.tags] - Array of tags for categorization
@@ -233,7 +233,7 @@ function createSLA(slaData = {
  * const result = readSLA('SLA-000001');
  * if (result.success) {
  *   console.log(result.data.slaName); // 'System Uptime'
- *   console.log(result.data.status);  // 'ontrack'
+ *   console.log(result.data.status);  // 'on-track'
  * }
  */
 function readSLA(slaId) {
@@ -440,8 +440,9 @@ function updateSLA(slaId, updates) {
     sheet.getRange(rowIndex, updatedByIndex + 1).setValue(userId);
     sheet.getRange(rowIndex, versionCol).setValue(currentVersion + 1);
     
-    // Log activity
-    _logActivity(slaId, 'updated', 'SLA updated', oldValues, updates);
+    // Log activity with update description if provided
+    const actionDetails = updates.updateDescription || 'SLA updated';
+    _logActivity(slaId, 'updated', actionDetails, oldValues, updates);
     
     return {
       success: true,
@@ -722,6 +723,94 @@ function getSLARelationships(slaId) {
     
   } catch (error) {
     console.error('Error getting relationships:', error);
+    return [];
+  }
+}
+
+/**
+ * Retrieves activity log entries for a specific SLA from the SLA_ACTIVITY_LOG sheet.
+ * Returns chronologically sorted log entries with user, timestamp, and action details.
+ * 
+ * @param {string} slaId - The unique identifier of the SLA (e.g., 'SLA-000001')
+ * 
+ * @returns {Object[]} Array of activity log entry objects
+ * @returns {string} return[].logId - Unique log entry identifier
+ * @returns {string} return[].slaId - Associated SLA ID
+ * @returns {Date} return[].timestamp - When the action occurred
+ * @returns {string} return[].userId - Email of user who performed action
+ * @returns {string} return[].userName - Display name of user
+ * @returns {string} return[].actionType - Type of action (created, updated, deleted, etc.)
+ * @returns {string} return[].actionDetails - Description of the action taken
+ * @returns {string} [return[].oldValue] - JSON string of old values (for updates)
+ * @returns {string} [return[].newValue] - JSON string of new values (for updates)
+ * 
+ * @example
+ * const log = getActivityLog('SLA-000001');
+ * // Returns: [
+ * //   { logId: 'LOG-123', actionType: 'updated', actionDetails: 'Updated quantity to 50', ... },
+ * //   { logId: 'LOG-122', actionType: 'created', actionDetails: 'SLA created', ... }
+ * // ]
+ */
+function getActivityLog(slaId) {
+  try {
+    Logger.log('getActivityLog called with slaId: ' + slaId);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('SLA_ACTIVITY_LOG');
+    if (!sheet) {
+      Logger.log('SLA_ACTIVITY_LOG sheet not found');
+      return [];
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    Logger.log('Total rows in activity log: ' + data.length);
+    if (data.length < 2) {
+      Logger.log('Not enough data rows');
+      return [];
+    }
+    
+    const headers = data[0];
+    Logger.log('Headers: ' + JSON.stringify(headers));
+    const slaIdIndex = headers.indexOf('SLA ID');
+    Logger.log('SLA ID column index: ' + slaIdIndex);
+    
+    if (slaIdIndex === -1) {
+      Logger.log('SLA ID column not found in headers');
+      return [];
+    }
+    
+    const logEntries = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      const rowSlaId = String(data[i][slaIdIndex]).trim();
+      const searchSlaId = String(slaId).trim();
+      if (rowSlaId === searchSlaId) {
+        const entry = {};
+        headers.forEach((header, index) => {
+          const value = data[i][index];
+          // Convert Date objects to ISO strings for JSON serialization
+          if (value instanceof Date) {
+            entry[_toCamelCase(header)] = value.toISOString();
+          } else {
+            entry[_toCamelCase(header)] = value;
+          }
+        });
+        logEntries.push(entry);
+      }
+    }
+    
+    Logger.log('Total matching entries found: ' + logEntries.length);
+    
+    // Sort by timestamp descending (newest first)
+    logEntries.sort((a, b) => {
+      const dateA = new Date(a.timestamp);
+      const dateB = new Date(b.timestamp);
+      return dateB - dateA;
+    });
+    
+    return logEntries;
+    
+  } catch (error) {
+    Logger.log('Error getting activity log: ' + error.toString());
     return [];
   }
 }

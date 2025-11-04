@@ -56,6 +56,7 @@ function enableInlineEditing(slaId) {
         originalData: JSON.parse(JSON.stringify(sla)),
         slaId: slaId
     };
+    window.inlineEditState = inlineEditState; // Keep window reference updated
     
     // Transform detail view to edit mode
     renderInlineEditMode(sla);
@@ -134,8 +135,10 @@ function renderEditableOverview(sla) {
                 <div>
                     <label class="block text-sm font-medium text-primary-color mb-2">Status</label>
                     <select id="edit-completion-status" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="n-a" ${sla.status === 'n-a' ? 'selected' : ''}>N/A</option>
                         <option value="not-started" ${sla.status === 'not-started' ? 'selected' : ''}>Not Started</option>
-                        <option value="ontrack" ${sla.status === 'ontrack' ? 'selected' : ''}>In Progress</option>
+                        <option value="pending-request" ${sla.status === 'pending-request' ? 'selected' : ''}>Pending Request</option>
+                        <option value="on-track" ${sla.status === 'on-track' ? 'selected' : ''}>In Progress</option>
                         <option value="met" ${sla.status === 'met' ? 'selected' : ''}>Completed</option>
                     </select>
                 </div>
@@ -225,16 +228,25 @@ function renderEditableOverview(sla) {
             </div>
         `;
     } else if (slaType === 'compliance') {
-        // For compliance, show Yes/No dropdown
-        const isCompliant = currentValue === 1 || currentValue === true || currentValue === 'true';
+        // For compliance, show N/A/Yes/No dropdown
+        // Handle N/A (2), Compliant (1/true), Non-Compliant (0/false)
+        let selectedValue = '0';
+        if (currentValue === 2 || currentValue === '2') {
+            selectedValue = '2';
+        } else if (currentValue === 1 || currentValue === true || currentValue === 'true') {
+            selectedValue = '1';
+        } else {
+            selectedValue = '0';
+        }
         
         valueFieldsHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-primary-color mb-2">Compliance Status</label>
                     <select id="edit-complianceStatus" class="w-full px-3 py-2 border border-color rounded-md">
-                        <option value="1" ${isCompliant ? 'selected' : ''}>Compliant (Yes)</option>
-                        <option value="0" ${!isCompliant ? 'selected' : ''}>Non-Compliant (No)</option>
+                        <option value="2" ${selectedValue === '2' ? 'selected' : ''}>N/A</option>
+                        <option value="1" ${selectedValue === '1' ? 'selected' : ''}>Compliant (Yes)</option>
+                        <option value="0" ${selectedValue === '0' ? 'selected' : ''}>Non-Compliant (No)</option>
                     </select>
                 </div>
                 
@@ -282,8 +294,10 @@ function renderEditableOverview(sla) {
                 <div>
                     <label class="block text-sm font-medium text-primary-color mb-2">Status</label>
                     <select id="edit-status" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="n-a" ${sla.status === 'n-a' ? 'selected' : ''}>N/A</option>
                         <option value="not-started" ${sla.status === 'not-started' ? 'selected' : ''}>Not Started</option>
-                        <option value="ontrack" ${sla.status === 'ontrack' ? 'selected' : ''}>On Track</option>
+                        <option value="pending-request" ${sla.status === 'pending-request' ? 'selected' : ''}>Pending Request</option>
+                        <option value="on-track" ${sla.status === 'on-track' ? 'selected' : ''}>On Track</option>
                         <option value="at-risk" ${sla.status === 'at-risk' ? 'selected' : ''}>At Risk</option>
                         <option value="met" ${sla.status === 'met' ? 'selected' : ''}>Met</option>
                         <option value="exceeded" ${sla.status === 'exceeded' ? 'selected' : ''}>Exceeded</option>
@@ -336,6 +350,7 @@ function renderEditableOverview(sla) {
                         <option value="monthly" ${frequency === 'monthly' ? 'selected' : ''}>Monthly</option>
                         <option value="quarterly" ${frequency === 'quarterly' ? 'selected' : ''}>Quarterly</option>
                         <option value="annually" ${frequency === 'annually' ? 'selected' : ''}>Annually</option>
+                        <option value="as-requested" ${frequency === 'as-requested' ? 'selected' : ''}>As Requested</option>
                     </select>
                 </div>
             </div>
@@ -348,7 +363,7 @@ function renderEditableOverview(sla) {
                     <input type="email" id="edit-email-input" placeholder="email@example.com"
                            class="flex-1 px-3 py-2 border border-color rounded-md">
                     <button type="button" id="edit-email-add-btn" 
-                            class="px-4 py-2 bg-primary text-white rounded-md hover:opacity-90">
+                            class="px-4 py-2 btn-primary rounded-md hover:opacity-90">
                         <i class="bi bi-plus-lg"></i>
                     </button>
                 </div>
@@ -761,11 +776,11 @@ function addEditActionButtons() {
     const buttonsHTML = `
         <div id="inline-edit-actions" class="flex gap-3">
             <button onclick="saveInlineEdits()" 
-                    class="px-4 py-2 bg-success text-white rounded-md hover:opacity-90">
+                    class="px-4 py-2 btn-success rounded-md hover:opacity-90 transition-opacity">
                 <i class="bi bi-check-lg mr-2"></i>Save Changes
             </button>
             <button onclick="cancelInlineEditing()" 
-                    class="px-4 py-2 bg-surface border border-color rounded-md hover:bg-gray-100">
+                    class="px-4 py-2 btn-secondary rounded-md">
                 <i class="bi bi-x-lg mr-2"></i>Cancel
             </button>
         </div>
@@ -877,9 +892,10 @@ async function saveInlineEdits() {
             if (startTime) customFields.startTime = startTime;
             if (endTime) customFields.endTime = endTime;
         } else if (slaType === 'compliance') {
-            // For compliance, get Yes/No status
-            currentValue = parseInt(document.getElementById('edit-complianceStatus')?.value) || 0;
-            targetValue = 1; // Always Yes/compliant
+            // For compliance, get N/A/Yes/No status
+            const complianceValue = document.getElementById('edit-complianceStatus')?.value;
+            currentValue = parseInt(complianceValue);
+            targetValue = 1; // Always Yes/compliant (when not N/A)
             const requirement = document.getElementById('edit-requirement')?.value;
             if (requirement) customFields.requirement = requirement;
         } else {
@@ -967,6 +983,7 @@ async function saveInlineEdits() {
             originalData: null,
             slaId: null
         };
+        window.inlineEditState = inlineEditState; // Keep window reference updated
         
         // Remove inline edit action buttons
         const editActions = document.getElementById('inline-edit-actions');
@@ -985,15 +1002,17 @@ async function saveInlineEdits() {
 }
 
 /**
- * Cancel inline editing and revert to original
+ * Discard inline editing changes without confirmation
+ * Internal helper function used by cancelInlineEditing and goBackToList
+ * @returns {boolean} True if changes were discarded, false if nothing to discard
  */
-function cancelInlineEditing() {
-    console.log('=== CANCEL INLINE EDITING CALLED ===');
+function discardInlineChanges() {
+    console.log('=== DISCARD INLINE CHANGES CALLED ===');
     console.log('Current inlineEditState:', JSON.stringify(inlineEditState, null, 2));
     
-    if (!confirm('Discard all changes?')) {
-        console.log('User cancelled the discard confirmation');
-        return;
+    if (!inlineEditState.isEditing) {
+        console.log('Not in editing mode, nothing to discard');
+        return false;
     }
     
     const savedSlaId = inlineEditState.slaId;
@@ -1019,6 +1038,7 @@ function cancelInlineEditing() {
         originalData: null,
         slaId: null
     };
+    window.inlineEditState = inlineEditState; // Keep window reference updated
     console.log('State reset:', JSON.stringify(inlineEditState, null, 2));
     
     // Remove inline edit action buttons
@@ -1033,12 +1053,12 @@ function cancelInlineEditing() {
         console.log('No editActions element found to remove');
     }
     
-    // Show original buttons BEFORE re-rendering
-    console.log('Calling toggleEditButtons(false) BEFORE renderSLADetail...');
+    // Show original buttons
+    console.log('Calling toggleEditButtons(false)...');
     toggleEditButtons(false);
     console.log('toggleEditButtons completed');
     
-    // Re-render in read mode AFTER resetting state
+    // Re-render in read mode
     console.log('Calling renderSLADetail for ID:', savedSlaId);
     if (savedSlaId) {
         renderSLADetail(savedSlaId);
@@ -1047,7 +1067,22 @@ function cancelInlineEditing() {
         console.log('No savedSlaId, skipping renderSLADetail');
     }
     
-    console.log('Showing notification...');
+    console.log('=== DISCARD INLINE CHANGES COMPLETE ===');
+    return true;
+}
+
+/**
+ * Cancel inline editing and revert to original
+ */
+function cancelInlineEditing() {
+    console.log('=== CANCEL INLINE EDITING CALLED ===');
+    
+    if (!confirm('Discard all changes?')) {
+        console.log('User cancelled the discard confirmation');
+        return;
+    }
+    
+    discardInlineChanges();
     showNotification('Changes discarded', 'info');
     console.log('=== CANCEL INLINE EDITING COMPLETE ===');
 }
@@ -1060,10 +1095,12 @@ function initializeInlineEditButton() {
     // The editCurrentSLA() function will be updated to call enableInlineEditing() instead
 }
 
-// Export functions for global access
+// Export functions and state for global access
+window.inlineEditState = inlineEditState;
 window.enableInlineEditing = enableInlineEditing;
 window.saveInlineEdits = saveInlineEdits;
 window.cancelInlineEditing = cancelInlineEditing;
+window.discardInlineChanges = discardInlineChanges;
 window.handleEditEmailInput = handleEditEmailInput;
 window.addEditEmailChip = addEditEmailChip;
 window.removeEditEmailChip = removeEditEmailChip;

@@ -221,6 +221,9 @@ function getTaskTeamMapping() {
             ],
             'Task 9': [
                 {id: 'TEAM-009', name: 'Communication Team'}
+            ],
+            'Task 10': [
+                {id: 'TEAM-012', name: 'Regional Financial Task Team'}
             ]
         };
         

@@ -162,8 +162,12 @@ function renderSLADetail(slaId) {
                 targetLabel = 'Target Uptime';
                 
             } else if (slaType === 'compliance') {
-                // Compliance shows Yes/No
-                currentDisplay = currentValue ? 'Yes' : 'No';
+                // Compliance shows N/A/Yes/No
+                if (currentValue === 2 || currentValue === '2') {
+                    currentDisplay = 'N/A';
+                } else {
+                    currentDisplay = currentValue ? 'Yes' : 'No';
+                }
                 targetDisplay = 'Yes';
                 targetValue = 1;
                 currentLabel = 'Compliant';
@@ -278,6 +282,12 @@ function renderSLADetail(slaId) {
                     <span class="text-sm text-muted">Description</span>
                     <p class="text-sm text-primary-color mt-1">${sla.description || 'No description provided'}</p>
                 </div>
+                <div id="recent-activity-overview">
+                    <span class="text-sm text-muted">Most Recent Activity</span>
+                    <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-muted">Loading...</p>
+                    </div>
+                </div>
                 ${sla.createdAt ? `
                 <div class="pt-3 border-t border-color text-xs text-muted">
                     Created: ${formatDateTime(sla.createdAt)} by ${sla.createdBy || 'Unknown'}
@@ -291,8 +301,9 @@ function renderSLADetail(slaId) {
     // Update progress tracking section
     renderProgressTracking(sla);
 
-    // Update activity log
+    // Update activity log and recent activity in overview
     renderActivityLog(sla);
+    renderRecentActivityInOverview(sla);
 
     // Update sidebar
     renderSLASidebar(sla);
@@ -301,6 +312,7 @@ function renderSLADetail(slaId) {
 /**
  * Renders the activity log for a given SLA in the detail view.
  * Displays chronological activity entries with status-colored indicators.
+ * Fetches actual activity log data from backend if available.
  * @param {Object} sla - SLA object containing activityLog array
  * @returns {void}
  */
@@ -322,6 +334,137 @@ function renderActivityLog(sla) {
         return;
     }
     
+    // Show loading state
+    activityContainer.innerHTML = `
+        <div class="text-center py-8">
+            <p class="text-muted">Loading activity log...</p>
+        </div>
+    `;
+    
+    // Try to fetch actual activity log from backend
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        console.log('Fetching activity log from backend for SLA:', sla.slaId);
+        google.script.run
+            .withSuccessHandler(function(logEntries) {
+                console.log('Activity log entries received:', logEntries);
+                console.log('Number of entries:', logEntries ? logEntries.length : 0);
+                if (logEntries && logEntries.length > 0) {
+                    console.log('Displaying activity log with', logEntries.length, 'entries');
+                    displayActivityLog(activityContainer, logEntries);
+                } else {
+                    console.log('No activity log entries returned from backend');
+                    activityContainer.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="bi bi-clock-history text-gray-400 text-2xl"></i>
+                            <p class="text-muted mt-2">No activity logged yet</p>
+                        </div>
+                    `;
+                }
+            })
+            .withFailureHandler(function(error) {
+                console.error('Failed to fetch activity log:', error);
+                activityContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="bi bi-exclamation-triangle text-red-500 text-2xl"></i>
+                        <p class="text-muted mt-2">Error loading activity log</p>
+                        <p class="text-xs text-muted mt-1">${error.message || error.toString()}</p>
+                    </div>
+                `;
+            })
+            .getActivityLog(sla.slaId);
+    } else {
+        console.log('Backend not available (google.script.run not found)');
+        activityContainer.innerHTML = `
+            <div class="text-center py-8">
+                <i class="bi bi-exclamation-triangle text-yellow-500 text-2xl"></i>
+                <p class="text-muted mt-2">Backend connection unavailable</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Displays activity log entries from backend data
+ * @param {HTMLElement} container - Container element for activity log
+ * @param {Array} logEntries - Array of log entry objects from backend
+ * @returns {void}
+ */
+function displayActivityLog(container, logEntries) {
+    if (!logEntries || logEntries.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="bi bi-clock-history text-gray-400 text-2xl"></i>
+                <p class="text-muted mt-2">No activity logged yet</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort by timestamp (newest first)
+    logEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    const activitiesHTML = logEntries.map(entry => {
+        const actionType = entry.actionType || 'info';
+        const statusColor = getStatusColor(actionType);
+        const userEmail = entry.userId || entry.userName || 'System';
+        const actionDetails = entry.actionDetails || entry.actionType || 'No description';
+        
+        // Format action type for display
+        const actionTypeDisplay = actionType.charAt(0).toUpperCase() + actionType.slice(1).replace(/-/g, ' ');
+        
+        // Format timestamp - show "just now" if within last 5 minutes
+        const timestamp = new Date(entry.timestamp);
+        const now = new Date();
+        const diffMinutes = Math.floor((now - timestamp) / (1000 * 60));
+        const timeDisplay = diffMinutes < 5 ? 'just now' : formatDateTime(timestamp);
+        
+        return `
+            <div class="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0">
+                <div class="w-2 h-2 rounded-full mt-2" style="background-color: ${statusColor}"></div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-semibold text-muted uppercase tracking-wide">${actionTypeDisplay}</span>
+                        <span class="text-xs text-muted">•</span>
+                        <span class="text-xs text-muted">${userEmail}</span>
+                        <span class="text-xs text-muted">•</span>
+                        <span class="text-xs text-muted">${timeDisplay}</span>
+                    </div>
+                    <p class="text-sm text-primary-color">${actionDetails}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = activitiesHTML;
+}
+
+/**
+ * Formats a value for display in the activity log
+ * @param {*} value - Value to format
+ * @returns {string} Formatted value
+ */
+function formatValue(value) {
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'number') return value.toLocaleString();
+    if (value instanceof Date) return value.toLocaleDateString();
+    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+        try {
+            return new Date(value).toLocaleDateString();
+        } catch (e) {
+            return value;
+        }
+    }
+    return String(value);
+}
+
+/**
+ * Displays fallback activity log built from SLA metadata
+ * @param {HTMLElement} container - Container element for activity log
+ * @param {Object} sla - SLA object
+ * @returns {void}
+ */
+function displayFallbackActivityLog(container, sla) {
     // Build activity log from available data
     const activities = [];
     
@@ -337,9 +480,12 @@ function renderActivityLog(sla) {
     
     // Add update activity if different from creation
     if (sla.updatedAt && sla.updatedAt !== sla.createdAt) {
+        // Check if we have update description in custom fields
+        const customFields = getCustomFields(sla);
+        const updateDesc = customFields?.lastUpdateDescription || 'SLA updated';
         activities.push({
             type: 'info',
-            message: 'SLA updated',
+            message: updateDesc,
             timestamp: sla.updatedAt,
             user: sla.updatedBy
         });
@@ -361,7 +507,7 @@ function renderActivityLog(sla) {
     activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
     if (activities.length === 0) {
-        activityContainer.innerHTML = `
+        container.innerHTML = `
             <div class="text-center py-8">
                 <i class="bi bi-clock-history text-gray-400 text-2xl"></i>
                 <p class="text-muted mt-2">No activity logged yet</p>
@@ -374,18 +520,123 @@ function renderActivityLog(sla) {
         const statusColor = getStatusColor(activity.type);
         const userName = activity.user || 'System';
         const userDisplay = userName !== 'System' ? `<span class="text-primary-color font-medium">${userName}</span> • ` : '';
+        const actionTypeDisplay = activity.type.charAt(0).toUpperCase() + activity.type.slice(1).replace(/-/g, ' ');
+        
         return `
-            <div class="flex items-start space-x-3 py-2">
+            <div class="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0">
                 <div class="w-2 h-2 rounded-full mt-2" style="background-color: ${statusColor}"></div>
                 <div class="flex-1">
-                    <p class="text-sm text-primary-color">${activity.message}</p>
-                    <p class="text-xs text-muted">${userDisplay}${formatRelativeTime(activity.timestamp)}</p>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold text-muted uppercase tracking-wide">${actionTypeDisplay}</span>
+                        <span class="text-xs text-muted">•</span>
+                        <span class="text-xs text-muted">${userDisplay}${formatRelativeTime(activity.timestamp)}</span>
+                    </div>
+                    <p class="text-sm text-primary-color font-medium mt-1">${activity.message}</p>
                 </div>
             </div>
         `;
     }).join('');
     
-    activityContainer.innerHTML = activitiesHTML;
+    container.innerHTML = activitiesHTML;
+}
+
+/**
+ * Renders the most recent activity in the overview section
+ * @param {Object} sla - SLA object
+ * @returns {void}
+ */
+function renderRecentActivityInOverview(sla) {
+    const recentActivityContainer = document.getElementById('recent-activity-overview');
+    if (!recentActivityContainer) return;
+    
+    // Try to fetch actual activity log from backend
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        console.log('Fetching recent activity from backend for overview');
+        google.script.run
+            .withSuccessHandler(function(logEntries) {
+                console.log('Recent activity entries received for overview:', logEntries);
+                if (logEntries && logEntries.length > 0) {
+                    // Get most recent entry
+                    logEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    const recentEntry = logEntries[0];
+                    
+                    const actionType = recentEntry.actionType || 'info';
+                    const statusColor = getStatusColor(actionType);
+                    const userEmail = recentEntry.userId || recentEntry.userName || 'System';
+                    const actionDetails = recentEntry.actionDetails || recentEntry.actionType || 'No description';
+                    const actionTypeDisplay = actionType.charAt(0).toUpperCase() + actionType.slice(1).replace(/-/g, ' ');
+                    
+                    // Format timestamp
+                    const timestamp = new Date(recentEntry.timestamp);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - timestamp) / (1000 * 60));
+                    const timeDisplay = diffMinutes < 5 ? 'just now' : formatDateTime(timestamp);
+                    
+                    recentActivityContainer.innerHTML = `
+                        <span class="text-sm text-muted">Recent Activity</span>
+                        <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-2 h-2 rounded-full mt-1.5" style="background-color: ${statusColor}"></div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                        <span class="text-xs font-semibold text-muted uppercase tracking-wide">${actionTypeDisplay}</span>
+                                        <span class="text-xs text-muted">•</span>
+                                        <span class="text-xs text-muted">${userEmail}</span>
+                                        <span class="text-xs text-muted">•</span>
+                                        <span class="text-xs text-muted">${timeDisplay}</span>
+                                    </div>
+                                    <p class="text-sm text-primary-color">${actionDetails}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    console.log('No activity log entries for overview');
+                    recentActivityContainer.innerHTML = `
+                        <span class="text-sm text-muted">Recent Activity</span>
+                        <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                            <p class="text-xs text-muted">No recent activity</p>
+                        </div>
+                    `;
+                }
+            })
+            .withFailureHandler(function(error) {
+                console.error('Failed to fetch recent activity for overview:', error);
+                // Fallback to last updated info
+                if (sla.updatedAt) {
+                    const timestamp = new Date(sla.updatedAt);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - timestamp) / (1000 * 60));
+                    const timeDisplay = diffMinutes < 5 ? 'just now' : formatDateTime(timestamp);
+                    
+                    recentActivityContainer.innerHTML = `
+                        <span class="text-sm text-muted">Recent Activity</span>
+                        <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-primary-color">Last updated</p>
+                            <p class="text-xs text-muted">${sla.updatedBy || 'Unknown'} • ${timeDisplay}</p>
+                        </div>
+                    `;
+                }
+            })
+            .getActivityLog(sla.slaId);
+    } else {
+        console.log('Backend not available for recent activity');
+        // No backend available, use fallback
+        if (sla.updatedAt) {
+            const timestamp = new Date(sla.updatedAt);
+            const now = new Date();
+            const diffMinutes = Math.floor((now - timestamp) / (1000 * 60));
+            const timeDisplay = diffMinutes < 5 ? 'just now' : formatDateTime(timestamp);
+            
+            recentActivityContainer.innerHTML = `
+                <span class="text-sm text-muted">Recent Activity</span>
+                <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm text-primary-color">Last updated</p>
+                    <p class="text-xs text-muted">${sla.updatedBy || 'Unknown'} • ${timeDisplay}</p>
+                </div>
+            `;
+        }
+    }
 }
 
 /**
@@ -623,15 +874,28 @@ function generateMetricsHTML(sla) {
             const complianceTarget = customFields.targetValue !== undefined ? customFields.targetValue : 1;
             const complianceRequirement = customFields.requirement || '';
             
-            const isCompliant = currentValue === 1 || currentValue === true || currentValue === 'true';
-            const complianceStatusClass = isCompliant ? 'stat-card-green' : 'stat-card-red';
-            const complianceStatusColor = isCompliant ? 'success' : 'danger';
-            const complianceStatusText = isCompliant ? 'Compliant' : 'Non-Compliant';
+            // Handle N/A (2), Compliant (1), Non-Compliant (0)
+            let complianceStatusClass, complianceStatusColor, complianceStatusText, currentStatusDisplay, percentComplete;
+            
+            if (currentValue === 2 || currentValue === '2') {
+                complianceStatusClass = 'stat-card-gray';
+                complianceStatusColor = 'info';
+                complianceStatusText = 'N/A';
+                currentStatusDisplay = 'N/A';
+                percentComplete = 'N/A';
+            } else {
+                const isCompliant = currentValue === 1 || currentValue === true || currentValue === 'true';
+                complianceStatusClass = isCompliant ? 'stat-card-green' : 'stat-card-red';
+                complianceStatusColor = isCompliant ? 'success' : 'danger';
+                complianceStatusText = isCompliant ? 'Compliant' : 'Non-Compliant';
+                currentStatusDisplay = isCompliant ? 'Yes' : 'No';
+                percentComplete = isCompliant ? '100%' : '0%';
+            }
             
             return `
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
-                        <div class="text-2xl font-bold text-primary-color">${isCompliant ? 'Yes' : 'No'}</div>
+                        <div class="text-2xl font-bold text-primary-color">${currentStatusDisplay}</div>
                         <div class="text-sm text-muted">Current Status</div>
                     </div>
                     <div class="text-center p-4 rounded-lg" style="background-color: var(--color-gray-light)">
@@ -640,7 +904,7 @@ function generateMetricsHTML(sla) {
                     </div>
                     <div class="text-center p-4 rounded-lg ${complianceStatusClass}">
                         <div class="text-2xl font-bold" style="color: var(--color-status-${complianceStatusColor})">${complianceStatusText}</div>
-                        <div class="text-sm text-muted">${isCompliant ? '100%' : '0%'} Complete</div>
+                        <div class="text-sm text-muted">${percentComplete} Complete</div>
                     </div>
                 </div>
                 ${complianceRequirement ? `<div class="text-sm text-muted mt-2"><strong>Requirement:</strong> ${complianceRequirement}</div>` : ''}

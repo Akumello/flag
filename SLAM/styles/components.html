@@ -131,13 +131,33 @@
     background-color: var(--color-primary-hover);
   }
   
+  [data-theme="dark"] .btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  [data-theme="dark"] .btn-primary:hover {
+    background-color: var(--color-primary-hover);
+  }
+  
   .btn-secondary {
     border: 1px solid var(--color-border);
     color: var(--color-text-primary);
+    background-color: var(--color-surface);
   }
   
   .btn-secondary:hover {
     background-color: var(--color-gray-light);
+  }
+  
+  [data-theme="dark"] .btn-secondary {
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface);
+  }
+  
+  [data-theme="dark"] .btn-secondary:hover {
+    background-color: #3d3d3d;
   }
   
   .btn-danger {
@@ -146,7 +166,16 @@
   }
   
   .btn-danger:hover {
-    background-color: #6B2A42;
+    opacity: 0.9;
+  }
+  
+  [data-theme="dark"] .btn-danger {
+    background-color: var(--color-status-error);
+    color: white;
+  }
+  
+  [data-theme="dark"] .btn-danger:hover {
+    opacity: 0.9;
   }
   
   .btn-success {
@@ -155,7 +184,16 @@
   }
   
   .btn-success:hover {
-    background-color: #1F5630;
+    opacity: 0.9;
+  }
+  
+  [data-theme="dark"] .btn-success {
+    background-color: var(--color-status-success);
+    color: white;
+  }
+  
+  [data-theme="dark"] .btn-success:hover {
+    opacity: 0.9;
   }
   
   .link-primary {
@@ -227,6 +265,10 @@
     background-color: var(--color-status-ontrack);
   }
   
+  .progress-info {
+    background-color: var(--color-status-info);
+  }
+  
   input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--color-primary);
@@ -256,11 +298,22 @@
   /* Tag and Email Chips */
   #edit-tags-chips-container {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: var(--color-surface);
   }
   
   #edit-tags-chips-container:focus-within {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+  }
+  
+  [data-theme="dark"] #edit-tags-chips-container {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+  }
+  
+  [data-theme="dark"] #edit-tags-chips-container:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
   }
   
   .tag-chip {
@@ -286,5 +339,10 @@
   .email-chip button:hover {
     background-color: rgba(0, 0, 0, 0.1);
     border-radius: 50%;
+  }
+  
+  [data-theme="dark"] .tag-chip button:hover,
+  [data-theme="dark"] .email-chip button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 </style>

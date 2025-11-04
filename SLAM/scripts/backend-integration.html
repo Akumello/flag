@@ -170,7 +170,7 @@ function transformToBackendSchema(formData) {
     // Transform the data
     const transformed = {
         ...cleanData,
-        // Normalize status values (valid: met, at-risk, ontrack, exceeded, missed, pending, not-started)
+        // Normalize status values (valid: met, at-risk, on-track, exceeded, missed, pending, not-started, n-a)
         status: status,
         // Normalize frequency (backend expects lowercase)
         frequency: (formData.frequency || 'once').toLowerCase(),
@@ -358,23 +358,38 @@ async function updateSLAInBackend(slaId, updates) {
         
         const result = await SLA_API.update(slaId, updates);
         
-        hideLoadingIndicator();
-        
         if (result.success) {
+            // Reload the SLA data and ensure UI updates BEFORE dismissing modal
+            console.log('Update successful, refreshing SLA detail for:', slaId);
+            const refreshSuccess = await refreshSLADetail(slaId);
+            
+            if (!refreshSuccess) {
+                console.warn('refreshSLADetail returned false, attempting full data reload');
+                // Fallback: reload all data if single SLA refresh fails
+                await loadSLAsFromBackend();
+                
+                // Check if we're on the detail page and re-render
+                const detailSection = document.getElementById('detail');
+                if (detailSection && !detailSection.classList.contains('hidden')) {
+                    renderSLADetail(slaId);
+                }
+            }
+            
+            // Only hide loading and show success AFTER UI is updated
+            hideLoadingIndicator();
             showNotification('SLA updated successfully!', 'success');
             
-            // Reload the SLA data
-            await refreshSLADetail(slaId);
             return true;
         } else {
+            hideLoadingIndicator();
             showNotification('Update failed: ' + result.error, 'error');
             return false;
         }
         
     } catch (error) {
         console.error('Error updating SLA:', error);
-        showNotification('Error updating SLA: ' + error.message, 'error');
         hideLoadingIndicator();
+        showNotification('Error updating SLA: ' + error.message, 'error');
         return false;
     }
 }
@@ -419,21 +434,34 @@ async function deleteSLAFromBackend(slaId) {
  */
 async function refreshSLADetail(slaId) {
     try {
+        console.log('Refreshing SLA detail for:', slaId);
         const result = await SLA_API.read(slaId);
         
         if (result.success) {
             // Transform and update in local data
             const sla = transformFromBackendSchema(result.data);
-            const index = window.APP_DATA.slas.findIndex(s => s.id === slaId);
+            console.log('Transformed SLA data:', sla);
+            
+            // Find by slaId (not id)
+            const index = window.APP_DATA.slas.findIndex(s => s.slaId === slaId);
             
             if (index !== -1) {
+                console.log('Updating existing SLA at index:', index);
                 window.APP_DATA.slas[index] = sla;
             } else {
+                console.log('SLA not found in local data, adding new entry');
                 window.APP_DATA.slas.push(sla);
             }
             
-            // Re-render detail view
-            renderSLADetail(slaId);
+            // Re-render detail view if we're on the detail page
+            const detailSection = document.getElementById('detail');
+            if (detailSection && !detailSection.classList.contains('hidden')) {
+                console.log('Re-rendering detail view');
+                renderSLADetail(slaId);
+            } else {
+                console.log('Detail view not active, skipping render');
+            }
+            
             return true;
         } else {
             showNotification('Failed to refresh SLA: ' + result.error, 'error');

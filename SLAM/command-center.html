@@ -531,6 +531,24 @@
                         </div>
                     </div>
                 </div>
+                
+                <div onclick="showTaskSLAs('Task 10')" class="task-card cursor-pointer bg-surface rounded-lg p-4 border border-color hover:border-primary-color transition-colors duration-200 hover:shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-primary-color rounded-full flex items-center justify-center">
+                                <i class="bi bi-currency-dollar text-lg" style="color: var(--color-text-on-primary)"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-primary-color">Task 10</h3>
+                                <p class="text-sm text-muted">Regional Financial</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span id="task-10-count" class="inline-block bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full">0 SLAs</span>
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -579,7 +597,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center">
-                    <button onclick="showSection('list')" class="mr-4 text-secondary-color hover:text-primary-color flex items-center gap-2">
+                    <button onclick="goBackToList()" class="mr-4 text-secondary-color hover:text-primary-color flex items-center gap-2">
                         <i class="bi bi-arrow-left"></i> Back to List
                     </button>
                     <h2 class="text-2xl font-bold text-primary-color">SLA Details</h2>
@@ -670,6 +688,24 @@
                            class="w-full px-3 py-2 border border-color rounded-md">
                 </div>
                 <div>
+                    <label for="updateQuantityStatus" class="block text-sm font-medium text-primary-color mb-2">Status</label>
+                    <select id="updateQuantityStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="n-a">N/A</option>
+                        <option value="met">Met</option>
+                        <option value="on-track">On Track</option>
+                        <option value="at-risk">At Risk</option>
+                        <option value="missed">Missed</option>
+                        <option value="pending">Pending</option>
+                        <option value="pending-request">Pending Request</option>
+                        <option value="not-started">Not Started</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="updateQuantityDescription" class="block text-sm font-medium text-primary-color mb-2">Update Description</label>
+                    <input type="text" id="updateQuantityDescription" placeholder="Brief description of this update"
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                <div>
                     <label for="updateQuantityNotes" class="block text-sm font-medium text-primary-color mb-2">Notes</label>
                     <textarea id="updateQuantityNotes" rows="3" placeholder="Optional notes about this update..."
                               class="w-full px-3 py-2 border border-color rounded-md"></textarea>
@@ -690,6 +726,24 @@
                 <div>
                     <label for="updatePercentageValue" class="block text-sm font-medium text-primary-color mb-2">Current Percentage (%)</label>
                     <input type="number" id="updatePercentageValue" min="0" max="100" step="0.1"
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                <div>
+                    <label for="updatePercentageStatus" class="block text-sm font-medium text-primary-color mb-2">Status</label>
+                    <select id="updatePercentageStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="n-a">N/A</option>
+                        <option value="met">Met</option>
+                        <option value="on-track">On Track</option>
+                        <option value="at-risk">At Risk</option>
+                        <option value="missed">Missed</option>
+                        <option value="pending">Pending</option>
+                        <option value="pending-request">Pending Request</option>
+                        <option value="not-started">Not Started</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="updatePercentageDescription" class="block text-sm font-medium text-primary-color mb-2">Update Description</label>
+                    <input type="text" id="updatePercentageDescription" placeholder="Brief description of this update"
                            class="w-full px-3 py-2 border border-color rounded-md">
                 </div>
                 <div>
@@ -721,6 +775,24 @@
                            class="w-full px-3 py-2 border border-color rounded-md">
                 </div>
                 <div>
+                    <label for="updateTimelinessStatus" class="block text-sm font-medium text-primary-color mb-2">Status</label>
+                    <select id="updateTimelinessStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="n-a">N/A</option>
+                        <option value="met">Met</option>
+                        <option value="on-track">On Track</option>
+                        <option value="at-risk">At Risk</option>
+                        <option value="missed">Missed</option>
+                        <option value="pending">Pending</option>
+                        <option value="pending-request">Pending Request</option>
+                        <option value="not-started">Not Started</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="updateTimelinessDescription" class="block text-sm font-medium text-primary-color mb-2">Update Description</label>
+                    <input type="text" id="updateTimelinessDescription" placeholder="Brief description of this update"
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                <div>
                     <label for="updateTimelinessNotes" class="block text-sm font-medium text-primary-color mb-2">Notes</label>
                     <textarea id="updateTimelinessNotes" rows="3" placeholder="Optional notes about this completion..."
                               class="w-full px-3 py-2 border border-color rounded-md"></textarea>
@@ -749,6 +821,24 @@
                            class="w-full px-3 py-2 border border-color rounded-md">
                 </div>
                 <div>
+                    <label for="updateAvailabilityStatus" class="block text-sm font-medium text-primary-color mb-2">Status</label>
+                    <select id="updateAvailabilityStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="n-a">N/A</option>
+                        <option value="met">Met</option>
+                        <option value="on-track">On Track</option>
+                        <option value="at-risk">At Risk</option>
+                        <option value="missed">Missed</option>
+                        <option value="pending">Pending</option>
+                        <option value="pending-request">Pending Request</option>
+                        <option value="not-started">Not Started</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="updateAvailabilityDescription" class="block text-sm font-medium text-primary-color mb-2">Update Description</label>
+                    <input type="text" id="updateAvailabilityDescription" placeholder="Brief description of this update"
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+                <div>
                     <label for="updateAvailabilityNotes" class="block text-sm font-medium text-primary-color mb-2">Notes</label>
                     <textarea id="updateAvailabilityNotes" rows="3" placeholder="Optional notes about this update..."
                               class="w-full px-3 py-2 border border-color rounded-md"></textarea>
@@ -769,9 +859,28 @@
                 <div>
                     <label for="updateComplianceStatus" class="block text-sm font-medium text-primary-color mb-2">Compliance Status</label>
                     <select id="updateComplianceStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="2">N/A</option>
                         <option value="true">Compliant</option>
                         <option value="false">Not Compliant</option>
                     </select>
+                </div>
+                <div>
+                    <label for="updateComplianceSLAStatus" class="block text-sm font-medium text-primary-color mb-2">SLA Status</label>
+                    <select id="updateComplianceSLAStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="n-a">N/A</option>
+                        <option value="met">Met</option>
+                        <option value="on-track">On Track</option>
+                        <option value="at-risk">At Risk</option>
+                        <option value="missed">Missed</option>
+                        <option value="pending">Pending</option>
+                        <option value="pending-request">Pending Request</option>
+                        <option value="not-started">Not Started</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="updateComplianceDescription" class="block text-sm font-medium text-primary-color mb-2">Update Description</label>
+                    <input type="text" id="updateComplianceDescription" placeholder="Brief description of this update"
+                           class="w-full px-3 py-2 border border-color rounded-md">
                 </div>
                 <div>
                     <label for="updateComplianceNotes" class="block text-sm font-medium text-primary-color mb-2">Notes</label>
@@ -969,6 +1078,7 @@
         // Global Variables
         let slaCounter = 0;
         let currentSlaId = null;
+        let previousTask = null; // Track which task the user was viewing before opening an SLA
         
         // DOM Element Cache for Performance
         const domCache = {
@@ -1232,6 +1342,7 @@
             tbody.innerHTML = '';
 
             window.APP_DATA.slas.forEach((sla, index) => {
+                const progressPercent = calculateProgress(sla);
                 const row = document.createElement('tr');
                 row.style.backgroundColor = 'white';
                 row.innerHTML = `
@@ -1246,9 +1357,9 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
                             <div class="w-16 rounded-full h-2 mr-2" style="background-color: var(--color-gray-light)">
-                                <div class="${getProgressBarClass(sla.status)} h-2 rounded-full" style="width: ${sla.progress}%"></div>
+                                <div class="${getProgressBarClass(sla.status)} h-2 rounded-full" style="width: ${progressPercent}%"></div>
                             </div>
-                            <span class="text-sm text-secondary-color">${sla.progress}%</span>
+                            <span class="text-sm text-secondary-color">${progressPercent}%</span>
                         </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">${formatDate(sla.endDate)}</td>
@@ -1402,6 +1513,9 @@
          * @returns {void}
          */
         function showTaskSLAs(taskName) {
+            // Save the current task so we can return to it later
+            previousTask = taskName;
+            
             if (domCache.taskSelectionView && domCache.filteredSlaView) {
                 domCache.taskSelectionView.style.display = 'none';
                 domCache.filteredSlaView.style.display = 'block';
@@ -1428,6 +1542,9 @@
          * @returns {void}
          */
         function showAllTasksSLAs() {
+            // Save that we're viewing all tasks
+            previousTask = 'All';
+            
             if (domCache.taskSelectionView && domCache.filteredSlaView) {
                 domCache.taskSelectionView.style.display = 'none';
                 domCache.filteredSlaView.style.display = 'block';
@@ -1457,30 +1574,46 @@
             const slas = window.APP_DATA.slas || [];
             const taskCounts = {};
             
-            // Initialize counts
-            for (let i = 1; i <= 9; i++) {
-                taskCounts[`Task ${i}`] = 0;
-            }
+            // Get all tasks dynamically from TEAM_CONFIG
+            const allTasks = window.TEAM_CONFIG.getAllTasks();
+            
+            // Initialize counts for all available tasks
+            allTasks.forEach(taskName => {
+                taskCounts[taskName] = 0;
+            });
+            
+            console.log('[updateTaskCounts] All tasks:', allTasks);
+            console.log('[updateTaskCounts] Processing', slas.length, 'SLAs');
             
             // Count SLAs per task (mapped from teamId)
             slas.forEach((sla, index) => {
                 const teamId = sla.teamId;
                 const taskName = window.TEAM_CONFIG.getTaskFromTeamId(teamId);
                 
+                console.log(`[updateTaskCounts] SLA "${sla.slaName}" - teamId: ${teamId} -> task: ${taskName}`);
+                
                 if (taskName && taskCounts.hasOwnProperty(taskName)) {
                     taskCounts[taskName]++;
                 }
             });
             
-            // Update the UI
-            for (let i = 1; i <= 9; i++) {
-                const taskKey = `Task ${i}`;
-                const count = taskCounts[taskKey];
-                const countElement = document.getElementById(`task-${i}-count`);
-                if (countElement) {
-                    countElement.textContent = `${count} SLA${count !== 1 ? 's' : ''}`;
+            console.log('[updateTaskCounts] Final counts:', taskCounts);
+            
+            // Update the UI for each task
+            allTasks.forEach(taskName => {
+                // Extract task number from "Task X" format
+                const taskMatch = taskName.match(/Task (\d+)/);
+                if (taskMatch) {
+                    const taskNum = taskMatch[1];
+                    const count = taskCounts[taskName] || 0;
+                    const countElement = document.getElementById(`task-${taskNum}-count`);
+                    if (countElement) {
+                        countElement.textContent = `${count} SLA${count !== 1 ? 's' : ''}`;
+                    } else {
+                        console.warn(`[updateTaskCounts] Count element not found: task-${taskNum}-count`);
+                    }
                 }
-            }
+            });
             
             // Update the all tasks count
             const totalCount = slas.length;
@@ -1576,6 +1709,38 @@
         // ========================================
 
         /**
+         * Handles navigation back from SLA detail view.
+         * Checks if user is in edit mode and prompts to discard changes.
+         * Returns to the previous task view if available, otherwise shows task selection.
+         * @returns {void}
+         */
+        function goBackToList() {
+            // Check if inline editing is active
+            if (window.inlineEditState && window.inlineEditState.isEditing) {
+                // Prompt user to confirm discarding changes
+                if (!confirm('Discard all changes?')) {
+                    return; // User cancelled, stay on page
+                }
+                
+                // User confirmed, discard changes (without re-rendering detail view)
+                if (typeof window.discardInlineChanges === 'function') {
+                    window.discardInlineChanges();
+                }
+            }
+            
+            // Navigate back to list view
+            showSection('list');
+            
+            // If we have a saved task, go back to that filtered view
+            if (previousTask && previousTask !== 'All') {
+                showTaskSLAs(previousTask);
+            } else if (previousTask === 'All') {
+                showAllTasksSLAs();
+            }
+            // Otherwise, default behavior shows task selection (handled by showSection)
+        }
+
+        /**
          * Shows the detail view for a specific SLA.
          * Sets the current SLA ID and renders its details.
          * @param {string} slaId - Unique identifier of the SLA to display
@@ -1583,6 +1748,7 @@
          */
         function showSLADetail(slaId) {
             currentSlaId = slaId;
+            window.currentSlaId = slaId; // Also set on window for global access
             renderSLADetail(slaId);
             showSection('detail');
         }
@@ -2440,11 +2606,15 @@ function togglePercentageRange(id) {
             switch (slaType) {
                 case 'quantity':
                     document.getElementById('updateQuantityValue').value = currentValue || 0;
+                    document.getElementById('updateQuantityStatus').value = sla.status || 'pending';
+                    document.getElementById('updateQuantityDescription').value = '';
                     document.getElementById('updateQuantityNotes').value = '';
                     break;
                     
                 case 'percentage':
                     document.getElementById('updatePercentageValue').value = currentValue || 0;
+                    document.getElementById('updatePercentageStatus').value = sla.status || 'pending';
+                    document.getElementById('updatePercentageDescription').value = '';
                     document.getElementById('updatePercentageNotes').value = '';
                     break;
                     
@@ -2452,18 +2622,31 @@ function togglePercentageRange(id) {
                     const now = new Date();
                     document.getElementById('updateTimelinessDate').value = now.toISOString().split('T')[0];
                     document.getElementById('updateTimelinessTime').value = now.toTimeString().substring(0, 5);
+                    document.getElementById('updateTimelinessStatus').value = sla.status || 'pending';
+                    document.getElementById('updateTimelinessDescription').value = '';
                     document.getElementById('updateTimelinessNotes').value = '';
                     break;
                     
                 case 'availability':
                     document.getElementById('updateAvailabilityValue').value = currentValue || 99.9;
                     document.getElementById('updateAvailabilityDowntime').value = 0;
+                    document.getElementById('updateAvailabilityStatus').value = sla.status || 'pending';
+                    document.getElementById('updateAvailabilityDescription').value = '';
                     document.getElementById('updateAvailabilityNotes').value = '';
                     break;
                     
                 case 'compliance':
-                    const isCompliant = currentValue === true || currentValue === 1 || currentValue === 'true';
-                    document.getElementById('updateComplianceStatus').value = isCompliant ? 'true' : 'false';
+                    // Handle N/A (2), Compliant (1/true), and Non-Compliant (0/false)
+                    let complianceValue;
+                    if (currentValue === 2 || currentValue === '2') {
+                        complianceValue = '2';
+                    } else {
+                        const isCompliant = currentValue === true || currentValue === 1 || currentValue === 'true';
+                        complianceValue = isCompliant ? 'true' : 'false';
+                    }
+                    document.getElementById('updateComplianceStatus').value = complianceValue;
+                    document.getElementById('updateComplianceSLAStatus').value = sla.status || 'pending';
+                    document.getElementById('updateComplianceDescription').value = '';
                     document.getElementById('updateComplianceNotes').value = '';
                     break;
                     
@@ -2513,6 +2696,7 @@ async function saveUpdate() {
     const slaType = sla.slaType;
     let newValue;
     let notes = '';
+    let updateDescription = '';
     let updateMessage = '';
     let customFieldsUpdate = {};
     
@@ -2520,27 +2704,30 @@ async function saveUpdate() {
     switch (slaType) {
         case 'quantity':
             newValue = parseFloat(document.getElementById('updateQuantityValue').value);
+            updateDescription = document.getElementById('updateQuantityDescription').value;
             notes = document.getElementById('updateQuantityNotes').value;
             if (isNaN(newValue)) {
                 showNotification('Please enter a valid quantity', 'error');
                 return;
             }
-            updateMessage = `Quantity updated to ${newValue}`;
+            updateMessage = updateDescription || `Quantity updated to ${newValue}`;
             break;
             
         case 'percentage':
             newValue = parseFloat(document.getElementById('updatePercentageValue').value);
+            updateDescription = document.getElementById('updatePercentageDescription').value;
             notes = document.getElementById('updatePercentageNotes').value;
             if (isNaN(newValue) || newValue < 0 || newValue > 100) {
                 showNotification('Please enter a valid percentage (0-100)', 'error');
                 return;
             }
-            updateMessage = `Percentage updated to ${newValue}%`;
+            updateMessage = updateDescription || `Percentage updated to ${newValue}%`;
             break;
             
         case 'timeliness':
             const completionDate = document.getElementById('updateTimelinessDate').value;
             const completionTime = document.getElementById('updateTimelinessTime').value;
+            updateDescription = document.getElementById('updateTimelinessDescription').value;
             notes = document.getElementById('updateTimelinessNotes').value;
             
             if (!completionDate) {
@@ -2553,7 +2740,7 @@ async function saveUpdate() {
                 `${completionDate}T12:00:00Z`;
             
             newValue = completionDateTime;
-            updateMessage = `Completed on ${completionDate}${completionTime ? ' at ' + completionTime : ''}`;
+            updateMessage = updateDescription || `Completed on ${completionDate}${completionTime ? ' at ' + completionTime : ''}`;
             
             // Update custom fields
             customFieldsUpdate.lastCompletion = completionDateTime;
@@ -2562,13 +2749,14 @@ async function saveUpdate() {
         case 'availability':
             newValue = parseFloat(document.getElementById('updateAvailabilityValue').value);
             const downtime = parseFloat(document.getElementById('updateAvailabilityDowntime').value) || 0;
+            updateDescription = document.getElementById('updateAvailabilityDescription').value;
             notes = document.getElementById('updateAvailabilityNotes').value;
             
             if (isNaN(newValue) || newValue < 0 || newValue > 100) {
                 showNotification('Please enter a valid uptime percentage (0-100)', 'error');
                 return;
             }
-            updateMessage = `Uptime updated to ${newValue}%${downtime > 0 ? ` (${downtime} min downtime)` : ''}`;
+            updateMessage = updateDescription || `Uptime updated to ${newValue}%${downtime > 0 ? ` (${downtime} min downtime)` : ''}`;
             
             if (downtime > 0) {
                 customFieldsUpdate.lastDowntime = downtime;
@@ -2578,9 +2766,17 @@ async function saveUpdate() {
             
         case 'compliance':
             const complianceStatus = document.getElementById('updateComplianceStatus').value;
+            updateDescription = document.getElementById('updateComplianceDescription').value;
             notes = document.getElementById('updateComplianceNotes').value;
-            newValue = complianceStatus === 'true' ? 1 : 0;
-            updateMessage = `Compliance status: ${complianceStatus === 'true' ? 'Compliant' : 'Not Compliant'}`;
+            
+            // Handle N/A (2), Compliant (true/1), Non-Compliant (false/0)
+            if (complianceStatus === '2') {
+                newValue = 2;
+                updateMessage = updateDescription || 'Compliance status: N/A';
+            } else {
+                newValue = complianceStatus === 'true' ? 1 : 0;
+                updateMessage = updateDescription || `Compliance status: ${complianceStatus === 'true' ? 'Compliant' : 'Not Compliant'}`;
+            }
             break;
             
         case 'composite':
@@ -2625,16 +2821,32 @@ async function saveUpdate() {
     const targetValue = sla.targetValue !== undefined ? sla.targetValue : 0;
     const newProgress = targetValue > 0 ? Math.min(100, Math.round((newValue / targetValue) * 100)) : 0;
     
-    // Update status based on new progress (simple logic)
-    let newStatus = sla.status;
-    if (newProgress >= 100) {
-        newStatus = 'met';
-    } else if (newProgress >= 80) {
-        newStatus = 'ontrack';
-    } else if (newProgress >= 50) {
-        newStatus = 'at-risk';
-    } else {
-        newStatus = 'missed';
+    // Get status from manual selection instead of auto-calculating
+    let newStatus;
+    switch (slaType) {
+        case 'quantity':
+            newStatus = document.getElementById('updateQuantityStatus').value;
+            break;
+        case 'percentage':
+            newStatus = document.getElementById('updatePercentageStatus').value;
+            break;
+        case 'timeliness':
+            newStatus = document.getElementById('updateTimelinessStatus').value;
+            break;
+        case 'availability':
+            newStatus = document.getElementById('updateAvailabilityStatus').value;
+            break;
+        case 'compliance':
+            newStatus = document.getElementById('updateComplianceSLAStatus').value;
+            break;
+        default:
+            newStatus = sla.status; // Fallback to current status for types without status dropdown
+    }
+    
+    // Validate status selection
+    if (!newStatus) {
+        showNotification('Please select a status', 'error');
+        return;
     }
     
     // Add update notes to custom fields if provided
@@ -2642,7 +2854,11 @@ async function saveUpdate() {
     if (notes) {
         customFieldsUpdate.lastUpdateNotes = notes;
         customFieldsUpdate.lastUpdateTime = new Date().toISOString();
-        updateMessage += ` - ${notes}`;
+    }
+    
+    // Add update description to custom fields
+    if (updateDescription) {
+        customFieldsUpdate.lastUpdateDescription = updateDescription;
     }
     
     // Merge custom fields
@@ -2653,6 +2869,7 @@ async function saveUpdate() {
         currentValue: newValue,
         progress: newProgress,
         status: newStatus,
+        updateDescription: updateDescription, // Include description for activity log
         customFields: mergedCustomFields,
         rowVersion: sla.rowVersion || 0
     };
@@ -3161,10 +3378,25 @@ async function submitToBackend(payload) {
                 refreshIcon.classList.add('animate-spin');
                 console.log('🔄 Manual refresh triggered by user');
                 
+                // Check if we're currently viewing a detail page
+                const detailSection = document.getElementById('detail');
+                const isDetailViewActive = detailSection && !detailSection.classList.contains('hidden');
+                const activeSlaId = currentSlaId; // Store current SLA ID
+                
+                if (isDetailViewActive) {
+                    console.log('Currently viewing SLA detail:', activeSlaId);
+                }
+                
                 // Call the backend to refresh data
                 const success = await loadSLAsFromBackend();
                 
                 if (success) {
+                    // If we were viewing a detail page, re-render it with fresh data
+                    if (isDetailViewActive && activeSlaId) {
+                        console.log('Re-rendering detail view after refresh');
+                        renderSLADetail(activeSlaId);
+                    }
+                    
                     showNotification('Data refreshed successfully!', 'success');
                     console.log('✅ Manual refresh completed successfully');
                 } else {

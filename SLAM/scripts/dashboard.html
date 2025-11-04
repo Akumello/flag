@@ -29,7 +29,7 @@ function updateDashboardStats() {
         total: window.APP_DATA.slas.length,
         met: window.APP_DATA.slas.filter(sla => sla.status === 'met' || sla.status === 'exceeded').length,
         atRisk: window.APP_DATA.slas.filter(sla => sla.status === 'at-risk').length,
-        ontrack: window.APP_DATA.slas.filter(sla => sla.status === 'ontrack').length
+        ontrack: window.APP_DATA.slas.filter(sla => sla.status === 'on-track').length
     };
 
     // Update stat cards with actual data
@@ -194,7 +194,7 @@ function createInteractivePerformanceChart(metPercent, atRiskPercent, onTrackPer
     const stats = {
         met: window.APP_DATA.slas.filter(sla => sla.status === 'met').length,
         'at-risk': window.APP_DATA.slas.filter(sla => sla.status === 'at-risk').length,
-        ontrack: window.APP_DATA.slas.filter(sla => sla.status === 'ontrack').length
+        ontrack: window.APP_DATA.slas.filter(sla => sla.status === 'on-track').length
     };
     
     // Add hover interactions for chart segments
@@ -331,7 +331,9 @@ function updateDashboardRecentSLAs() {
     }
 
     const recentSLAs = window.APP_DATA.slas.slice(0, 3); // Show first 3 SLAs
-    recentContainer.innerHTML = recentSLAs.map(sla => `
+    recentContainer.innerHTML = recentSLAs.map(sla => {
+        const progress = calculateProgress(sla);
+        return `
         <div class="flex items-center justify-between py-3 border-b border-color">
             <div class="flex-1">
                 <h4 class="text-sm font-medium text-primary-color cursor-pointer hover:text-primary" style="color: var(--color-text-primary)" onclick="showSLADetail('${sla.slaId}')">${sla.slaName}</h4>
@@ -340,14 +342,15 @@ function updateDashboardRecentSLAs() {
             <div class="flex items-center space-x-3">
                 <div class="flex items-center space-x-2">
                     <div class="w-16 rounded-full h-2" style="background-color: var(--color-gray-light)">
-                        <div class="${getProgressBarClass(sla.status)} h-2 rounded-full progress-bar" style="width: ${sla.progress}%"></div>
+                        <div class="${getProgressBarClass(sla.status)} h-2 rounded-full progress-bar" style="width: ${progress}%"></div>
                     </div>
-                    <span class="text-sm text-secondary-color">${sla.progress}%</span>
+                    <span class="text-sm text-secondary-color">${progress}%</span>
                 </div>
                 <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(sla.status)}" style="min-width: 4rem;">${sla.status.replace('-', ' ')}</span>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Export functions to window object for global access

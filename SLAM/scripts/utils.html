@@ -110,25 +110,22 @@ function getCustomFields(sla) {
 }
 
 /**
- * Converts team_id to team_name using TEAM_ID_MAP.
+ * Converts team_id to team_name using TEAM_CONFIG.
+ * Falls back to returning the teamId if TEAM_CONFIG is not initialized or team not found.
  * @param {string} teamId - Team ID in format TEAM-XXX
  * @returns {string} Team name or the teamId if not found
  */
 function getTeamName(teamId) {
-    const TEAM_NAMES = {
-        'TEAM-001': 'Program Management Team',
-        'TEAM-002': 'APM Team',
-        'TEAM-003': 'PPM Team',
-        'TEAM-004': 'Technical Evaluation Team',
-        'TEAM-005': 'Training Support Team',
-        'TEAM-006': 'Business Intelligence Team',
-        'TEAM-007': 'Operational Support Team',
-        'TEAM-008': 'Quality Support Team',
-        'TEAM-009': 'Communication Team',
-        'TEAM-010': 'TW/Template Team',
-        'TEAM-011': 'Cost Team'
-    };
-    return TEAM_NAMES[teamId] || teamId || 'Unknown Team';
+    // Use TEAM_CONFIG if available and initialized
+    if (window.TEAM_CONFIG && window.TEAM_CONFIG._initialized) {
+        const teamName = window.TEAM_CONFIG.getTeamName(teamId);
+        if (teamName) {
+            return teamName;
+        }
+    }
+    
+    // Fallback: return the teamId itself (will show "TEAM-XXX" until TEAM_CONFIG loads)
+    return teamId || 'Unknown Team';
 }
 
 // ========================================
@@ -142,9 +139,15 @@ function getTeamName(teamId) {
  * @returns {number} Progress percentage (0-100)
  */
 function calculateProgress(sla) {
+    // Check both 'progress%' (from sheet) and 'progress' (legacy)
+    const progressValue = sla['progress%'] !== undefined ? sla['progress%'] : sla.progress;
+    
     // If progress is already set and valid, use it
-    if (sla.progress && sla.progress > 0) {
-        return sla.progress; // No cap - allows unlimited over-achievement
+    if (progressValue !== undefined && progressValue !== null && progressValue !== '') {
+        const numValue = typeof progressValue === 'string' ? parseFloat(progressValue) : progressValue;
+        if (!isNaN(numValue)) {
+            return Math.round(numValue); // Round to whole number
+        }
     }
     
     // Backend now returns consistent camelCase
@@ -182,28 +185,34 @@ function calculateProgress(sla) {
 
 /**
  * Returns the appropriate CSS class for a status badge based on SLA status.
- * @param {string} status - SLA status ('met', 'at-risk', 'ontrack', 'missed')
+ * @param {string} status - SLA status ('met', 'at-risk', 'on-track', 'missed', 'n-a')
  * @returns {string} CSS class name for the badge
  */
 function getStatusBadgeClass(status) {
     switch (status) {
         case 'met': return 'badge-success';
         case 'at-risk': return 'badge-warning';
-        case 'ontrack': return 'badge-ontrack';
+        case 'on-track': return 'badge-ontrack';
+        case 'n-a': return 'badge-info';
+        case 'pending': return 'badge-info';
+        case 'pending-request': return 'badge-info';
         default: return 'badge-info';
     }
 }
 
 /**
  * Returns the appropriate CSS class for a progress bar based on SLA status.
- * @param {string} status - SLA status ('met', 'at-risk', 'ontrack', 'missed')
+ * @param {string} status - SLA status ('met', 'at-risk', 'on-track', 'missed', 'n-a')
  * @returns {string} CSS class name for the progress bar
  */
 function getProgressBarClass(status) {
     switch (status) {
         case 'met': return 'progress-success';
         case 'at-risk': return 'progress-warning';
-        case 'ontrack': return 'progress-ontrack';
+        case 'on-track': return 'progress-ontrack';
+        case 'n-a': return 'progress-info';
+        case 'pending': return 'progress-info';
+        case 'pending-request': return 'progress-info';
         default: return 'progress-success';
     }
 }

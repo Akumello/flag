@@ -247,7 +247,7 @@ function applyDataValidation(sheets) {
     // Status dropdown (Column I - after removing Collaborating Teams)
     const statusRange = sheet.getRange('I2:I');
     const statusRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList(['met', 'at-risk', 'ontrack', 'exceeded', 'missed', 'pending', 'not-started'])
+      .requireValueInList(['n-a', 'met', 'on-track', 'at-risk', 'exceeded', 'missed', 'pending', 'pending-request', 'not-started'])
       .setAllowInvalid(false)
       .build();
     statusRange.setDataValidation(statusRule);
@@ -255,7 +255,7 @@ function applyDataValidation(sheets) {
     // Frequency dropdown (Column P - after removing Collaborating Teams and adding range columns M, N, O)
     const frequencyRange = sheet.getRange('P2:P');
     const frequencyRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList(['once', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'annually'])
+      .requireValueInList(['once', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'annually', 'as-requested'])
       .setAllowInvalid(false)
       .build();
     frequencyRange.setDataValidation(frequencyRule);
@@ -317,11 +317,11 @@ function setupFormulas(sheets) {
     //   * >100% when current exceeds max target
     // - Numeric types (quantity, percentage, availability, composite, multi-metric, recurring): current/target * 100
     // - Timeliness: 100 if current <= target (on time), else 0 (late) - assumes datetime values converted to serial numbers
-    // - Compliance: 100 if current = target (compliant), else 0 (non-compliant) - assumes boolean 1/0 values
+    // - Compliance: 100 if current = target (compliant), else 0 (non-compliant), N/A (2) returns blank - assumes 0/1/2 values
     // Column positions: K=Current, L=Target, M=RangeMin, N=RangeMax, O=UseRange
     // Note: Uses + instead of OR() because OR() in ARRAYFORMULA evaluates entire array, not row-by-row
     // ROUND to 2 decimal places for clean display
-    sheet.getRange('J1').setFormula('={"Progress %"; ARRAYFORMULA(IF((ISBLANK(C2:C)+ISBLANK(K2:K))>0,"",IF(O2:O=TRUE,IF(ISBLANK(M2:M)+ISBLANK(N2:N)>0,"",IF(K2:K<M2:M,ROUND(K2:K/M2:M*100,2),IF(K2:K<=N2:N,100,ROUND(100+(K2:K-N2:N)/(N2:N-M2:M)*100,2)))),IF(D2:D="timeliness",IF(K2:K<=L2:L,100,0),IF(D2:D="compliance",IF(K2:K=L2:L,100,0),IF(L2:L=0,"",ROUND(K2:K/L2:L*100,2)))))))}');
+    sheet.getRange('J1').setFormula('={"Progress %"; ARRAYFORMULA(IF((ISBLANK(C2:C)+ISBLANK(K2:K))>0,"",IF(O2:O=TRUE,IF(ISBLANK(M2:M)+ISBLANK(N2:N)>0,"",IF(K2:K<M2:M,ROUND(K2:K/M2:M*100,2),IF(K2:K<=N2:N,100,ROUND(100+(K2:K-N2:N)/(N2:N-M2:M)*100,2)))),IF(D2:D="timeliness",IF(K2:K<=L2:L,100,0),IF(D2:D="compliance",IF(K2:K=2,"",IF(K2:K=L2:L,100,0)),IF(L2:L=0,"",ROUND(K2:K/L2:L*100,2)))))))}');
     
     // REMOVED: Created At formula - causes circular reference #REF! error
     // Column T is set directly by createSLA() and updateSLA() functions
@@ -339,7 +339,7 @@ function setupFormulas(sheets) {
 /**
  * Applies conditional formatting rules for visual status indicators.
  * Configures color-coded backgrounds for status columns (green for met/exceeded,
- * yellow for at-risk/ontrack, red for missed). Adds progress bar color formatting
+ * yellow for at-risk/on-track, red for missed). Adds progress bar color formatting
  * (green >90%, yellow 70-90%, red <70%). Makes data visually scannable at a glance.
  * 
  * @param {Object<string, GoogleAppsScript.Spreadsheet.Sheet>} sheets - Object mapping sheet names to Sheet objects
@@ -382,10 +382,30 @@ function applyConditionalFormatting(sheets) {
       .setRanges([statusRange])
       .build());
     
-    // Blue for "ontrack"
+    // Blue for "on-track"
     rules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo('ontrack')
+      .whenTextEqualTo('on-track')
       .setBackground('#D1ECF1')
+      .setRanges([statusRange])
+      .build());
+    
+    // Gray for "n-a"
+    rules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('n-a')
+      .setBackground('#E9ECEF')
+      .setRanges([statusRange])
+      .build());
+    
+    // Light blue for "pending" and "pending-request"
+    rules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('pending')
+      .setBackground('#E7F3FF')
+      .setRanges([statusRange])
+      .build());
+    
+    rules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('pending-request')
+      .setBackground('#E7F3FF')
       .setRanges([statusRange])
       .build());
     
@@ -520,7 +540,8 @@ function addSampleData(sheets) {
       ['TEAM-008', 'Quality Support Team', 'Task 8', 'quality.manager@company.com', true],
       ['TEAM-009', 'Communication Team', 'Task 9', 'comm.manager@company.com', true],
       ['TEAM-010', 'TW/Template Team', 'Task 2', 'tw.manager@company.com', true],
-      ['TEAM-011', 'Cost Team', 'Task 2', 'cost.manager@company.com', true]
+      ['TEAM-011', 'Cost Team', 'Task 2', 'cost.manager@company.com', true],
+      ['TEAM-012', 'Regional Financial Task Team', 'Task 10', 'regional.finance@company.com', true]
     ];
     
     if (teamsData.length > 0) {
@@ -532,13 +553,15 @@ function addSampleData(sheets) {
   // Add sample statuses
   if (sheets['LOOKUP_STATUSES']) {
     const statusData = [
-      ['STATUS-001', 'met', '#28A745', 1],
-      ['STATUS-002', 'at-risk', '#FFC107', 2],
-      ['STATUS-003', 'ontrack', '#17A2B8', 3],
-      ['STATUS-004', 'exceeded', '#155724', 4],
-      ['STATUS-005', 'missed', '#DC3545', 5],
-      ['STATUS-006', 'pending', '#6C757D', 6],
-      ['STATUS-007', 'not-started', '#F8F9FA', 7]
+      ['STATUS-001', 'n-a', '#6C757D', 1],
+      ['STATUS-002', 'met', '#28A745', 2],
+      ['STATUS-003', 'on-track', '#17A2B8', 3],
+      ['STATUS-004', 'at-risk', '#FFC107', 4],
+      ['STATUS-005', 'exceeded', '#155724', 5],
+      ['STATUS-006', 'missed', '#DC3545', 6],
+      ['STATUS-007', 'pending', '#6C757D', 7],
+      ['STATUS-008', 'pending-request', '#6C757D', 8],
+      ['STATUS-009', 'not-started', '#F8F9FA', 9]
     ];
     
     if (statusData.length > 0) {
