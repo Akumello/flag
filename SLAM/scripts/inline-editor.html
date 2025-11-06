@@ -100,6 +100,7 @@ function renderEditableOverview(sla) {
     // Backend now returns consistent camelCase - no fallbacks needed
     const slaName = sla.slaName || '';
     const slaType = sla.slaType || 'quantity';
+    const parentId = sla.parentId || '';
     
     // Convert dates from ISO format to YYYY-MM-DD for date inputs
     const startDate = sla.startDate ? formatDateForInput(sla.startDate) : '';
@@ -355,6 +356,17 @@ function renderEditableOverview(sla) {
                 </div>
             </div>
             
+            <!-- Parent SLA -->
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">
+                    <i class="bi bi-diagram-3 mr-2"></i>Parent SLA
+                </label>
+                <select id="edit-parentId" class="w-full px-3 py-2 border border-color rounded-md">
+                    <option value="">None (Root SLA)</option>
+                </select>
+                <p class="text-xs text-muted mt-2">Optional: Link to a parent SLA for hierarchical tracking</p>
+            </div>
+            
             <!-- Notification Emails -->
             <div>
                 <label class="block text-sm font-medium text-primary-color mb-2">Notification Emails</label>
@@ -409,8 +421,43 @@ function renderEditableOverview(sla) {
     const tagsArray = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(t => t) : [];
     initializeEditTagChips(tagsArray);
     
+    // Populate parent SLA dropdown
+    populateEditParentDropdown(sla.slaId, parentId);
+    
     // Attach event listeners AFTER HTML is rendered
     attachEditModeEventListeners();
+}
+
+/**
+ * Populate the parent SLA dropdown in edit mode
+ * @param {string} currentSlaId - The ID of the SLA being edited (to exclude from parent options)
+ * @param {string} currentParentId - The current parent ID to pre-select
+ */
+function populateEditParentDropdown(currentSlaId, currentParentId) {
+    const parentSelect = document.getElementById('edit-parentId');
+    if (!parentSelect) return;
+    
+    // Get all SLAs from APP_DATA
+    const allSLAs = window.APP_DATA?.slas || [];
+    
+    // Clear existing options except the first "None" option
+    parentSelect.innerHTML = '<option value="">None (Root SLA)</option>';
+    
+    // Add all other SLAs as options (excluding the current SLA itself)
+    allSLAs.forEach(sla => {
+        if (sla.slaId && sla.slaId !== currentSlaId) {
+            const option = document.createElement('option');
+            option.value = sla.slaId;
+            option.textContent = `${sla.slaId} - ${sla.slaName || 'Unnamed SLA'}`;
+            
+            // Pre-select if this is the current parent
+            if (sla.slaId === currentParentId) {
+                option.selected = true;
+            }
+            
+            parentSelect.appendChild(option);
+        }
+    });
 }
 
 /**
@@ -853,6 +900,7 @@ async function saveInlineEdits() {
         const teamId = document.getElementById('edit-teamId')?.value;
         const frequency = document.getElementById('edit-frequency')?.value;
         const externalTrackerUrl = document.getElementById('edit-externalTrackerUrl')?.value;
+        const parentId = document.getElementById('edit-parentId')?.value || '';
         
         // Collect type-specific values
         let currentValue, targetValue, customFields;
@@ -940,6 +988,7 @@ async function saveInlineEdits() {
             targetValue: targetValue,
             teamId: teamId,
             frequency: frequency,
+            parentId: parentId,
             externalTrackerUrl: externalTrackerUrl,
             notificationEmails: notificationEmails,  // Backend expects array
             tags: tags,  // Backend expects array
@@ -1101,6 +1150,7 @@ window.enableInlineEditing = enableInlineEditing;
 window.saveInlineEdits = saveInlineEdits;
 window.cancelInlineEditing = cancelInlineEditing;
 window.discardInlineChanges = discardInlineChanges;
+window.populateEditParentDropdown = populateEditParentDropdown;
 window.handleEditEmailInput = handleEditEmailInput;
 window.addEditEmailChip = addEditEmailChip;
 window.removeEditEmailChip = removeEditEmailChip;
