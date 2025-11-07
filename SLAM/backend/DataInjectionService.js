@@ -57,6 +57,7 @@ function getInitialSLAData() {
 
 /**
  * Gets current user data for server-side injection
+ * Looks up user's task assignment from LOOKUP_TEAMS sheet based on email
  * 
  * @returns {Object|null} User data object or null on error
  */
@@ -74,6 +75,36 @@ function getInitialUserData() {
     // Extract name from email (before @)
     const name = userEmail.split('@')[0];
     
+    // Look up user's task from LOOKUP_TEAMS sheet
+    let taskTeam = 'Task 1'; // Default fallback
+    try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const teamsSheet = ss.getSheetByName('LOOKUP_TEAMS');
+      
+      if (teamsSheet) {
+        const data = teamsSheet.getDataRange().getValues();
+        // Headers: Team ID, Team Name, Department (Task), Manager Email, Is Active
+        // Find row where Manager Email (column D, index 3) matches user email
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          const managerEmail = row[3]; // Column D (0-indexed: 3)
+          const department = row[2];   // Column C (0-indexed: 2) - contains Task name
+          const isActive = row[4];     // Column E (0-indexed: 4)
+          
+          if (managerEmail === userEmail && isActive) {
+            taskTeam = department;
+            console.log('DataInjectionService: Found user task assignment:', taskTeam);
+            break;
+          }
+        }
+      } else {
+        console.warn('DataInjectionService: LOOKUP_TEAMS sheet not found, using default task');
+      }
+    } catch (error) {
+      console.error('DataInjectionService: Error looking up user task:', error);
+      // Fall back to default Task 1
+    }
+    
     // You can expand this to fetch from a users/permissions table if needed
     const userData = {
       email: userEmail,
@@ -81,7 +112,7 @@ function getInitialUserData() {
       employeeId: userEmail,
       department: 'General',
       role: 'User',
-      taskTeam: 'Task 1', // Default - can be fetched from permissions table
+      taskTeam: taskTeam, // Now dynamically fetched from LOOKUP_TEAMS sheet
       profilePicture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4F46E5&color=fff`,
       office: 'Not specified',
       securityLevel: 'Level 1',
@@ -91,7 +122,7 @@ function getInitialUserData() {
       tasksOverdue: 0
     };
     
-    console.log('DataInjectionService: User data prepared:', userData.email);
+    console.log('DataInjectionService: User data prepared:', userData.email, 'Task:', userData.taskTeam);
     return userData;
     
   } catch (error) {
