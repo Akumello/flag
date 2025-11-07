@@ -224,7 +224,7 @@ function renderSLADetail(slaId) {
                     <div>
                         <span class="text-sm text-muted">Status</span>
                         <p class="text-sm font-medium text-primary-color">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(status)}">${status}</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(status)}">${formatStatusDisplay(status)}</span>
                         </p>
                     </div>
                     <div>
@@ -1022,7 +1022,7 @@ function renderSLASidebar(sla) {
             statusContent.innerHTML = `
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-muted">Current Status</span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(status)}">${status.replace('-', ' ')}</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(status)}">${formatStatusDisplay(status)}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-muted">Time Remaining</span>

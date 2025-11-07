@@ -184,6 +184,18 @@ function calculateProgress(sla) {
 // ========================================
 
 /**
+ * Formats status value for display (converts internal values to user-friendly text).
+ * @param {string} status - Internal status value ('n-a', 'at-risk', 'on-track', etc.)
+ * @returns {string} Display-friendly status text
+ */
+function formatStatusDisplay(status) {
+    if (!status) return '';
+    if (status === 'n-a') return 'N/A';
+    // Replace hyphens with spaces and capitalize
+    return status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+/**
  * Returns the appropriate CSS class for a status badge based on SLA status.
  * @param {string} status - SLA status ('met', 'at-risk', 'on-track', 'missed', 'n-a')
  * @returns {string} CSS class name for the badge
@@ -274,6 +286,7 @@ window.calculateTimeRemaining = calculateTimeRemaining;
 window.getCustomFields = getCustomFields;
 window.getTeamName = getTeamName;
 window.calculateProgress = calculateProgress;
+window.formatStatusDisplay = formatStatusDisplay;
 window.getStatusBadgeClass = getStatusBadgeClass;
 window.getProgressBarClass = getProgressBarClass;
 window.getActivityIconColor = getActivityIconColor;

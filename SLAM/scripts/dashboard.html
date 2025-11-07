@@ -346,7 +346,7 @@ function updateDashboardRecentSLAs() {
                     </div>
                     <span class="text-sm text-secondary-color">${progress}%</span>
                 </div>
-                <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(sla.status)}" style="min-width: 4rem;">${sla.status.replace('-', ' ')}</span>
+                <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(sla.status)}" style="min-width: 4rem;">${formatStatusDisplay(sla.status)}</span>
             </div>
         </div>
         `;
