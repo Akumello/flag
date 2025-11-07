@@ -159,4 +159,34 @@
       color: #1d4ed8; 
     }
   }
+
+  /* Reference Guide Modal Styles */
+  .reference-tab {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border-bottom: 2px solid transparent;
+  }
+
+  .reference-tab:hover {
+    color: var(--color-primary);
+    background-color: rgba(var(--color-primary-rgb, 0, 79, 135), 0.05);
+  }
+
+  .reference-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+    background-color: rgba(var(--color-primary-rgb, 0, 79, 135), 0.08);
+  }
+
+  [data-theme="dark"] .reference-tab.active {
+    background-color: rgba(var(--color-primary-rgb, 58, 123, 200), 0.15);
+  }
+
+  .reference-content {
+    display: block;
+  }
+
+  .reference-content.hidden {
+    display: none;
+  }
 </style>

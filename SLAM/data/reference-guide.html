@@ -1,0 +1,202 @@
+<script>
+/**
+ * SLA Reference Guide Data
+ * Comprehensive definitions for SLA types, statuses, frequencies, and compliance options
+ */
+window.SLA_REFERENCE = {
+    slaTypes: [
+        {
+            name: "Quantity",
+            icon: "bi-123",
+            description: "Track numeric targets with specific quantities or counts",
+            example: "Process 500 customer requests per month",
+            useCase: "Use when measuring discrete, countable items or activities",
+            fields: ["Current Value (number)", "Target Value (number)", "Unit (optional)"]
+        },
+        {
+            name: "Percentage",
+            icon: "bi-percent",
+            description: "Track ratio-based targets as percentages (0-100%)",
+            example: "Achieve 95% customer satisfaction rating",
+            useCase: "Use when measuring ratios, rates, or proportional targets",
+            fields: ["Current Value (%)", "Target Value (%)"]
+        },
+        {
+            name: "Timeliness",
+            icon: "bi-clock-history",
+            description: "Track completion against a target date or deadline",
+            example: "Complete security audit by December 31, 2025",
+            useCase: "Use for project milestones, deadlines, and time-bound deliverables",
+            fields: ["Target Completion Date", "Status (Not Started/In Progress/Completed)"]
+        },
+        {
+            name: "Availability",
+            icon: "bi-shield-check",
+            description: "Track system or service uptime percentages",
+            example: "Maintain 99.9% system uptime during business hours",
+            useCase: "Use for infrastructure, system availability, and service reliability metrics",
+            fields: ["Current Uptime (%)", "Target Uptime (%)", "Time Range (optional)"]
+        },
+        {
+            name: "Compliance",
+            icon: "bi-check2-square",
+            description: "Track yes/no compliance with requirements or standards",
+            example: "Pass annual security compliance audit",
+            useCase: "Use for regulatory requirements, audits, and binary pass/fail criteria",
+            fields: ["Compliance Status (N/A/Compliant/Non-Compliant)", "Requirement Description"]
+        }
+    ],
+    
+    statuses: [
+        {
+            name: "N/A",
+            value: "n-a",
+            color: "#6C757D",
+            icon: "bi-dash-circle",
+            description: "Not applicable or not yet started tracking",
+            when: "Use when the SLA is not currently active or doesn't apply to the current period"
+        },
+        {
+            name: "Not Started",
+            value: "not-started",
+            color: "#6C757D",
+            icon: "bi-hourglass",
+            description: "SLA period has not begun yet",
+            when: "Use when the SLA is scheduled but work hasn't commenced"
+        },
+        {
+            name: "Pending Request",
+            value: "pending-request",
+            color: "#17A2B8",
+            icon: "bi-clock",
+            description: "Waiting for external input or approval",
+            when: "Use when progress is blocked waiting for stakeholder response or resources"
+        },
+        {
+            name: "On Track",
+            value: "on-track",
+            color: "#17A2B8",
+            icon: "bi-graph-up-arrow",
+            description: "Progressing well toward target with no issues",
+            when: "Use when current performance meets expectations and target is achievable"
+        },
+        {
+            name: "At Risk",
+            value: "at-risk",
+            color: "#FFC107",
+            icon: "bi-exclamation-triangle",
+            description: "May not meet target without intervention",
+            when: "Use when performance is below expectations or obstacles threaten success"
+        },
+        {
+            name: "Met",
+            value: "met",
+            color: "#28A745",
+            icon: "bi-check-circle",
+            description: "Successfully achieved the target",
+            when: "Use when the target has been reached exactly"
+        },
+        {
+            name: "Exceeded",
+            value: "exceeded",
+            color: "#155724",
+            icon: "bi-trophy",
+            description: "Surpassed the target significantly",
+            when: "Use when performance significantly exceeds the target goal"
+        },
+        {
+            name: "Missed",
+            value: "missed",
+            color: "#DC3545",
+            icon: "bi-x-circle",
+            description: "Failed to meet the target",
+            when: "Use when the deadline has passed or target was not achieved"
+        }
+    ],
+    
+    frequencies: [
+        {
+            name: "Once",
+            value: "once",
+            icon: "bi-1-circle",
+            description: "Single occurrence, one-time deliverable",
+            example: "Annual security audit"
+        },
+        {
+            name: "Daily",
+            value: "daily",
+            icon: "bi-calendar-day",
+            description: "Tracked every day",
+            example: "Daily backup completion"
+        },
+        {
+            name: "Weekly",
+            value: "weekly",
+            icon: "bi-calendar-week",
+            description: "Tracked every week",
+            example: "Weekly status reports"
+        },
+        {
+            name: "Biweekly",
+            value: "biweekly",
+            icon: "bi-calendar2-week",
+            description: "Tracked every two weeks",
+            example: "Bi-weekly sprint reviews"
+        },
+        {
+            name: "Monthly",
+            value: "monthly",
+            icon: "bi-calendar-month",
+            description: "Tracked every month",
+            example: "Monthly performance reviews"
+        },
+        {
+            name: "Quarterly",
+            value: "quarterly",
+            icon: "bi-calendar3",
+            description: "Tracked every quarter (3 months)",
+            example: "Quarterly business reviews"
+        },
+        {
+            name: "Annually",
+            value: "annually",
+            icon: "bi-calendar-event",
+            description: "Tracked once per year",
+            example: "Annual compliance certification"
+        },
+        {
+            name: "As Requested",
+            value: "as-requested",
+            icon: "bi-calendar-check",
+            description: "Tracked on an ad-hoc basis as needed",
+            example: "On-demand reporting requests"
+        }
+    ],
+    
+    complianceOptions: [
+        {
+            name: "N/A",
+            value: 2,
+            icon: "bi-dash-circle",
+            description: "Not applicable for current period",
+            when: "Use when the compliance requirement doesn't apply to the current evaluation period"
+        },
+        {
+            name: "Compliant",
+            value: 1,
+            icon: "bi-check-circle-fill",
+            color: "#28A745",
+            description: "Meets all compliance requirements",
+            when: "Use when all requirements are satisfied and audit criteria are met"
+        },
+        {
+            name: "Non-Compliant",
+            value: 0,
+            icon: "bi-x-circle-fill",
+            color: "#DC3545",
+            description: "Does not meet compliance requirements",
+            when: "Use when requirements are not met or audit findings are negative"
+        }
+    ]
+};
+</script>
