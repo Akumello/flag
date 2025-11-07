@@ -89,17 +89,6 @@
                         </button>
                     </div>
                     
-                    <!-- Help/Reference Guide Button -->
-                    <div class="flex items-center">
-                        <button onclick="openReferenceGuide()" class="p-2 rounded-lg transition-colors duration-200" 
-                                style="background-color: rgba(255, 255, 255, 0.1);" 
-                                onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.2)'" 
-                                onmouseout="this.style.backgroundColor='rgba(255, 255, 255, 0.1)'"
-                                title="SLA Quick Reference Guide">
-                            <i class="bi bi-question-circle text-lg" style="color: white;"></i>
-                        </button>
-                    </div>
-                    
                     <!-- Theme Toggle -->
                     <div class="flex items-center">
                         <button id="themeToggle" onclick="toggleTheme()" class="theme-toggle-btn p-2 rounded-lg transition-colors duration-200" style="background-color: rgba(255, 255, 255, 0.1);" onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.backgroundColor='rgba(255, 255, 255, 0.1)'">
@@ -305,6 +294,101 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reference Tables -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                <!-- SLA Types Reference -->
+                <div class="bg-surface rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-semibold text-primary-color mb-4 flex items-center gap-2">
+                        <i class="bi bi-info-circle"></i>
+                        SLA Types Reference
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-color">
+                                    <th class="text-left py-2 px-3 text-primary-color font-semibold">Type</th>
+                                    <th class="text-left py-2 px-3 text-primary-color font-semibold">Definition</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-secondary-color">
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">Quantity</td>
+                                    <td class="py-3 px-3">Track numeric targets (e.g., "Process 500 requests")</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">Percentage</td>
+                                    <td class="py-3 px-3">Track ratio/percentage targets (e.g., "95% uptime")</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">Timeliness</td>
+                                    <td class="py-3 px-3">Track completion by a target date (e.g., "Complete by Q4")</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">Availability</td>
+                                    <td class="py-3 px-3">Track system/service uptime within time windows</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 px-3 font-medium">Compliance</td>
+                                    <td class="py-3 px-3">Track yes/no/N/A compliance status (e.g., "Pass security audit")</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Status Values Reference -->
+                <div class="bg-surface rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-semibold text-primary-color mb-4 flex items-center gap-2">
+                        <i class="bi bi-flag"></i>
+                        Status Values Reference
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-color">
+                                    <th class="text-left py-2 px-3 text-primary-color font-semibold">Status</th>
+                                    <th class="text-left py-2 px-3 text-primary-color font-semibold">Meaning</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-secondary-color">
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">N/A</td>
+                                    <td class="py-3 px-3">Not applicable or not yet started</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">Not Started</td>
+                                    <td class="py-3 px-3">Work has not begun yet</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">Pending Request</td>
+                                    <td class="py-3 px-3">Waiting for external input or approval</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">On Track</td>
+                                    <td class="py-3 px-3">Progressing as expected, will meet target</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">At Risk</td>
+                                    <td class="py-3 px-3">May not meet target, attention needed</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">Met</td>
+                                    <td class="py-3 px-3">Target successfully achieved</td>
+                                </tr>
+                                <tr class="border-b border-color">
+                                    <td class="py-3 px-3 font-medium">Exceeded</td>
+                                    <td class="py-3 px-3">Surpassed target expectations</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 px-3 font-medium">Missed</td>
+                                    <td class="py-3 px-3">Failed to meet target</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -975,67 +1059,6 @@
         </div>
     </div>
 
-    <!-- Reference Guide Modal -->
-    <div id="referenceGuideModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target === this) closeReferenceGuide()">
-        <div class="bg-surface rounded-lg w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-color flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-primary-color flex items-center gap-2">
-                    <i class="bi bi-book"></i>
-                    SLA Quick Reference Guide
-                </h2>
-                <button onclick="closeReferenceGuide()" class="text-muted hover:text-primary-color">
-                    <i class="bi bi-x-lg text-xl"></i>
-                </button>
-            </div>
-            
-            <!-- Tab Navigation -->
-            <div class="px-6 pt-4 border-b border-color">
-                <div class="flex gap-2">
-                    <button onclick="switchReferenceTab('types')" id="ref-tab-types" 
-                            class="reference-tab active px-4 py-2 rounded-t-md font-medium transition-colors">
-                        <i class="bi bi-grid mr-2"></i>SLA Types
-                    </button>
-                    <button onclick="switchReferenceTab('statuses')" id="ref-tab-statuses" 
-                            class="reference-tab px-4 py-2 rounded-t-md font-medium transition-colors">
-                        <i class="bi bi-flag mr-2"></i>Statuses
-                    </button>
-                    <button onclick="switchReferenceTab('frequencies')" id="ref-tab-frequencies" 
-                            class="reference-tab px-4 py-2 rounded-t-md font-medium transition-colors">
-                        <i class="bi bi-calendar3 mr-2"></i>Frequencies
-                    </button>
-                    <button onclick="switchReferenceTab('compliance')" id="ref-tab-compliance" 
-                            class="reference-tab px-4 py-2 rounded-t-md font-medium transition-colors">
-                        <i class="bi bi-check2-square mr-2"></i>Compliance
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Modal Content -->
-            <div class="flex-1 overflow-y-auto p-6">
-                <!-- SLA Types Tab -->
-                <div id="ref-content-types" class="reference-content">
-                    <div class="space-y-4" id="types-container"></div>
-                </div>
-                
-                <!-- Statuses Tab -->
-                <div id="ref-content-statuses" class="reference-content hidden">
-                    <div class="space-y-3" id="statuses-container"></div>
-                </div>
-                
-                <!-- Frequencies Tab -->
-                <div id="ref-content-frequencies" class="reference-content hidden">
-                    <div class="space-y-3" id="frequencies-container"></div>
-                </div>
-                
-                <!-- Compliance Tab -->
-                <div id="ref-content-compliance" class="reference-content hidden">
-                    <div class="space-y-3" id="compliance-container"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Notification Toast -->
     <div id="notification" class="hidden fixed top-4 right-4 px-6 py-3 rounded-md z-50"></div>
 
@@ -1043,9 +1066,6 @@
     <script>
     <?!= generateDataInjectionScript(); ?>
     </script>
-
-    <!-- Reference Guide Data -->
-    <?!= HtmlService.createHtmlOutputFromFile('data/reference-guide').getContent(); ?>
 
     <!-- Utility Functions (must load first - no dependencies) -->
     <?!= HtmlService.createHtmlOutputFromFile('scripts/utils').getContent(); ?>
