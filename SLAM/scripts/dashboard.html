@@ -27,17 +27,27 @@ function updateDashboardStats() {
 
     const stats = {
         total: window.APP_DATA.slas.length,
-        met: window.APP_DATA.slas.filter(sla => sla.status === 'met' || sla.status === 'exceeded').length,
+        na: window.APP_DATA.slas.filter(sla => sla.status === 'n-a').length,
+        notStarted: window.APP_DATA.slas.filter(sla => sla.status === 'not-started').length,
+        pendingRequest: window.APP_DATA.slas.filter(sla => sla.status === 'pending-request').length,
+        ontrack: window.APP_DATA.slas.filter(sla => sla.status === 'on-track').length,
         atRisk: window.APP_DATA.slas.filter(sla => sla.status === 'at-risk').length,
-        ontrack: window.APP_DATA.slas.filter(sla => sla.status === 'on-track').length
+        met: window.APP_DATA.slas.filter(sla => sla.status === 'met').length,
+        exceeded: window.APP_DATA.slas.filter(sla => sla.status === 'exceeded').length,
+        missed: window.APP_DATA.slas.filter(sla => sla.status === 'missed').length
     };
 
     // Update stat cards with actual data
     const statCards = document.querySelectorAll('#dashboard .bg-surface p.text-3xl');
     if (statCards[0]) statCards[0].textContent = stats.total;
-    if (statCards[1]) statCards[1].textContent = stats.met;
-    if (statCards[2]) statCards[2].textContent = stats.atRisk;
-    if (statCards[3]) statCards[3].textContent = stats.ontrack;
+    if (statCards[1]) statCards[1].textContent = stats.na;
+    if (statCards[2]) statCards[2].textContent = stats.notStarted;
+    if (statCards[3]) statCards[3].textContent = stats.pendingRequest;
+    if (statCards[4]) statCards[4].textContent = stats.ontrack;
+    if (statCards[5]) statCards[5].textContent = stats.atRisk;
+    if (statCards[6]) statCards[6].textContent = stats.met;
+    if (statCards[7]) statCards[7].textContent = stats.exceeded;
+    if (statCards[8]) statCards[8].textContent = stats.missed;
     
     // Update performance percentages
     const successRate = stats.total > 0 ? Math.round((stats.met / stats.total) * 100) : 0;
