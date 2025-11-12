@@ -78,8 +78,8 @@
           "column": "D",
           "type": "string",
           "required": true,
-          "values": ["quantity", "percentage", "timeliness", "availability", "compliance"],
-          "description": "Core SLA types (composite, multi-metric, recurring removed)"
+          "values": ["quantity", "percentage", "timeliness", "availability", "compliance", "parent"],
+          "description": "Core SLA types - 'parent' is a container type for grouping child SLAs"
         },
         "Description": {
           "column": "E",
@@ -449,6 +449,54 @@
         }
       },
       "progressCalculation": "Binary: 100% if compliant (currentValue=1), 0% if not (currentValue=0)"
+    },
+    "parent": {
+      "description": "Parent container SLAs for grouping child SLAs",
+      "fields": {
+        "parentMode": {
+          "type": "string",
+          "required": true,
+          "values": ["container", "tracked"],
+          "default": "container",
+          "description": "Container: progress derived from children. Tracked: has own values plus children"
+        },
+        "isParentContainer": {
+          "type": "boolean",
+          "description": "True if container-only mode (legacy field for backward compatibility)"
+        },
+        "parentTrackingType": {
+          "type": "string",
+          "required": false,
+          "values": ["quantity", "percentage", "timeliness", "availability", "compliance"],
+          "description": "Only used when parentMode=tracked. Defines how parent tracks its own values"
+        },
+        "unit": {
+          "type": "string",
+          "required": false,
+          "description": "Used for tracked parent with quantity tracking type"
+        },
+        "targetDate": {
+          "type": "date",
+          "required": false,
+          "description": "Used for tracked parent with timeliness tracking type"
+        },
+        "startTime": {
+          "type": "time",
+          "required": false,
+          "description": "Used for tracked parent with availability tracking type"
+        },
+        "endTime": {
+          "type": "time",
+          "required": false,
+          "description": "Used for tracked parent with availability tracking type"
+        },
+        "requirement": {
+          "type": "string",
+          "required": false,
+          "description": "Used for tracked parent with compliance tracking type"
+        }
+      },
+      "progressCalculation": "Container mode: average of children progress. Tracked mode: own calculation based on parentTrackingType"
     }
   },
 

@@ -49,280 +49,146 @@ function updateDashboardStats() {
     if (statCards[7]) statCards[7].textContent = stats.exceeded;
     if (statCards[8]) statCards[8].textContent = stats.missed;
     
-    // Update performance percentages
-    const successRate = stats.total > 0 ? Math.round((stats.met / stats.total) * 100) : 0;
-    const atRiskRate = stats.total > 0 ? Math.round((stats.atRisk / stats.total) * 100) : 0;
-    const ontrackRate = stats.total > 0 ? Math.round((stats.ontrack / stats.total) * 100) : 0;
-    
-    // Update the performance chart with D3.js interactive visualization
+    // Create pie chart data
     const chartContainer = document.getElementById('performance-chart-container');
     if (chartContainer) {
-        chartContainer.innerHTML = `
-            <div class="w-full">
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-secondary-color">This Month</span>
-                        <span class="text-sm font-medium" style="color: var(--color-status-success)">SLA Performance Overview</span>
-                    </div>
-                    <div id="d3-performance-chart" class="w-full h-6 mb-4"></div>
-                    
-                    <div class="grid grid-cols-3 gap-4 mt-6" id="performance-percentages">
-                        <div class="text-center" data-status="met" style="cursor: pointer;">
-                            <div class="text-2xl font-bold" style="color: var(--color-status-success)">${successRate}%</div>
-                            <div class="text-xs text-muted">Met</div>
-                        </div>
-                        <div class="text-center" data-status="at-risk" style="cursor: pointer;">
-                            <div class="text-2xl font-bold" style="color: var(--color-status-warning)">${atRiskRate}%</div>
-                            <div class="text-xs text-muted">At Risk</div>
-                        </div>
-                        <div class="text-center" data-status="ontrack" style="cursor: pointer;">
-                            <div class="text-2xl font-bold" style="color: var(--color-status-ontrack)">${ontrackRate}%</div>
-                            <div class="text-xs text-muted">On Track</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Create D3.js interactive bar chart
-        createInteractivePerformanceChart(successRate, atRiskRate, ontrackRate);
+        createSLABreakoutPieChart(stats);
     }
 }
 
 /**
- * Creates an interactive D3.js bar chart showing SLA performance distribution.
- * Displays percentages for met, at-risk, and on-track SLAs with click interactions.
- * @param {number} metPercent - Percentage of SLAs met
- * @param {number} atRiskPercent - Percentage of SLAs at risk
- * @param {number} onTrackPercent - Percentage of SLAs on track
+ * Creates an interactive D3.js pie chart showing SLA status distribution.
+ * @param {Object} stats - Object containing counts for each status
  * @returns {void}
  */
-function createInteractivePerformanceChart(metPercent, atRiskPercent, onTrackPercent) {
-    // Clear any existing chart and observers
-    const container = d3.select("#d3-performance-chart");
-    const containerNode = container.node();
-    
-    // Clean up existing resize observer
-    if (containerNode._resizeObserver) {
-        containerNode._resizeObserver.disconnect();
-        delete containerNode._resizeObserver;
-    }
-
-    // Clean up existing tooltips
-    d3.selectAll(".chart-tooltip").remove();
-    
+function createSLABreakoutPieChart(stats) {
+    const container = d3.select("#performance-chart-container");
     container.selectAll("*").remove();
     
-    const data = [
-        { status: 'met', percent: metPercent, color: getComputedStyle(document.documentElement).getPropertyValue('--color-status-success').trim(), isFirst: true, isLast: false },
-        { status: 'at-risk', percent: atRiskPercent, color: getComputedStyle(document.documentElement).getPropertyValue('--color-status-warning').trim(), isFirst: false, isLast: false },
-        { status: 'ontrack', percent: onTrackPercent, color: getComputedStyle(document.documentElement).getPropertyValue('--color-status-ontrack').trim(), isFirst: false, isLast: true }
-    ];
-    const width = containerNode.getBoundingClientRect().width;
-    const height = 24;
-    const borderRadius = 12;
+    // Prepare data for pie chart (exclude total, only include non-zero statuses)
+    const pieData = [
+        { label: 'N/A', value: stats.na, color: getComputedStyle(document.documentElement).getPropertyValue('--color-status-info').trim() },
+        { label: 'Not Started', value: stats.notStarted, color: getComputedStyle(document.documentElement).getPropertyValue('--color-gray').trim() },
+        { label: 'Pending Request', value: stats.pendingRequest, color: '#6366f1' },
+        { label: 'On Track', value: stats.ontrack, color: getComputedStyle(document.documentElement).getPropertyValue('--color-status-ontrack').trim() },
+        { label: 'At Risk', value: stats.atRisk, color: getComputedStyle(document.documentElement).getPropertyValue('--color-status-warning').trim() },
+        { label: 'Met', value: stats.met, color: getComputedStyle(document.documentElement).getPropertyValue('--color-status-success').trim() },
+        { label: 'Exceeded', value: stats.exceeded, color: '#10b981' },
+        { label: 'Missed', value: stats.missed, color: getComputedStyle(document.documentElement).getPropertyValue('--color-status-danger').trim() }
+    ].filter(d => d.value > 0); // Only show statuses with at least 1 SLA
+    
+    if (pieData.length === 0) {
+        container.html('<div class="text-muted">No SLA data available</div>');
+        return;
+    }
+    
+    const width = 256;
+    const height = 256;
+    const radius = Math.min(width, height) / 2;
     
     const svg = container.append("svg")
         .attr("width", width)
-        .attr("height", height);
+        .attr("height", height)
+        .append("g")
+        .attr("transform", `translate(${width / 2}, ${height / 2})`);
     
-    // Create segments with proper rounded corners
-    let currentX = 0;
-    const segments = svg.selectAll("path")
-        .data(data.filter(d => d.percent > 0)) // Only create segments for non-zero percentages
+    // Create pie layout
+    const pie = d3.pie()
+        .value(d => d.value)
+        .sort(null);
+    
+    // Create arc generator
+    const arc = d3.arc()
+        .innerRadius(0)
+        .outerRadius(radius - 10);
+    
+    // Create pie slices
+    const slices = svg.selectAll("path")
+        .data(pie(pieData))
         .enter()
         .append("path")
-        .attr("d", d => {
-            const segmentWidth = width * d.percent / 100;
-            const x = currentX;
-            currentX += segmentWidth;
-            
-            // Create path with selective rounded corners
-            let path = `M ${x} ${borderRadius}`;
-            
-            if (d.isFirst) {
-                // First segment: rounded left corners
-                path += ` Q ${x} 0 ${x + borderRadius} 0`;
-                path += ` L ${x + segmentWidth} 0`;
-                path += ` L ${x + segmentWidth} ${height}`;
-                path += ` L ${x + borderRadius} ${height}`;
-                path += ` Q ${x} ${height} ${x} ${height - borderRadius}`;
-            } else if (d.isLast) {
-                // Last segment: rounded right corners
-                path += ` L ${x} 0`;
-                path += ` L ${x + segmentWidth - borderRadius} 0`;
-                path += ` Q ${x + segmentWidth} 0 ${x + segmentWidth} ${borderRadius}`;
-                path += ` L ${x + segmentWidth} ${height - borderRadius}`;
-                path += ` Q ${x + segmentWidth} ${height} ${x + segmentWidth - borderRadius} ${height}`;
-                path += ` L ${x} ${height}`;
-            } else {
-                // Middle segment: no rounded corners
-                path += ` L ${x} 0`;
-                path += ` L ${x + segmentWidth} 0`;
-                path += ` L ${x + segmentWidth} ${height}`;
-                path += ` L ${x} ${height}`;
-            }
-            path += ` Z`;
-            
-            return path;
-        })
-        .attr("fill", d => d.color || '#ccc')
-        .attr("stroke", d => d.color || '#ccc')
+        .attr("d", arc)
+        .attr("fill", d => d.data.color)
+        .attr("stroke", "var(--color-bg-primary)")
         .attr("stroke-width", 2)
         .style("cursor", "pointer")
-        .style("fill-opacity", 1)
-        .style("transition", "fill-opacity 0.2s ease");
-
-    // Create tooltip with notch
-    const tooltip = d3.select("body").append("div")
-        .attr("class", "chart-tooltip")
-        .style("position", "absolute")
-        .style("background", "rgba(0, 0, 0, 0.8)")
-        .style("color", "white")
-        .style("padding", "8px 12px")
-        .style("border-radius", "4px")
-        .style("font-size", "12px")
-        .style("pointer-events", "none")
-        .style("opacity", 0)
-        .style("z-index", "9999")
-        .style("transform", "translateX(-50%)")
-        .style("white-space", "nowrap");
-
-    // Add notch to tooltip
-    tooltip.append("div")
-        .style("position", "absolute")
-        .style("bottom", "-5px")
-        .style("left", "50%")
-        .style("transform", "translateX(-50%)")
-        .style("width", "0")
-        .style("height", "0")
-        .style("border-left", "5px solid transparent")
-        .style("border-right", "5px solid transparent")
-        .style("border-top", "5px solid rgba(0, 0, 0, 0.8)");
-
-    // Get the actual counts for tooltip
-    const stats = {
-        met: window.APP_DATA.slas.filter(sla => sla.status === 'met').length,
-        'at-risk': window.APP_DATA.slas.filter(sla => sla.status === 'at-risk').length,
-        ontrack: window.APP_DATA.slas.filter(sla => sla.status === 'on-track').length
-    };
-    
-    // Add hover interactions for chart segments
-    segments
+        .style("transition", "fill 0.2s ease")
         .on("mouseover", function(event, d) {
-            const rect = this.getBBox();
-            const containerRect = containerNode.getBoundingClientRect();
+            // Change color on hover (brighten by reducing opacity slightly)
+            d3.select(this)
+                .transition()
+                .duration(150)
+                .style("opacity", 0.8);
             
-            // Dim all segments by reducing fill opacity, keep stroke solid
-            segments.each(function(seg) {
-                d3.select(this)
-                    .style("fill-opacity", seg.status === d.status ? 1 : 0.3)
-                    .style("transition", "fill-opacity 0.2s ease");
-            });
-            
-            // Dim all other percentage divs
-            const allPercentageDivs = document.querySelectorAll('#performance-percentages [data-status]');
-            allPercentageDivs.forEach(div => {
-                const divStatus = div.getAttribute('data-status');
-                div.style.opacity = divStatus === d.status ? '1' : '0.3';
-                div.style.transition = 'opacity 0.2s ease';
-            });
-
-            // Show tooltip centered on segment
-            const statusLabel = d.status === 'at-risk' ? 'At Risk' : 
-                               d.status === 'met' ? 'Met' : 'On Track';
-            
-            // Clear previous content and add new content with notch
-            tooltip.selectAll("*").remove();
-            tooltip.text(`${statusLabel}: ${stats[d.status]} SLAs (${d.percent}%)`);
-            
-            // Add notch
-            tooltip.append("div")
+            // Show tooltip
+            const tooltip = container.append("div")
+                .attr("class", "pie-tooltip")
                 .style("position", "absolute")
-                .style("bottom", "-5px")
-                .style("left", "50%")
-                .style("transform", "translateX(-50%)")
-                .style("width", "0")
-                .style("height", "0")
-                .style("border-left", "5px solid transparent")
-                .style("border-right", "5px solid transparent")
-                .style("border-top", "5px solid rgba(0, 0, 0, 0.8)");
+                .style("background", "var(--color-bg-secondary)")
+                .style("padding", "8px 12px")
+                .style("border-radius", "6px")
+                .style("border", "1px solid var(--color-border)")
+                .style("box-shadow", "0 4px 6px rgba(0,0,0,0.1)")
+                .style("pointer-events", "none")
+                .style("z-index", "1000")
+                .html(`
+                    <div style="color: var(--color-text-primary); font-size: 12px;">
+                        <strong>${d.data.label}</strong><br>
+                        Count: ${d.data.value}<br>
+                        ${((d.data.value / stats.total) * 100).toFixed(1)}%
+                    </div>
+                `);
             
-            // Position tooltip centered above the segment
+            // Position tooltip to the left of the cursor
             tooltip
-                .style("left", (containerRect.left + rect.x + rect.width/2) + "px")
-                .style("top", (containerRect.top - 40) + "px")
-                .style("opacity", 1);
+                .style("left", `${event.offsetX - 120}px`)
+                .style("top", `${event.offsetY - 20}px`);
         })
-        .on("mouseout", function(event, d) {
-            // Reset all segments
-            segments.each(function() {
-                d3.select(this)
-                    .style("fill-opacity", 1)
-                    .style("transition", "fill-opacity 0.2s ease");
-            });
+        .on("mousemove", function(event, d) {
+            // Update tooltip position as mouse moves
+            const tooltip = container.select(".pie-tooltip");
+            if (!tooltip.empty()) {
+                // Position tooltip to the left of the cursor
+                tooltip
+                    .style("left", `${event.offsetX - 120}px`)
+                    .style("top", `${event.offsetY - 20}px`);
+            }
+        })
+        .on("mouseout", function() {
+            // Restore original opacity
+            d3.select(this)
+                .transition()
+                .duration(150)
+                .style("opacity", 1);
             
-            // Reset all percentage divs
-            const allPercentageDivs = document.querySelectorAll('#performance-percentages [data-status]');
-            allPercentageDivs.forEach(div => {
-                div.style.opacity = '1';
-                div.style.transition = 'opacity 0.2s ease';
-            });
-
-            // Hide tooltip
-            tooltip.style("opacity", 0);
+            container.selectAll(".pie-tooltip").remove();
         });
     
-    // Add hover interactions for percentage text
-    const percentageDivs = document.querySelectorAll('#performance-percentages [data-status]');
-    percentageDivs.forEach((div, index) => {
-        const status = div.getAttribute('data-status');
+    // Add legend
+    const legend = container.append("div")
+        .style("margin-top", "20px")
+        .style("display", "grid")
+        .style("grid-template-columns", "1fr 1fr")
+        .style("gap", "8px")
+        .style("font-size", "11px");
+    
+    pieData.forEach(d => {
+        const legendItem = legend.append("div")
+            .style("display", "flex")
+            .style("align-items", "center")
+            .style("gap", "6px");
         
-        div.addEventListener('mouseover', () => {
-            // Dim all chart segments by fill opacity, highlight matching one
-            segments.each(function(seg) {
-                d3.select(this)
-                    .style("fill-opacity", seg.status === status ? 1 : 0.3)
-                    .style("transition", "fill-opacity 0.2s ease");
-            });
-            
-            // Dim all percentage divs, highlight current one
-            const allPercentageDivs = document.querySelectorAll('#performance-percentages [data-status]');
-            allPercentageDivs.forEach(otherDiv => {
-                const otherStatus = otherDiv.getAttribute('data-status');
-                otherDiv.style.opacity = otherStatus === status ? '1' : '0.3';
-                otherDiv.style.transition = 'opacity 0.2s ease';
-            });
-        });
+        legendItem.append("div")
+            .style("width", "12px")
+            .style("height", "12px")
+            .style("border-radius", "2px")
+            .style("background-color", d.color)
+            .style("flex-shrink", "0");
         
-        div.addEventListener('mouseout', () => {
-            // Reset all chart segments
-            segments.each(function() {
-                d3.select(this)
-                    .style("fill-opacity", 1)
-                    .style("transition", "fill-opacity 0.2s ease");
-            });
-            
-            // Reset all percentage divs
-            const allPercentageDivs = document.querySelectorAll('#performance-percentages [data-status]');
-            allPercentageDivs.forEach(otherDiv => {
-                otherDiv.style.opacity = '1';
-                otherDiv.style.transition = 'opacity 0.2s ease';
-            });
-        });
+        legendItem.append("span")
+            .style("color", "var(--color-text-secondary)")
+            .text(`${d.label} (${d.value})`);
     });
-    
-    // Add window resize listener for responsiveness
-    const resizeObserver = new ResizeObserver(() => {
-        // Recreate chart with new dimensions
-        createInteractivePerformanceChart(metPercent, atRiskPercent, onTrackPercent);
-    });
-    
-    // Observe the container for size changes
-    resizeObserver.observe(containerNode);
-    
-    // Store the observer on the container for cleanup
-    containerNode._resizeObserver = resizeObserver;
 }
 
 /**
@@ -365,7 +231,7 @@ function updateDashboardRecentSLAs() {
 
 // Export functions to window object for global access
 window.updateDashboardStats = updateDashboardStats;
-window.createInteractivePerformanceChart = createInteractivePerformanceChart;
+window.createSLABreakoutPieChart = createSLABreakoutPieChart;
 window.updateDashboardRecentSLAs = updateDashboardRecentSLAs;
 
 </script>

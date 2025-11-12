@@ -126,7 +126,55 @@ function renderEditableOverview(sla) {
     // Type-specific value fields HTML
     let valueFieldsHTML = '';
     
-    if (slaType === 'timeliness') {
+    if (slaType === 'parent') {
+        // For parent type, show options for container vs tracked parent
+        const parentMode = customFields.parentMode || 'container';
+        
+        valueFieldsHTML = `
+            <div class="space-y-4">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="bi bi-info-circle text-blue-600 dark:text-blue-400 text-xl"></i>
+                        <div>
+                            <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Parent SLA Type</h4>
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                Choose how this parent SLA should behave:
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parent Mode Selection -->
+                <div class="space-y-3">
+                    <label class="flex items-start gap-3 p-3 border border-color rounded-lg cursor-pointer hover:bg-surface-hover transition-colors">
+                        <input type="radio" name="parentMode" value="container" ${parentMode === 'container' ? 'checked' : ''}
+                               onchange="handleParentModeChange()" class="mt-1">
+                        <div class="flex-1">
+                            <div class="font-medium text-primary-color">Container Only</div>
+                            <div class="text-sm text-muted mt-1">
+                                Progress and status are automatically calculated from child SLAs. No direct tracking.
+                            </div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-start gap-3 p-3 border border-color rounded-lg cursor-pointer hover:bg-surface-hover transition-colors">
+                        <input type="radio" name="parentMode" value="tracked" ${parentMode === 'tracked' ? 'checked' : ''}
+                               onchange="handleParentModeChange()" class="mt-1">
+                        <div class="flex-1">
+                            <div class="font-medium text-primary-color">Parent with Tracking</div>
+                            <div class="text-sm text-muted mt-1">
+                                Has its own values and calculations while also grouping child SLAs.
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Tracked Parent Fields Container -->
+                <div id="edit-parent-tracked-fields" style="display: ${parentMode === 'tracked' ? 'block' : 'none'}">
+                </div>
+            </div>
+        `;
+    } else if (slaType === 'timeliness') {
         // For timeliness, show date picker for target
         const targetDate = customFields.targetDate || targetValue;
         const targetDateFormatted = formatDateForInput(targetDate);
@@ -152,45 +200,125 @@ function renderEditableOverview(sla) {
             </div>
         `;
     } else if (slaType === 'quantity') {
-        // For quantity, show numeric inputs with optional unit
+        // For quantity, show numeric inputs with optional unit and range toggle
         const unit = customFields.unit || '';
+        const useRange = sla.useRange || false;
+        const rangeMin = sla.targetRangeMin || 0;
+        const rangeMax = sla.targetRangeMax || targetValue;
         
         valueFieldsHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
-                    <input type="number" id="edit-currentValue" value="${currentValue}" 
-                           step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+            <div class="space-y-4">
+                <!-- Range Toggle -->
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="edit-quantityRange" ${useRange ? 'checked' : ''}
+                           onchange="toggleEditQuantityRange()" class="rounded">
+                    <label for="edit-quantityRange" class="text-sm font-medium text-primary-color cursor-pointer">
+                        Use Range Target (Min-Max)
+                    </label>
                 </div>
                 
-                <div>
-                    <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
-                    <input type="number" id="edit-targetValue" value="${targetValue}" 
-                           step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                <!-- Single Value Fields -->
+                <div id="edit-quantity-single" class="grid grid-cols-1 md:grid-cols-3 gap-4" style="display: ${useRange ? 'none' : 'grid'}">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                        <input type="number" id="edit-currentValue" value="${currentValue}" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                        <input type="number" id="edit-targetValue" value="${targetValue}" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Unit (optional)</label>
+                        <input type="text" id="edit-unit" value="${unit}" 
+                               class="w-full px-3 py-2 border border-color rounded-md"
+                               placeholder="e.g., tickets, requests">
+                    </div>
                 </div>
                 
-                <div>
-                    <label class="block text-sm font-medium text-primary-color mb-2">Unit (optional)</label>
-                    <input type="text" id="edit-unit" value="${unit}" 
-                           class="w-full px-3 py-2 border border-color rounded-md"
-                           placeholder="e.g., tickets, requests">
+                <!-- Range Value Fields -->
+                <div id="edit-quantity-range" class="grid grid-cols-1 md:grid-cols-4 gap-4" style="display: ${useRange ? 'grid' : 'none'}">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                        <input type="number" id="edit-currentValueRange" value="${currentValue}" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Min Target</label>
+                        <input type="number" id="edit-targetMin" value="${rangeMin}" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Max Target</label>
+                        <input type="number" id="edit-targetMax" value="${rangeMax}" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Unit (optional)</label>
+                        <input type="text" id="edit-unitRange" value="${unit}" 
+                               class="w-full px-3 py-2 border border-color rounded-md"
+                               placeholder="e.g., tickets, requests">
+                    </div>
                 </div>
             </div>
         `;
     } else if (slaType === 'percentage') {
-        // For percentage, show numeric inputs with % suffix
+        // For percentage, show numeric inputs with % suffix and range toggle
+        const useRange = sla.useRange || false;
+        const rangeMin = sla.targetRangeMin || 0;
+        const rangeMax = sla.targetRangeMax || targetValue;
+        
         valueFieldsHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-primary-color mb-2">Current Value (%)</label>
-                    <input type="number" id="edit-currentValue" value="${currentValue}" 
-                           min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+            <div class="space-y-4">
+                <!-- Range Toggle -->
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="edit-percentageRange" ${useRange ? 'checked' : ''}
+                           onchange="toggleEditPercentageRange()" class="rounded">
+                    <label for="edit-percentageRange" class="text-sm font-medium text-primary-color cursor-pointer">
+                        Use Range Target (Min-Max %)
+                    </label>
                 </div>
                 
-                <div>
-                    <label class="block text-sm font-medium text-primary-color mb-2">Target Value (%)</label>
-                    <input type="number" id="edit-targetValue" value="${targetValue}" 
-                           min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                <!-- Single Value Fields -->
+                <div id="edit-percentage-single" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display: ${useRange ? 'none' : 'grid'}">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Value (%)</label>
+                        <input type="number" id="edit-currentValue" value="${currentValue}" 
+                               min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Target Value (%)</label>
+                        <input type="number" id="edit-targetValue" value="${targetValue}" 
+                               min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                </div>
+                
+                <!-- Range Value Fields -->
+                <div id="edit-percentage-range" class="grid grid-cols-1 md:grid-cols-3 gap-4" style="display: ${useRange ? 'grid' : 'none'}">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Value (%)</label>
+                        <input type="number" id="edit-currentValueRange" value="${currentValue}" 
+                               min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Min Target (%)</label>
+                        <input type="number" id="edit-percentMin" value="${rangeMin}" 
+                               min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Max Target (%)</label>
+                        <input type="number" id="edit-percentMax" value="${rangeMax}" 
+                               min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
                 </div>
             </div>
         `;
@@ -307,6 +435,47 @@ function renderEditableOverview(sla) {
                 </div>
             </div>
             
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">SLA Type *</label>
+                    <select id="edit-slaType" class="w-full px-3 py-2 border border-color rounded-md" onchange="handleEditSLATypeChange()">
+                        <option value="parent" ${slaType === 'parent' ? 'selected' : ''} style="display: ${slaType === 'parent' ? 'block' : 'none'}">Parent</option>
+                        <option value="quantity" ${slaType === 'quantity' ? 'selected' : ''}>Quantity</option>
+                        <!-- <option value="percentage" ${slaType === 'percentage' ? 'selected' : ''}>Percentage</option> -->
+                        <!-- <option value="timeliness" ${slaType === 'timeliness' ? 'selected' : ''}>Timeliness</option> -->
+                        <!-- <option value="availability" ${slaType === 'availability' ? 'selected' : ''}>Availability</option> -->
+                        <option value="compliance" ${slaType === 'compliance' ? 'selected' : ''}>Compliance</option>
+                    </select>
+                </div>
+                
+                <!-- Parent SLA / Is Parent Checkbox -->
+                <div id="edit-parent-section">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-primary-color">
+                            <i class="bi bi-diagram-3 mr-2"></i>Parent SLA
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="edit-isParent" ${slaType === 'parent' ? 'checked' : ''}
+                                   onchange="handleEditIsParentChange()" class="rounded">
+                            <span class="text-sm font-medium text-primary-color">
+                                <i class="bi bi-diagram-3"></i> Is Parent SLA
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <div id="edit-parent-dropdown" style="display: ${slaType === 'parent' ? 'none' : 'block'}">
+                        <select id="edit-parentId" class="w-full px-3 py-2 border border-color rounded-md">
+                            <option value="">None (Root SLA)</option>
+                        </select>
+                        <p class="text-xs text-muted mt-1">Optional: Link to a parent SLA for hierarchical tracking</p>
+                    </div>
+                    
+                    <div id="edit-parent-info" style="display: ${slaType === 'parent' ? 'block' : 'none'}">
+                        <p class="text-xs text-muted mb-1">This SLA is a parent and cannot have a parent itself.</p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Description -->
             <div>
                 <label class="block text-sm font-medium text-primary-color mb-2">Description</label>
@@ -330,17 +499,32 @@ function renderEditableOverview(sla) {
             </div>
             
             <!-- Type-Specific Value Fields -->
-            ${valueFieldsHTML}
+            <div id="edit-type-specific-fields">
+                ${valueFieldsHTML}
+            </div>
             
-            <!-- Team and Frequency -->
+            <!-- Task and Team -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-primary-color mb-2">Team ID</label>
-                    <input type="text" id="edit-teamId" value="${teamId}" 
-                           class="w-full px-3 py-2 border border-color rounded-md"
-                           placeholder="TEAM-001">
+                    <label class="block text-sm font-medium text-primary-color mb-2">Task</label>
+                    <select id="edit-taskName" class="w-full px-3 py-2 border border-color rounded-md"
+                            onchange="handleEditTaskChange()">
+                        <option value="">Select Task</option>
+                    </select>
+                    <input type="hidden" id="edit-taskId" value="">
                 </div>
                 
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Team</label>
+                    <select id="edit-teamId" class="w-full px-3 py-2 border border-color rounded-md"
+                            onchange="handleEditTeamChange()">
+                        <option value="">Select Team</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Frequency -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-primary-color mb-2">Frequency</label>
                     <select id="edit-frequency" class="w-full px-3 py-2 border border-color rounded-md">
@@ -354,17 +538,6 @@ function renderEditableOverview(sla) {
                         <option value="as-requested" ${frequency === 'as-requested' ? 'selected' : ''}>As Requested</option>
                     </select>
                 </div>
-            </div>
-            
-            <!-- Parent SLA -->
-            <div>
-                <label class="block text-sm font-medium text-primary-color mb-2">
-                    <i class="bi bi-diagram-3 mr-2"></i>Parent SLA
-                </label>
-                <select id="edit-parentId" class="w-full px-3 py-2 border border-color rounded-md">
-                    <option value="">None (Root SLA)</option>
-                </select>
-                <p class="text-xs text-muted mt-2">Optional: Link to a parent SLA for hierarchical tracking</p>
             </div>
             
             <!-- Notification Emails -->
@@ -382,26 +555,28 @@ function renderEditableOverview(sla) {
                 <input type="hidden" id="edit-emails-hidden" value="">
             </div>
             
+            <!-- Tags -->
+            <div>
+                <label class="block text-sm font-medium text-primary-color mb-2">Tags</label>
+                <div id="edit-tags-chips-display" class="flex flex-wrap gap-2 mb-2"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="edit-tags-input" placeholder="Add a tag..."
+                           class="flex-1 px-3 py-2 border border-color rounded-md">
+                    <button type="button" id="edit-tag-add-btn" 
+                            class="px-4 py-2 btn-primary rounded-md hover:opacity-90">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+                <input type="hidden" id="edit-tags-hidden" value="">
+                <p class="text-xs text-muted mt-2">Click + to add a tag or press Enter</p>
+            </div>
+            
             <!-- External Tracker URL -->
             <div>
                 <label class="block text-sm font-medium text-primary-color mb-2">External Tracker URL</label>
                 <input type="url" id="edit-externalTrackerUrl" value="${externalTrackerUrl}" 
                        class="w-full px-3 py-2 border border-color rounded-md"
                        placeholder="https://...">
-            </div>
-            
-            <!-- Tags -->
-            <div>
-                <label class="block text-sm font-medium text-primary-color mb-2">Tags</label>
-                <div id="edit-tags-chips-container" class="border-2 border-color rounded-md p-2 min-h-[42px] flex flex-wrap items-center gap-2 cursor-text">
-                    <div id="edit-tags-chips-display" class="inline-flex flex-wrap gap-1"></div>
-                    <input type="text" id="edit-tags-input" 
-                           class="outline-none border-0 flex-1 min-w-[100px] bg-transparent"
-                           placeholder="Type and press comma to add tag..."
-                           style="padding: 0; margin: 0;">
-                </div>
-                <input type="hidden" id="edit-tags-hidden" value="">
-                <p class="text-xs text-muted mt-2">Press comma or enter to add a tag</p>
             </div>
             
             <!-- Update Notes -->
@@ -423,6 +598,30 @@ function renderEditableOverview(sla) {
     
     // Populate parent SLA dropdown
     populateEditParentDropdown(sla.slaId, parentId);
+    
+    // Get taskId from customFields or SLA data
+    const taskId = sla.taskId || customFields.taskId || '';
+    const taskName = taskId ? `Task ${taskId.replace('TASK-', '').replace(/^0+/, '')}` : '';
+    
+    // Populate task dropdown first
+    populateEditTaskDropdown(taskName);
+    
+    // Populate team dropdown (will be filtered if task is selected)
+    populateEditTeamDropdown(teamId, taskName);
+    
+    // Initialize parent mode if this is a parent SLA
+    if (slaType === 'parent') {
+        const parentMode = customFields.parentMode || 'container';
+        const trackedRadio = document.querySelector('input[name="parentMode"][value="tracked"]');
+        
+        if (parentMode === 'tracked' && trackedRadio) {
+            trackedRadio.checked = true;
+            const trackingType = customFields.parentTrackingType || 'quantity';
+            setTimeout(() => {
+                populateParentTrackedFields(trackingType);
+            }, 0);
+        }
+    }
     
     // Attach event listeners AFTER HTML is rendered
     attachEditModeEventListeners();
@@ -458,6 +657,161 @@ function populateEditParentDropdown(currentSlaId, currentParentId) {
             parentSelect.appendChild(option);
         }
     });
+}
+
+/**
+ * Populate the task dropdown in edit mode
+ * @param {string} currentTaskName - The current task name to pre-select (e.g., "Task 1")
+ */
+function populateEditTaskDropdown(currentTaskName) {
+    const taskSelect = document.getElementById('edit-taskName');
+    const taskIdField = document.getElementById('edit-taskId');
+    if (!taskSelect) return;
+    
+    // Clear existing options
+    taskSelect.innerHTML = '<option value="">Select Task</option>';
+    
+    // Get all tasks from TEAM_CONFIG
+    const allTasks = window.TEAM_CONFIG?.getAllTasks() || [];
+    
+    // Sort tasks numerically (Task 1, Task 2, ...)
+    allTasks.sort((a, b) => {
+        const numA = parseInt(a.replace('Task ', ''));
+        const numB = parseInt(b.replace('Task ', ''));
+        return numA - numB;
+    });
+    
+    // Add all tasks as options
+    allTasks.forEach(task => {
+        const option = document.createElement('option');
+        option.value = task;
+        option.textContent = task;
+        
+        // Pre-select if this is the current task
+        if (task === currentTaskName) {
+            option.selected = true;
+            // Set hidden task ID field
+            if (taskIdField) {
+                const taskNumber = task.replace('Task ', '');
+                taskIdField.value = `TASK-${taskNumber.padStart(3, '0')}`;
+            }
+        }
+        
+        taskSelect.appendChild(option);
+    });
+}
+
+/**
+ * Populate the team dropdown in edit mode with all available teams or filtered by task
+ * @param {string} currentTeamId - The current team ID to pre-select
+ * @param {string} taskName - Optional task name to filter teams
+ */
+function populateEditTeamDropdown(currentTeamId, taskName = '') {
+    const teamSelect = document.getElementById('edit-teamId');
+    if (!teamSelect) return;
+    
+    // Clear existing options
+    teamSelect.innerHTML = '<option value="">Select Team</option>';
+    
+    let teams;
+    if (taskName) {
+        // Get teams for the selected task
+        teams = window.TEAM_CONFIG?.getTeamsForTask(taskName) || [];
+    } else {
+        // Get all teams if no task selected
+        teams = window.TEAM_CONFIG?.getAllTeams() || [];
+    }
+    
+    // Sort teams by name for better UX
+    teams.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Add teams as options
+    teams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.id; // Store the team ID as the value
+        option.textContent = team.name; // Display the human-readable name
+        
+        // Pre-select if this is the current team
+        if (team.id === currentTeamId) {
+            option.selected = true;
+        }
+        
+        teamSelect.appendChild(option);
+    });
+    
+    // Auto-select if only one team available for the task
+    if (taskName && teams.length === 1 && !currentTeamId) {
+        teamSelect.value = teams[0].id;
+    }
+}
+
+/**
+ * Handle task selection change in edit mode
+ */
+function handleEditTaskChange() {
+    const taskSelect = document.getElementById('edit-taskName');
+    const taskIdField = document.getElementById('edit-taskId');
+    const teamSelect = document.getElementById('edit-teamId');
+    
+    if (!taskSelect) return;
+    
+    const taskName = taskSelect.value;
+    
+    // Update hidden task ID field
+    if (taskIdField) {
+        if (taskName) {
+            const taskNumber = taskName.replace('Task ', '');
+            taskIdField.value = `TASK-${taskNumber.padStart(3, '0')}`;
+        } else {
+            taskIdField.value = '';
+        }
+    }
+    
+    // Clear team selection
+    if (teamSelect) {
+        teamSelect.value = '';
+    }
+    
+    // Repopulate team dropdown based on task
+    populateEditTeamDropdown('', taskName);
+}
+
+/**
+ * Handle team selection change in edit mode - auto-select task if not selected
+ */
+function handleEditTeamChange() {
+    const taskSelect = document.getElementById('edit-taskName');
+    const taskIdField = document.getElementById('edit-taskId');
+    const teamSelect = document.getElementById('edit-teamId');
+    
+    if (!taskSelect || !teamSelect) return;
+    
+    const teamId = teamSelect.value;
+    const currentTaskName = taskSelect.value;
+    
+    // If task is already selected, do nothing
+    if (currentTaskName || !teamId) return;
+    
+    // Find which task this team belongs to
+    const allTasks = window.TEAM_CONFIG?.getAllTasks() || [];
+    
+    for (const task of allTasks) {
+        const teamsForTask = window.TEAM_CONFIG?.getTeamsForTask(task) || [];
+        const teamMatch = teamsForTask.find(t => t.id === teamId);
+        
+        if (teamMatch) {
+            // Auto-select this task
+            taskSelect.value = task;
+            
+            // Update hidden task ID field
+            if (taskIdField) {
+                const taskNumber = task.replace('Task ', '');
+                taskIdField.value = `TASK-${taskNumber.padStart(3, '0')}`;
+            }
+            
+            break;
+        }
+    }
 }
 
 /**
@@ -505,12 +859,12 @@ function attachEditModeEventListeners() {
         });
     }
     
-    // Tag container click to focus input
-    const tagContainer = document.getElementById('edit-tags-chips-container');
-    if (tagContainer) {
-        tagContainer.addEventListener('click', function() {
-            const input = document.getElementById('edit-tags-input');
-            if (input) input.focus();
+    // Tag add button event listener
+    const tagAddBtn = document.getElementById('edit-tag-add-btn');
+    if (tagAddBtn) {
+        tagAddBtn.addEventListener('click', function() {
+            console.log('[INLINE EDITOR] Tag add button clicked');
+            addEditTagFromInput();
         });
     }
 }
@@ -687,7 +1041,7 @@ function initializeEditTagChips(tags) {
  * Handle tag input keydown events
  */
 function handleEditTagInput(event) {
-    if (event.key === ',' || event.key === 'Enter') {
+    if (event.key === 'Enter') {
         event.preventDefault();
         addEditTagFromInput();
     } else if (event.key === 'Backspace' && event.target.value === '') {
@@ -755,8 +1109,8 @@ function addEditTagChipElement(tag) {
     }
     
     const chip = document.createElement('span');
-    chip.className = 'tag-chip inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all';
-    chip.style.backgroundColor = 'var(--color-secondary, #6366f1)';
+    chip.className = 'tag-chip inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm';
+    chip.style.backgroundColor = 'var(--color-primary)';
     chip.style.color = 'white';
     chip.dataset.tag = sanitizedTag;
     
@@ -767,9 +1121,8 @@ function addEditTagChipElement(tag) {
     // Create remove button
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
-    removeBtn.className = 'hover:opacity-75 flex items-center justify-center';
-    removeBtn.style.cssText = 'width: 14px; height: 14px;';
-    removeBtn.innerHTML = '<i class="bi bi-x text-sm"></i>';
+    removeBtn.className = 'hover:opacity-75';
+    removeBtn.innerHTML = '<i class="bi bi-x-lg text-xs"></i>';
     removeBtn.addEventListener('click', () => removeEditTagChip(sanitizedTag));
     chip.appendChild(removeBtn);
     
@@ -889,7 +1242,8 @@ async function saveInlineEdits() {
         }
         
         const originalSla = slaData[slaIndex];
-        const slaType = originalSla.slaType || 'quantity';
+        // Get slaType from form dropdown (allows type changes)
+        const slaType = document.getElementById('edit-slaType')?.value || originalSla.slaType || 'quantity';
         
         // Collect common data from form
         const slaName = document.getElementById('edit-slaName')?.value;
@@ -898,17 +1252,28 @@ async function saveInlineEdits() {
         const startDate = document.getElementById('edit-startDate')?.value;
         const endDate = document.getElementById('edit-endDate')?.value;
         const teamId = document.getElementById('edit-teamId')?.value;
+        const taskId = document.getElementById('edit-taskId')?.value || '';
         const frequency = document.getElementById('edit-frequency')?.value;
         const externalTrackerUrl = document.getElementById('edit-externalTrackerUrl')?.value;
         const parentId = document.getElementById('edit-parentId')?.value || '';
         
         // Collect type-specific values
         let currentValue, targetValue, customFields;
+        let useRange = false;  // Track if using range targets
+        let targetRangeMin = null;
+        let targetRangeMax = null;
         
         try {
             customFields = JSON.parse(originalSla.customFields || originalSla.custom_fields_json || '{}');
         } catch (e) {
             customFields = {};
+        }
+        
+        // Store taskId in customFields
+        if (taskId) {
+            customFields.taskId = taskId;
+        } else {
+            delete customFields.taskId;
         }
         
         if (slaType === 'timeliness') {
@@ -921,16 +1286,107 @@ async function saveInlineEdits() {
             targetValue = targetDate;
             currentValue = 0; // Not used for timeliness
             customFields.targetDate = targetDate;
+        } else if (slaType === 'parent') {
+            // For parent type, check if container-only or tracked
+            const parentModeRadio = document.querySelector('input[name="parentMode"]:checked');
+            const parentMode = parentModeRadio ? parentModeRadio.value : 'container';
+            
+            customFields.parentMode = parentMode;
+            
+            if (parentMode === 'container') {
+                // Container only - no values needed
+                currentValue = 0;
+                targetValue = 0;
+                customFields.isParentContainer = true;
+            } else {
+                // Tracked parent - get tracking type and values
+                const trackingType = document.getElementById('edit-parentTrackingType')?.value || 'quantity';
+                customFields.parentTrackingType = trackingType;
+                customFields.isParentContainer = false;
+                
+                // Get values based on tracking type
+                if (trackingType === 'quantity') {
+                    currentValue = parseFloat(document.getElementById('edit-parent-currentValue')?.value) || 0;
+                    targetValue = parseFloat(document.getElementById('edit-parent-targetValue')?.value) || 0;
+                    const unit = document.getElementById('edit-parent-unit')?.value || '';
+                    if (unit) customFields.unit = unit;
+                } else if (trackingType === 'percentage') {
+                    currentValue = parseFloat(document.getElementById('edit-parent-currentValue')?.value) || 0;
+                    targetValue = parseFloat(document.getElementById('edit-parent-targetValue')?.value) || 0;
+                } else if (trackingType === 'timeliness') {
+                    const targetDate = document.getElementById('edit-parent-targetDate')?.value;
+                    targetValue = targetDate || '';
+                    currentValue = 0;
+                    customFields.targetDate = targetDate;
+                } else if (trackingType === 'availability') {
+                    currentValue = parseFloat(document.getElementById('edit-parent-currentValue')?.value) || 0;
+                    targetValue = parseFloat(document.getElementById('edit-parent-targetValue')?.value) || 0;
+                    const startTime = document.getElementById('edit-parent-startTime')?.value;
+                    const endTime = document.getElementById('edit-parent-endTime')?.value;
+                    if (startTime) customFields.startTime = startTime;
+                    if (endTime) customFields.endTime = endTime;
+                } else if (trackingType === 'compliance') {
+                    const complianceValue = document.getElementById('edit-parent-complianceStatus')?.value;
+                    currentValue = parseInt(complianceValue);
+                    targetValue = 1;
+                    const requirement = document.getElementById('edit-parent-requirement')?.value;
+                    if (requirement) customFields.requirement = requirement;
+                }
+            }
         } else if (slaType === 'quantity') {
-            // For quantity, get numeric values and unit
-            currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
-            targetValue = parseFloat(document.getElementById('edit-targetValue')?.value) || 0;
-            const unit = document.getElementById('edit-unit')?.value || '';
-            if (unit) customFields.unit = unit;
+            // For quantity, check if using range or single value
+            useRange = document.getElementById('edit-quantityRange')?.checked || false;
+            
+            if (useRange) {
+                // Get range values
+                currentValue = parseFloat(document.getElementById('edit-currentValueRange')?.value) || 0;
+                targetRangeMin = parseFloat(document.getElementById('edit-targetMin')?.value) || 0;
+                targetRangeMax = parseFloat(document.getElementById('edit-targetMax')?.value) || 0;
+                targetValue = (targetRangeMin + targetRangeMax) / 2; // Store midpoint as primary target
+                
+                // Store range values in customFields for backward compatibility
+                customFields.targetMin = targetRangeMin;
+                customFields.targetMax = targetRangeMax;
+                
+                const unitRange = document.getElementById('edit-unitRange')?.value || '';
+                if (unitRange) customFields.unit = unitRange;
+            } else {
+                // Get single values
+                currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
+                targetValue = parseFloat(document.getElementById('edit-targetValue')?.value) || 0;
+                
+                // Clean up range fields if switching from range to single
+                delete customFields.targetMin;
+                delete customFields.targetMax;
+                
+                const unit = document.getElementById('edit-unit')?.value || '';
+                if (unit) customFields.unit = unit;
+            }
         } else if (slaType === 'percentage') {
-            // For percentage, get numeric values (0-100)
-            currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
-            targetValue = parseFloat(document.getElementById('edit-targetValue')?.value) || 0;
+            // For percentage, check if using range or single value
+            useRange = document.getElementById('edit-percentageRange')?.checked || false;
+            
+            if (useRange) {
+                // Get range values
+                currentValue = parseFloat(document.getElementById('edit-currentValueRange')?.value) || 0;
+                const percentMin = parseFloat(document.getElementById('edit-percentMin')?.value) || 0;
+                const percentMax = parseFloat(document.getElementById('edit-percentMax')?.value) || 0;
+                targetRangeMin = percentMin;
+                targetRangeMax = percentMax;
+                targetValue = (percentMin + percentMax) / 2; // Store midpoint as primary target
+                
+                // Store range values in customFields for backward compatibility
+                customFields.targetMin = percentMin;
+                customFields.targetMax = percentMax;
+            } else {
+                // Get single values
+                currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
+                targetValue = parseFloat(document.getElementById('edit-targetValue')?.value) || 0;
+                
+                // Clean up range fields if switching from range to single
+                delete customFields.targetMin;
+                delete customFields.targetMax;
+            }
         } else if (slaType === 'availability') {
             // For availability, get uptime percentages and times
             currentValue = parseFloat(document.getElementById('edit-currentValue')?.value) || 0;
@@ -980,13 +1436,18 @@ async function saveInlineEdits() {
         // Prepare updates object for backend (only changed fields)
         const updates = {
             slaName: slaName,
+            slaType: slaType,  // Include type (allows type changes)
             description: description,
             status: status,
             startDate: startDate,
             endDate: endDate,
             currentValue: currentValue,
             targetValue: targetValue,
+            useRange: useRange,  // Boolean for Use Range column
+            targetRangeMin: targetRangeMin,  // For Target Range Min column
+            targetRangeMax: targetRangeMax,  // For Target Range Max column
             teamId: teamId,
+            taskId: taskId,  // Include taskId as top-level field
             frequency: frequency,
             parentId: parentId,
             externalTrackerUrl: externalTrackerUrl,
@@ -1080,7 +1541,7 @@ function discardInlineChanges() {
         }
     }
     
-    // Reset state
+    // Reset state FIRST before any UI updates
     console.log('Resetting inlineEditState...');
     inlineEditState = {
         isEditing: false,
@@ -1102,12 +1563,7 @@ function discardInlineChanges() {
         console.log('No editActions element found to remove');
     }
     
-    // Show original buttons
-    console.log('Calling toggleEditButtons(false)...');
-    toggleEditButtons(false);
-    console.log('toggleEditButtons completed');
-    
-    // Re-render in read mode
+    // Re-render in read mode FIRST
     console.log('Calling renderSLADetail for ID:', savedSlaId);
     if (savedSlaId) {
         renderSLADetail(savedSlaId);
@@ -1115,6 +1571,11 @@ function discardInlineChanges() {
     } else {
         console.log('No savedSlaId, skipping renderSLADetail');
     }
+    
+    // Show original buttons AFTER re-rendering
+    console.log('Calling toggleEditButtons(false)...');
+    toggleEditButtons(false);
+    console.log('toggleEditButtons completed');
     
     console.log('=== DISCARD INLINE CHANGES COMPLETE ===');
     return true;
@@ -1144,6 +1605,437 @@ function initializeInlineEditButton() {
     // The editCurrentSLA() function will be updated to call enableInlineEditing() instead
 }
 
+/**
+ * Toggle between single and range inputs for quantity targets in edit mode
+ */
+function toggleEditQuantityRange() {
+    const checkbox = document.getElementById('edit-quantityRange');
+    const singleDiv = document.getElementById('edit-quantity-single');
+    const rangeDiv = document.getElementById('edit-quantity-range');
+    
+    if (!checkbox || !singleDiv || !rangeDiv) return;
+    
+    if (checkbox.checked) {
+        // Show range, hide single
+        singleDiv.style.display = 'none';
+        rangeDiv.style.display = 'grid';
+        
+        // Copy current value to range current value
+        const currentValue = document.getElementById('edit-currentValue')?.value;
+        const currentValueRange = document.getElementById('edit-currentValueRange');
+        if (currentValue && currentValueRange) {
+            currentValueRange.value = currentValue;
+        }
+        
+        // Copy unit to range unit
+        const unit = document.getElementById('edit-unit')?.value;
+        const unitRange = document.getElementById('edit-unitRange');
+        if (unit && unitRange) {
+            unitRange.value = unit;
+        }
+    } else {
+        // Show single, hide range
+        singleDiv.style.display = 'grid';
+        rangeDiv.style.display = 'none';
+        
+        // Copy range current value back to single
+        const currentValueRange = document.getElementById('edit-currentValueRange')?.value;
+        const currentValue = document.getElementById('edit-currentValue');
+        if (currentValueRange && currentValue) {
+            currentValue.value = currentValueRange;
+        }
+        
+        // Copy range unit back to single
+        const unitRange = document.getElementById('edit-unitRange')?.value;
+        const unit = document.getElementById('edit-unit');
+        if (unitRange && unit) {
+            unit.value = unitRange;
+        }
+    }
+}
+
+/**
+ * Toggle between single and range inputs for percentage targets in edit mode
+ */
+function toggleEditPercentageRange() {
+    const checkbox = document.getElementById('edit-percentageRange');
+    const singleDiv = document.getElementById('edit-percentage-single');
+    const rangeDiv = document.getElementById('edit-percentage-range');
+    
+    if (!checkbox || !singleDiv || !rangeDiv) return;
+    
+    if (checkbox.checked) {
+        // Show range, hide single
+        singleDiv.style.display = 'none';
+        rangeDiv.style.display = 'grid';
+        
+        // Copy current value to range current value
+        const currentValue = document.getElementById('edit-currentValue')?.value;
+        const currentValueRange = document.getElementById('edit-currentValueRange');
+        if (currentValue && currentValueRange) {
+            currentValueRange.value = currentValue;
+        }
+    } else {
+        // Show single, hide range
+        singleDiv.style.display = 'grid';
+        rangeDiv.style.display = 'none';
+        
+        // Copy range current value back to single
+        const currentValueRange = document.getElementById('edit-currentValueRange')?.value;
+        const currentValue = document.getElementById('edit-currentValue');
+        if (currentValueRange && currentValue) {
+            currentValue.value = currentValueRange;
+        }
+    }
+}
+
+/**
+ * Handle SLA type change in edit mode - dynamically update type-specific fields
+ */
+function handleEditSLATypeChange() {
+    const slaTypeSelect = document.getElementById('edit-slaType');
+    if (!slaTypeSelect) return;
+    
+    const newType = slaTypeSelect.value;
+    console.log('SLA type changed to:', newType);
+    
+    // Get the container for type-specific fields
+    const fieldsContainer = document.getElementById('edit-type-specific-fields');
+    if (!fieldsContainer) {
+        console.error('Type-specific fields container not found');
+        return;
+    }
+    
+    // Generate new fields HTML based on selected type
+    let valueFieldsHTML = '';
+    
+    if (newType === 'parent') {
+        // For parent type, show minimal fields
+        valueFieldsHTML = `
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                    <i class="bi bi-info-circle text-blue-600 dark:text-blue-400 text-xl"></i>
+                    <div>
+                        <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">Parent SLA</h4>
+                        <p class="text-sm text-blue-700 dark:text-blue-300">
+                            This SLA acts as a container for grouping related child SLAs. 
+                            Parent SLAs don't track values directly - their status is derived from their children.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (newType === 'quantity') {
+        // For quantity, show numeric inputs with optional unit and range toggle
+        valueFieldsHTML = `
+            <div class="space-y-4">
+                <!-- Range Toggle -->
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="edit-quantityRange"
+                           onchange="toggleEditQuantityRange()" class="rounded">
+                    <label for="edit-quantityRange" class="text-sm font-medium text-primary-color cursor-pointer">
+                        Use Range Target (Min-Max)
+                    </label>
+                </div>
+                
+                <!-- Single Value Fields -->
+                <div id="edit-quantity-single" class="grid grid-cols-1 md:grid-cols-3 gap-4" style="display: grid">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                        <input type="number" id="edit-currentValue" value="0" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                        <input type="number" id="edit-targetValue" value="0" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Unit (optional)</label>
+                        <input type="text" id="edit-unit" value="" 
+                               class="w-full px-3 py-2 border border-color rounded-md"
+                               placeholder="e.g., tickets, requests">
+                    </div>
+                </div>
+                
+                <!-- Range Value Fields -->
+                <div id="edit-quantity-range" class="grid grid-cols-1 md:grid-cols-4 gap-4" style="display: none">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                        <input type="number" id="edit-currentValueRange" value="0" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Min Target</label>
+                        <input type="number" id="edit-targetMin" value="0" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Max Target</label>
+                        <input type="number" id="edit-targetMax" value="0" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Unit (optional)</label>
+                        <input type="text" id="edit-unitRange" value="" 
+                               class="w-full px-3 py-2 border border-color rounded-md"
+                               placeholder="e.g., tickets, requests">
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (newType === 'compliance') {
+        // For compliance, show N/A/Yes/No dropdown
+        valueFieldsHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Compliance Status</label>
+                    <select id="edit-complianceStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                        <option value="2">N/A</option>
+                        <option value="1">Compliant (Yes)</option>
+                        <option value="0">Non-Compliant (No)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Requirement</label>
+                    <input type="text" id="edit-requirement" value="" 
+                           class="w-full px-3 py-2 border border-color rounded-md"
+                           placeholder="e.g., Must pass security audit">
+                </div>
+            </div>
+        `;
+    }
+    
+    // Update the fields container
+    fieldsContainer.innerHTML = valueFieldsHTML;
+}
+
+/**
+ * Handle the "Is Parent SLA" checkbox change
+ */
+function handleEditIsParentChange() {
+    const isParentCheckbox = document.getElementById('edit-isParent');
+    const slaTypeSelect = document.getElementById('edit-slaType');
+    const parentDropdown = document.getElementById('edit-parent-dropdown');
+    const parentInfo = document.getElementById('edit-parent-info');
+    
+    if (!isParentCheckbox || !slaTypeSelect) return;
+    
+    const isParent = isParentCheckbox.checked;
+    const parentOption = slaTypeSelect.querySelector('option[value="parent"]');
+    
+    if (isParent) {
+        // Show parent option and select it
+        if (parentOption) {
+            parentOption.style.display = 'block';
+        }
+        slaTypeSelect.value = 'parent';
+        
+        // Hide parent dropdown, show info message
+        if (parentDropdown) parentDropdown.style.display = 'none';
+        if (parentInfo) parentInfo.style.display = 'block';
+    } else {
+        // Hide parent option and switch to quantity
+        if (parentOption) {
+            parentOption.style.display = 'none';
+        }
+        if (slaTypeSelect.value === 'parent') {
+            slaTypeSelect.value = 'quantity';
+        }
+        
+        // Show parent dropdown, hide info message
+        if (parentDropdown) parentDropdown.style.display = 'block';
+        if (parentInfo) parentInfo.style.display = 'none';
+    }
+    
+    // Trigger type change to update fields
+    handleEditSLATypeChange();
+}
+
+/**
+ * Handle parent mode change (container vs tracked)
+ */
+function handleParentModeChange() {
+    const containerRadio = document.querySelector('input[name="parentMode"][value="container"]');
+    const trackedRadio = document.querySelector('input[name="parentMode"][value="tracked"]');
+    const trackedFieldsContainer = document.getElementById('edit-parent-tracked-fields');
+    
+    if (!trackedFieldsContainer) return;
+    
+    const isTracked = trackedRadio?.checked;
+    
+    if (isTracked) {
+        // Show tracked parent fields - populate with quantity by default
+        trackedFieldsContainer.style.display = 'block';
+        populateParentTrackedFields('quantity');
+    } else {
+        // Hide tracked parent fields
+        trackedFieldsContainer.style.display = 'none';
+        trackedFieldsContainer.innerHTML = '';
+    }
+}
+
+/**
+ * Populate the tracked parent fields based on tracking type
+ */
+function populateParentTrackedFields(trackingType) {
+    const container = document.getElementById('edit-parent-tracked-fields');
+    if (!container) return;
+    
+    // Get current SLA to load existing values
+    const slaData = window.APP_DATA?.slas || [];
+    const sla = slaData.find(s => s.slaId === inlineEditState.slaId);
+    if (!sla) return;
+    
+    const customFields = getCustomFields(sla);
+    const currentValue = sla.currentValue || 0;
+    const targetValue = sla.targetValue || 0;
+    
+    let fieldsHTML = `
+        <div class="border-t border-color pt-4 mt-2">
+            <label class="block text-sm font-medium text-primary-color mb-2">Tracking Type</label>
+            <select id="edit-parentTrackingType" class="w-full px-3 py-2 border border-color rounded-md mb-4"
+                    onchange="handleParentTrackingTypeChange()">
+                <option value="quantity" ${trackingType === 'quantity' ? 'selected' : ''}>Quantity</option>
+                <option value="percentage" ${trackingType === 'percentage' ? 'selected' : ''}>Percentage</option>
+                <option value="timeliness" ${trackingType === 'timeliness' ? 'selected' : ''}>Timeliness</option>
+                <option value="availability" ${trackingType === 'availability' ? 'selected' : ''}>Availability</option>
+                <option value="compliance" ${trackingType === 'compliance' ? 'selected' : ''}>Compliance</option>
+            </select>
+            
+            <div id="edit-parent-tracking-values">
+    `;
+    
+    // Add type-specific fields
+    if (trackingType === 'quantity') {
+        const unit = customFields.unit || '';
+        fieldsHTML += `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Value</label>
+                        <input type="number" id="edit-parent-currentValue" value="${currentValue}" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Target Value</label>
+                        <input type="number" id="edit-parent-targetValue" value="${targetValue}" 
+                               step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Unit (optional)</label>
+                        <input type="text" id="edit-parent-unit" value="${unit}" 
+                               class="w-full px-3 py-2 border border-color rounded-md"
+                               placeholder="e.g., tickets, requests">
+                    </div>
+                </div>
+        `;
+    } else if (trackingType === 'percentage') {
+        fieldsHTML += `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Value (%)</label>
+                        <input type="number" id="edit-parent-currentValue" value="${currentValue}" 
+                               min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Target Value (%)</label>
+                        <input type="number" id="edit-parent-targetValue" value="${targetValue}" 
+                               min="0" max="100" step="0.1" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                </div>
+        `;
+    } else if (trackingType === 'timeliness') {
+        const targetDate = customFields.targetDate || targetValue;
+        const targetDateFormatted = formatDateForInput(targetDate);
+        fieldsHTML += `
+                <div>
+                    <label class="block text-sm font-medium text-primary-color mb-2">Target Completion Date</label>
+                    <input type="date" id="edit-parent-targetDate" value="${targetDateFormatted}" 
+                           class="w-full px-3 py-2 border border-color rounded-md">
+                </div>
+        `;
+    } else if (trackingType === 'availability') {
+        const startTime = customFields.startTime || '00:00';
+        const endTime = customFields.endTime || '23:59';
+        fieldsHTML += `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Current Uptime (%)</label>
+                        <input type="number" id="edit-parent-currentValue" value="${currentValue}" 
+                               min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Target Uptime (%)</label>
+                        <input type="number" id="edit-parent-targetValue" value="${targetValue}" 
+                               min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Service Start Time</label>
+                        <input type="time" id="edit-parent-startTime" value="${startTime}" 
+                               class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Service End Time</label>
+                        <input type="time" id="edit-parent-endTime" value="${endTime}" 
+                               class="w-full px-3 py-2 border border-color rounded-md">
+                    </div>
+                </div>
+        `;
+    } else if (trackingType === 'compliance') {
+        let selectedValue = '0';
+        if (currentValue === 2 || currentValue === '2') {
+            selectedValue = '2';
+        } else if (currentValue === 1 || currentValue === true) {
+            selectedValue = '1';
+        }
+        const requirement = customFields.requirement || '';
+        fieldsHTML += `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Compliance Status</label>
+                        <select id="edit-parent-complianceStatus" class="w-full px-3 py-2 border border-color rounded-md">
+                            <option value="2" ${selectedValue === '2' ? 'selected' : ''}>N/A</option>
+                            <option value="1" ${selectedValue === '1' ? 'selected' : ''}>Compliant (Yes)</option>
+                            <option value="0" ${selectedValue === '0' ? 'selected' : ''}>Non-Compliant (No)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-primary-color mb-2">Requirement</label>
+                        <input type="text" id="edit-parent-requirement" value="${requirement}" 
+                               class="w-full px-3 py-2 border border-color rounded-md"
+                               placeholder="e.g., Must pass security audit">
+                    </div>
+                </div>
+        `;
+    }
+    
+    fieldsHTML += `
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = fieldsHTML;
+}
+
+/**
+ * Handle parent tracking type change
+ */
+function handleParentTrackingTypeChange() {
+    const trackingTypeSelect = document.getElementById('edit-parentTrackingType');
+    if (!trackingTypeSelect) return;
+    
+    const trackingType = trackingTypeSelect.value;
+    populateParentTrackedFields(trackingType);
+}
+
 // Export functions and state for global access
 window.inlineEditState = inlineEditState;
 window.enableInlineEditing = enableInlineEditing;
@@ -1151,10 +2043,21 @@ window.saveInlineEdits = saveInlineEdits;
 window.cancelInlineEditing = cancelInlineEditing;
 window.discardInlineChanges = discardInlineChanges;
 window.populateEditParentDropdown = populateEditParentDropdown;
+window.populateEditTeamDropdown = populateEditTeamDropdown;
 window.handleEditEmailInput = handleEditEmailInput;
 window.addEditEmailChip = addEditEmailChip;
 window.removeEditEmailChip = removeEditEmailChip;
 window.handleEditTagInput = handleEditTagInput;
 window.handleEditTagKeyUp = handleEditTagKeyUp;
 window.removeEditTagChip = removeEditTagChip;
+window.toggleEditQuantityRange = toggleEditQuantityRange;
+window.toggleEditPercentageRange = toggleEditPercentageRange;
+window.handleEditSLATypeChange = handleEditSLATypeChange;
+window.handleEditIsParentChange = handleEditIsParentChange;
+window.handleParentModeChange = handleParentModeChange;
+window.populateParentTrackedFields = populateParentTrackedFields;
+window.handleParentTrackingTypeChange = handleParentTrackingTypeChange;
+window.populateEditTaskDropdown = populateEditTaskDropdown;
+window.handleEditTaskChange = handleEditTaskChange;
+window.handleEditTeamChange = handleEditTeamChange;
 </script>

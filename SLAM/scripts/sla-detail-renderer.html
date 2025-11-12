@@ -60,19 +60,15 @@ function renderSLADetail(slaId) {
     // Update overview section
     const overviewSection = document.querySelector('#detail .bg-surface');
     if (overviewSection) {
-        let overviewContent = overviewSection.querySelector('.space-y-4');
-        
-        // If .space-y-4 doesn't exist (e.g., after inline editing), rebuild the structure
-        if (!overviewContent) {
-            console.log('Overview content structure missing, rebuilding...');
-            overviewSection.innerHTML = `
-                <h3 class="text-lg font-semibold text-primary-color mb-4">Overview</h3>
-                <div class="space-y-4">
-                    <!-- Content will be inserted here -->
-                </div>
-            `;
-            overviewContent = overviewSection.querySelector('.space-y-4');
-        }
+        // Always rebuild the structure to ensure edit mode HTML is completely cleared
+        console.log('Rebuilding overview section structure...');
+        overviewSection.innerHTML = `
+            <h3 class="text-lg font-semibold text-primary-color mb-4">Overview</h3>
+            <div class="space-y-4">
+                <!-- Content will be inserted here -->
+            </div>
+        `;
+        const overviewContent = overviewSection.querySelector('.space-y-4');
         
         if (overviewContent) {
             // Backend returns camelCase - use backend data as source of truth with display fallbacks
@@ -272,8 +268,12 @@ function renderSLADetail(slaId) {
                     ${externalUrl ? `
                     <div class="col-span-2">
                         <span class="text-sm text-muted">External Tracker</span>
-                        <p class="text-sm font-medium text-primary-color">
-                            <a href="${externalUrl}" target="_blank" class="link-primary">${externalUrl}</a>
+                        <p class="text-sm font-medium mt-1">
+                            <a href="${externalUrl}" target="_blank" rel="noopener noreferrer" 
+                               class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md transition-colors duration-200 text-sm font-medium">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                                Open External Tracker
+                            </a>
                         </p>
                     </div>
                     ` : ''}

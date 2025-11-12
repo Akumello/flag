@@ -239,7 +239,7 @@ function applyDataValidation(sheets) {
     const slaTypeRange = sheet.getRange('D2:D');
     const slaTypeRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['quantity', 'percentage', 'timeliness', 'availability', 
-                          'compliance', 'composite', 'multi-metric', 'recurring'])
+                          'compliance', 'parent', 'composite', 'multi-metric', 'recurring'])
       .setAllowInvalid(false)
       .build();
     slaTypeRange.setDataValidation(slaTypeRule);

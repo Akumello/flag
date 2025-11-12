@@ -12,7 +12,7 @@
  * @param {Object} slaData - The SLA data object containing all required and optional fields
  * @param {string} [slaData.parentId] - Parent SLA ID for hierarchical relationships
  * @param {string} slaData.slaName - Name of the SLA (required)
- * @param {string} slaData.slaType - Type of SLA: 'quantity', 'percentage', 'timeliness', 'availability', 'compliance', 'composite', 'multi-metric', 'recurring' (required)
+ * @param {string} slaData.slaType - Type of SLA: 'quantity', 'percentage', 'timeliness', 'availability', 'compliance', 'parent', 'composite', 'multi-metric', 'recurring' (required)
  * @param {string} [slaData.description] - Detailed description of the SLA
  * @param {string} slaData.teamId - Team identifier responsible for the SLA (required)
  * @param {Date|string} slaData.startDate - Start date of the SLA period (required)
